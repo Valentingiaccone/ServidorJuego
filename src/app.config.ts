@@ -7,6 +7,9 @@ import {
     createEndpoint,
 } from "colyseus";
 
+// 1. ---> ACÁ IMPORTAMOS CORS <---
+import cors from "cors"; 
+
 /**
  * Import your Room files
  */
@@ -22,11 +25,9 @@ const server = defineServer({
 
     /**
      * Experimental: Define API routes. Built-in integration with the "playground" and SDK.
-     * 
-     * Usage from SDK: 
-     *   client.http.get("/api/hello").then((response) => {})
-     * 
-     */
+     * * Usage from SDK: 
+     * client.http.get("/api/hello").then((response) => {})
+     * */
     routes: createRouter({
         api_hello: createEndpoint("/api/hello", { method: "GET", }, async (ctx) => {
             return { message: "Hello World" }
@@ -38,6 +39,9 @@ const server = defineServer({
      * Read more: https://expressjs.com/en/starter/basic-routing.html
      */
     express: (app) => {
+        // 2. ---> ACÁ LE DAMOS PERMISO A NETLIFY PARA PASAR <---
+        app.use(cors());
+
         app.get("/hi", (req, res) => {
             res.send("It's time to kick ass and chew bubblegum!");
         });
