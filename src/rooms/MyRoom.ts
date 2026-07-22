@@ -42,11 +42,23 @@ export class MyRoom extends Room {
   onLeave (client: Client, code: number) {
     console.log(client.sessionId, "se fue de la sala.");
     
-    // Si el jugador se va, lo borramos de la pizarra
+    // 1. Guardamos el dato: ¿el que se está yendo era el anfitrión?
+    const jugadorQueSeVa = this.state.jugadores.get(client.sessionId);
+    const eraAnfitrion = jugadorQueSeVa ? jugadorQueSeVa.esAnfitrion : false;
+
+    // 2. Borramos al jugador de la pizarra
     this.state.jugadores.delete(client.sessionId);
     
-    // (Más adelante haremos lógica por si el que se va es el Anfitrión, 
-    // para pasarle la corona a otro, pero por ahora esto está perfecto).
+    // 3. SISTEMA DE HERENCIA (Host Migration)
+    // Si el que se fue era el anfitrión, y todavía queda gente en la sala...
+    if (eraAnfitrion && this.state.jugadores.size > 0) {
+        // Agarramos al primero que encontremos en la lista y le damos la corona
+        for (let [id, jugador] of this.state.jugadores.entries()) {
+            jugador.esAnfitrion = true;
+            console.log(`👑 ¡El anfitrión original huyó! El nuevo anfitrión es: ${id}`);
+            break; // Cortamos el bucle para que solo haya un rey
+        }
+    }
   }
 
   onDispose() {
