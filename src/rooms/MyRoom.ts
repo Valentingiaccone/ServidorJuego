@@ -1,5 +1,5 @@
 import { Room, Client, CloseCode } from "colyseus";
-import { MyRoomState } from "./schema/MyRoomState.js";
+import { Jugador, MyRoomState } from "./schema/MyRoomState.js";
 
 export class MyRoom extends Room {
   // Lo preparamos para los 8 jugadores que mencionaste
@@ -22,10 +22,28 @@ export class MyRoom extends Room {
 
   onJoin (client: Client, options: any) {
     console.log(client.sessionId, "entró a la sala!");
+
+    // 1. Creamos un nuevo jugador usando el molde que hicimos antes
+    const nuevoJugador = new Jugador();
+
+    // 2. ¿Es el primero en entrar? Si la lista de jugadores está vacía (tamaño 0), es el Anfitrión.
+    if (this.state.jugadores.size === 0) {
+      nuevoJugador.esAnfitrion = true;
+      console.log("¡" + client.sessionId + " es el Anfitrión!");
+    }
+
+    // 3. Lo anotamos en la pizarra central
+    this.state.jugadores.set(client.sessionId, nuevoJugador);
   }
 
-  onLeave (client: Client, code: CloseCode) {
-    console.log(client.sessionId, "se fue!", code);
+  onLeave (client: Client, code: number) {
+    console.log(client.sessionId, "se fue de la sala.");
+    
+    // Si el jugador se va, lo borramos de la pizarra
+    this.state.jugadores.delete(client.sessionId);
+    
+    // (Más adelante haremos lógica por si el que se va es el Anfitrión, 
+    // para pasarle la corona a otro, pero por ahora esto está perfecto).
   }
 
   onDispose() {
