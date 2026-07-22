@@ -28,12 +28,12 @@ export class MyRoom extends Room {
 
     const nuevoJugador = new Jugador();
 
-    // --- MAGIA NUEVA: Leer el nombre ---
-    // Si en las opciones viene un "nombre" y no está vacío, lo usamos.
     if (options.nombre && options.nombre.trim() !== "") {
         nuevoJugador.nombre = options.nombre;
     }
-    // -----------------------------------
+    if (options.avatar) {
+        nuevoJugador.avatar = options.avatar;
+    }
 
     if (this.state.jugadores.size === 0) {
       nuevoJugador.esAnfitrion = true;
