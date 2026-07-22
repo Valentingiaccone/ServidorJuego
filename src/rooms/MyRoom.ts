@@ -18,6 +18,9 @@ export class MyRoom extends Room {
 
   onCreate (options: any) {
     console.log("¡La sala se creó correctamente!");
+    
+    // ¡Acá instanciamos la pizarra y la colgamos en la sala!
+    this.setState(new MyRoomState());
   }
 
   onJoin (client: Client, options: any) {
