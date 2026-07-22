@@ -54,9 +54,10 @@ export class MyRoom extends Room {
                 const rolAsignado = mazoRoles[i];
                 j.rol = rolAsignado;
 
-                // Vidas base: 4 balas. Si sos Sheriff, tenés 5.
                 if (rolAsignado === "Sheriff") {
                     j.vidas = 5;
+                    this.state.turnoActual = sessionId;
+                    // ---------------------------------------
                 } else {
                     j.vidas = 4;
                 }
