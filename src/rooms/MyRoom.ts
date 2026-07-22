@@ -26,16 +26,20 @@ export class MyRoom extends Room {
   onJoin (client: Client, options: any) {
     console.log(client.sessionId, "entró a la sala!");
 
-    // 1. Creamos un nuevo jugador usando el molde que hicimos antes
     const nuevoJugador = new Jugador();
 
-    // 2. ¿Es el primero en entrar? Si la lista de jugadores está vacía (tamaño 0), es el Anfitrión.
+    // --- MAGIA NUEVA: Leer el nombre ---
+    // Si en las opciones viene un "nombre" y no está vacío, lo usamos.
+    if (options.nombre && options.nombre.trim() !== "") {
+        nuevoJugador.nombre = options.nombre;
+    }
+    // -----------------------------------
+
     if (this.state.jugadores.size === 0) {
       nuevoJugador.esAnfitrion = true;
       console.log("¡" + client.sessionId + " es el Anfitrión!");
     }
 
-    // 3. Lo anotamos en la pizarra central
     this.state.jugadores.set(client.sessionId, nuevoJugador);
   }
 
