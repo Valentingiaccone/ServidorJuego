@@ -21,18 +21,52 @@ export class MyRoom extends Room {
     this.setState(new MyRoomState());
 
     this.onMessage("iniciar_partida", (client, message) => {
-        // Buscamos quién fue el que apretó el botón
         const jugador = this.state.jugadores.get(client.sessionId);
 
-        // Verificamos por seguridad que el jugador exista, que sea el Anfitrión, y que estemos en el Lobby
         if (jugador && jugador.esAnfitrion && this.state.estadoJuego === "Lobby") {
             
-            console.log("🔥 ¡El Anfitrión dio la orden! Inicia el juego.");
+            const totalJugadores = this.state.jugadores.size;
+
+            // Opcional: Podés validar que haya al menos 4 jugadores (para testing te dejo probar con menos si querés)
+            console.log(`🔥 ¡El Anfitrión dio la orden! Inicia la partida con ${totalJugadores} jugadores.`);
             
-            // Cambiamos el estado de la partida
+            // 1. Armamos la lista de roles según la cantidad de personas
+            let mazoRoles: string[] = [];
+
+            if (totalJugadores <= 4) {
+                // Configuración para 4 o menos jugadores (ideal para testear)
+                mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido"];
+            } else if (totalJugadores === 5) {
+                mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Alguacil"];
+            } else if (totalJugadores === 6) {
+                mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil"];
+            } else {
+                // 7 jugadores
+                mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"];
+            }
+
+            // 2. Mezclamos el mazo de roles (Algoritmo de barajado)
+            mazoRoles.sort(() => Math.random() - 0.5);
+
+            // 3. Repartimos un rol y asignamos vidas a cada jugador
+            let i = 0;
+            this.state.jugadores.forEach((j, sessionId) => {
+                const rolAsignado = mazoRoles[i];
+                j.rol = rolAsignado;
+
+                // Vidas base: 4 balas. Si sos Sheriff, tenés 5.
+                if (rolAsignado === "Sheriff") {
+                    j.vidas = 5;
+                } else {
+                    j.vidas = 4;
+                }
+
+                console.log(`🎭 Jugador ${j.nombre} (${sessionId}) -> Rol: ${j.rol} | Vidas: ${j.vidas}`);
+                i++;
+            });
+
+            // 4. Cambiamos el estado de la sala a Jugando y cerramos la puerta
             this.state.estadoJuego = "Jugando";
-            
-            // Cerramos la sala para que no entren jugadores tarde
             this.lock(); 
         }
     });
