@@ -72,6 +72,30 @@ export class MyRoom extends Room {
         }
     });
     // ------------------------------------------
+    this.onMessage("pasar_turno", (client, message) => {
+        // 1. Verificamos por seguridad que el que tocó el botón sea el dueño del turno actual
+        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
+            
+            // 2. Extraemos todos los IDs de los jugadores en el orden en que entraron a la sala
+            const idsJugadores = Array.from(this.state.jugadores.keys());
+            
+            // 3. Buscamos en qué posición (índice) de la lista está el jugador actual
+            const indiceActual = idsJugadores.indexOf(client.sessionId);
+            
+            // 4. Calculamos quién sigue. Si es el último de la lista, volvemos a empezar en 0.
+            let siguienteIndice = (indiceActual + 1) % idsJugadores.length;
+            
+            // 5. Asignamos el nuevo turno en la pizarra
+            const siguienteId = idsJugadores[siguienteIndice];
+            this.state.turnoActual = siguienteId;
+            
+            // Opcional: El servidor le avisa a todos con un mensaje de texto (lo que daba el error amarillo)
+            const nombreSiguiente = this.state.jugadores.get(siguienteId)?.nombre;
+            this.broadcast("notificacion_turno", `¡Es el turno de ${nombreSiguiente}!`);
+            
+            console.log(`⏩ Turno completado. Ahora le toca a: ${nombreSiguiente}`);
+        }
+    });
   }
 
   onJoin (client: Client, options: any) {
