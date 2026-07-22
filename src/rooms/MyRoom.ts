@@ -96,6 +96,39 @@ export class MyRoom extends Room {
             console.log(`⏩ Turno completado. Ahora le toca a: ${nombreSiguiente}`);
         }
     });
+
+    this.onMessage("disparar", (client, message) => {
+        // 1. Verificamos que sea el turno del jugador que dispara
+        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
+            
+            // 2. Extraemos el ID de la víctima desde el mensaje que nos manda Cocos
+            const objetivoId = message.objetivo;
+            const jugadorObjetivo = this.state.jugadores.get(objetivoId);
+            const jugadorAtacante = this.state.jugadores.get(client.sessionId);
+
+            // 3. Verificamos que la víctima exista y siga con vida
+            if (jugadorObjetivo && jugadorObjetivo.estaVivo) {
+                
+                // Le restamos una bala (vida)
+                jugadorObjetivo.vidas -= 1;
+                
+                console.log(`💥 ${jugadorAtacante.nombre} le disparó a ${jugadorObjetivo.nombre}!`);
+                this.broadcast("notificacion_turno", `💥 ¡${jugadorAtacante.nombre} le disparó a ${jugadorObjetivo.nombre}!`);
+
+                // 4. Verificamos si el jugador objetivo fue eliminado
+                if (jugadorObjetivo.vidas <= 0) {
+                    jugadorObjetivo.estaVivo = false;
+                    jugadorObjetivo.vidas = 0; // Para que no quede en números negativos
+                    
+                    console.log(`💀 ${jugadorObjetivo.nombre} ha sido eliminado.`);
+                    this.broadcast("notificacion_turno", `💀 ¡${jugadorObjetivo.nombre} ha caído!`);
+                    
+                    // Más adelante, acá agregaremos la lógica para ver si el juego termina 
+                    // (ej: si murió el Sheriff).
+                }
+            }
+        }
+    });
   }
 
   onJoin (client: Client, options: any) {
