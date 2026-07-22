@@ -18,9 +18,25 @@ export class MyRoom extends Room {
 
   onCreate (options: any) {
     console.log("¡La sala se creó correctamente!");
-    
-    // ¡Acá instanciamos la pizarra y la colgamos en la sala!
     this.setState(new MyRoomState());
+
+    this.onMessage("iniciar_partida", (client, message) => {
+        // Buscamos quién fue el que apretó el botón
+        const jugador = this.state.jugadores.get(client.sessionId);
+
+        // Verificamos por seguridad que el jugador exista, que sea el Anfitrión, y que estemos en el Lobby
+        if (jugador && jugador.esAnfitrion && this.state.estadoJuego === "Lobby") {
+            
+            console.log("🔥 ¡El Anfitrión dio la orden! Inicia el juego.");
+            
+            // Cambiamos el estado de la partida
+            this.state.estadoJuego = "Jugando";
+            
+            // Cerramos la sala para que no entren jugadores tarde
+            this.lock(); 
+        }
+    });
+    // ------------------------------------------
   }
 
   onJoin (client: Client, options: any) {
