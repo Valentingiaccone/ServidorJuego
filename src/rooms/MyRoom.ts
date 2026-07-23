@@ -80,7 +80,6 @@ export class MyRoom extends Room {
                 this.state.mazo.push(nuevaCarta);
             }
             
-            // Creamos los Botiquines (Se usan al instante y curan)
             for (let c = 0; c < 5; c++) {
                 const nuevaCarta = new Carta();
                 nuevaCarta.id = `botiquin_${c}`;
@@ -88,6 +87,16 @@ export class MyRoom extends Room {
                 nuevaCarta.descripcion = "Recupera 1 vida.";
                 nuevaCarta.tipoDeUso = "instantanea"; // ¡La interfaz la jugará con un solo clic!
                 nuevaCarta.efecto = "curar_1";        // ¡El servidor sabrá que tiene que sumar vida!
+                this.state.mazo.push(nuevaCarta);
+            }
+
+            for (let c = 0; c < 12; c++) {
+                const nuevaCarta = new Carta();
+                nuevaCarta.id = `fallo_${c}`;
+                nuevaCarta.nombre = "¡Fallo!";
+                nuevaCarta.descripcion = "Esquiva un BANG! que te hayan disparado.";
+                nuevaCarta.tipoDeUso = "reaccion"; // Solo se usa al ser atacado
+                nuevaCarta.efecto = "esquivar";    // Cancela el daño
                 this.state.mazo.push(nuevaCarta);
             }
 
@@ -213,67 +222,90 @@ export class MyRoom extends Room {
         let atacante = this.state.jugadores.get(client.sessionId);
         let victima = this.state.jugadores.get(datosDelDisparo.objetivoId);
         
-        // Verificamos que sea el turno del atacante y que la víctima esté viva
-        if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo) {
+        // Verificamos que sea el turno del atacante y que NO haya otro jugador en peligro
+        if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && this.state.jugadorEnPeligro === "") {
             
-            // Buscamos el BANG! en la mano del atacante
             let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
             
-            if (indiceCarta !== -1) {
+            if (indiceCarta !== -1 && atacante.mano[indiceCarta].efecto === "dano_1") {
                 let carta = atacante.mano[indiceCarta];
                 
-                if (carta.nombre === "BANG!") {
-                    // ¡Impacto! Le restamos una vida
-                    victima.vidas--;
-                    
-                    // Si se queda sin vidas, lo eliminamos
-                    if (victima.vidas <= 0) {
-                        victima.estaVivo = false;
-                        victima.vidas = 0;
-                        console.log(`☠️ ${victima.nombre} ha sido ELIMINADO por ${atacante.nombre}`);
+                // Sacamos la carta del atacante y la descartamos
+                atacante.mano.splice(indiceCarta, 1);
+                this.state.descarte.push(carta);
+                
+                // --- ACTIVAMOS LA ALARMA DE PELIGRO ---
+                this.state.jugadorEnPeligro = datosDelDisparo.objetivoId;
+                this.state.atacanteActual = client.sessionId;
+                
+                this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le disparó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
+            }
+        }
+    });
 
-                        // --- MAGIA NUEVA: El Juez de la partida (Condiciones de Victoria) ---
-                        let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
-                        let totalVivos = 0;
+    this.onMessage("responder_ataque", (client, idCartaFallo) => {
+        // Solo el jugador que está a punta de pistola puede responder
+        if (client.sessionId !== this.state.jugadorEnPeligro) return;
 
-                        // Paso 1: Contamos rigurosamente quiénes siguen en pie
-                        this.state.jugadores.forEach((j) => {
-                            if (j.estaVivo) {
-                                if (j.rol === "Sheriff") vivos.Sheriff++;
-                                else if (j.rol === "Forajido") vivos.Forajido++;
-                                else if (j.rol === "Renegado") vivos.Renegado++;
-                                else if (j.rol === "Alguacil") vivos.Alguacil++;
-                                totalVivos++;
-                            }
-                        });
+        let victima = this.state.jugadores.get(client.sessionId);
+        let atacante = this.state.jugadores.get(this.state.atacanteActual);
 
-                        // Paso 2: Evaluamos las reglas oficiales de finalización
-                        if (vivos.Sheriff === 0) {
-                            // Si el Sheriff muere, el juego termina inmediatamente
-                            this.state.estadoJuego = "Terminado";
-                            
-                            if (totalVivos === 1 && vivos.Renegado === 1) {
-                                this.broadcast("victoria", "¡EL RENEGADO GANA LA PARTIDA!");
-                            } else {
-                                this.broadcast("victoria", "¡LOS FORAJIDOS GANAN LA PARTIDA!");
-                            }
-                        } else if (vivos.Forajido === 0 && vivos.Renegado === 0) {
-                            // Si ya no quedan villanos, gana la ley
-                            this.state.estadoJuego = "Terminado";
-                            this.broadcast("victoria", "¡EL SHERIFF GANA LA PARTIDA!");
-                        }
-                        // ---------------------------------------------------------------------
-                    }
-                    
-                    // Sacamos la carta de la mano y va al descarte
-                    atacante.mano.splice(indiceCarta, 1);
+        if (victima) {
+            // ESCENARIO A: La víctima mandó una carta para defenderse
+            if (idCartaFallo) {
+                let indice = victima.mano.findIndex((c: any) => c.id === idCartaFallo);
+                
+                if (indice !== -1 && victima.mano[indice].efecto === "esquivar") {
+                    let carta = victima.mano[indice];
+                    victima.mano.splice(indice, 1);
                     this.state.descarte.push(carta);
                     
-                    // Anunciamos el tiro a toda la sala
-                    this.broadcast("notificacion_turno", `🔫 ¡${atacante.nombre} le disparó a ${victima.nombre}!`);
+                    this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
+                }
+            } 
+            // ESCENARIO B: La víctima no mandó carta, recibe el balazo
+            else {
+                victima.vidas--;
+                this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
+                
+                // Mudamos al Juez acá: Si la víctima muere tras no esquivar
+                if (victima.vidas <= 0) {
+                    victima.estaVivo = false;
+                    victima.vidas = 0;
+                    console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
+
+                    let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
+                    let totalVivos = 0;
+
+                    this.state.jugadores.forEach((j) => {
+                        if (j.estaVivo) {
+                            if (j.rol === "Sheriff") vivos.Sheriff++;
+                            else if (j.rol === "Forajido") vivos.Forajido++;
+                            else if (j.rol === "Renegado") vivos.Renegado++;
+                            else if (j.rol === "Alguacil") vivos.Alguacil++;
+                            totalVivos++;
+                        }
+                    });
+
+                    if (vivos.Sheriff === 0) {
+                        this.state.estadoJuego = "Terminado";
+                        if (totalVivos === 1 && vivos.Renegado === 1) {
+                            this.broadcast("victoria", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
+                        } else {
+                            this.broadcast("victoria", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
+                        }
+                    } else if (vivos.Forajido === 0 && vivos.Renegado === 0) {
+                        this.state.estadoJuego = "Terminado";
+                        this.broadcast("victoria", "🏆 ¡EL SHERIFF GANA LA PARTIDA!");
+                    }
                 }
             }
         }
+
+        // --- APAGAMOS LA ALARMA DE PELIGRO ---
+        // El turno del atacante continúa normalmente
+        this.state.jugadorEnPeligro = "";
+        this.state.atacanteActual = "";
     });
 
     this.onMessage("descartar_carta", (client, idCarta) => {

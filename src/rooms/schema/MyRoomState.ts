@@ -29,8 +29,9 @@ export class MyRoomState extends Schema {
     @type({ map: Jugador }) jugadores = new MapSchema<Jugador>();
     @type("string") estadoJuego: string = "Lobby";
     @type("string") turnoActual: string = "";
+    @type("string") jugadorEnPeligro: string = "";
+    @type("string") atacanteActual: string = "";
 
-    // --- MAGIA NUEVA: Los mazos de la mesa ---
     @type([Carta]) mazo = new ArraySchema<Carta>();
     @type([Carta]) descarte = new ArraySchema<Carta>();
     // -----------------------------------------
