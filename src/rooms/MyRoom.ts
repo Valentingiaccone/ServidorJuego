@@ -116,7 +116,6 @@ export class MyRoom extends Room {
     this.onMessage("pasar_turno", (client, message) => {
         if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
             
-            // Tu mensaje personalizado:
             this.broadcast("notificacion_turno", `¡El jugador ${client.sessionId} ha pasado su turno!`);
 
             const idsJugadores = Array.from(this.state.jugadores.keys());
@@ -134,6 +133,18 @@ export class MyRoom extends Room {
             }
             
             this.state.turnoActual = siguienteId;
+            
+            if (jugadorSiguiente) {
+                for (let i = 0; i < 2; i++) {
+                    // Si todavía hay cartas en el mazo, le damos una
+                    if (this.state.mazo.length > 0) {
+                        const cartaRobada = this.state.mazo.pop();
+                        jugadorSiguiente.mano.push(cartaRobada);
+                    }
+                }
+                console.log(`🃏 ${jugadorSiguiente.nombre} robó 2 cartas.`);
+            }
+            // ----------------------------------------------------------------
             
             const nombreSiguiente = jugadorSiguiente?.nombre;
             this.broadcast("notificacion_turno", `¡Es el turno de ${nombreSiguiente}!`);
