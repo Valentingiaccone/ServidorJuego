@@ -248,14 +248,14 @@ export class MyRoom extends Room {
                             this.state.estadoJuego = "Terminado";
                             
                             if (totalVivos === 1 && vivos.Renegado === 1) {
-                                this.broadcast("notificacion_turno", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
+                                this.broadcast("victoria", "¡EL RENEGADO GANA LA PARTIDA!");
                             } else {
-                                this.broadcast("notificacion_turno", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
+                                this.broadcast("victoria", "¡LOS FORAJIDOS GANAN LA PARTIDA!");
                             }
                         } else if (vivos.Forajido === 0 && vivos.Renegado === 0) {
                             // Si ya no quedan villanos, gana la ley
                             this.state.estadoJuego = "Terminado";
-                            this.broadcast("notificacion_turno", "🏆 ¡LA LEY GANA LA PARTIDA!");
+                            this.broadcast("victoria", "¡EL SHERIFF GANA LA PARTIDA!");
                         }
                         // ---------------------------------------------------------------------
                     }
