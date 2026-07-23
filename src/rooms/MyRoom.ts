@@ -75,14 +75,19 @@ export class MyRoom extends Room {
                 nuevaCarta.id = `bang_${c}`;
                 nuevaCarta.nombre = "BANG!";
                 nuevaCarta.descripcion = "Quita 1 vida a un jugador a tu alcance.";
+                nuevaCarta.tipoDeUso = "objetivo"; // ¡La interfaz sabrá que tiene que apuntar!
+                nuevaCarta.efecto = "dano_1";      // ¡El servidor sabrá que tiene que restar vida!
                 this.state.mazo.push(nuevaCarta);
             }
             
+            // Creamos los Botiquines (Se usan al instante y curan)
             for (let c = 0; c < 5; c++) {
                 const nuevaCarta = new Carta();
                 nuevaCarta.id = `botiquin_${c}`;
                 nuevaCarta.nombre = "Botiquín";
                 nuevaCarta.descripcion = "Recupera 1 vida.";
+                nuevaCarta.tipoDeUso = "instantanea"; // ¡La interfaz la jugará con un solo clic!
+                nuevaCarta.efecto = "curar_1";        // ¡El servidor sabrá que tiene que sumar vida!
                 this.state.mazo.push(nuevaCarta);
             }
 

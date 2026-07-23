@@ -1,12 +1,15 @@
 import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
-// --- MAGIA NUEVA: El molde orientado a objetos de nuestra Carta ---
 export class Carta extends Schema {
     @type("string") id: string = "";
     @type("string") nombre: string = "";
     @type("string") descripcion: string = "";
+    
+    // --- MAGIA NUEVA: Diseño Orientado a Datos ---
+    @type("string") tipoDeUso: string = ""; // Ej: "instantanea", "objetivo", "reaccion"
+    @type("string") efecto: string = "";    // Ej: "curar_1", "dano_1"
+    // ---------------------------------------------
 }
-// -----------------------------------------------------------------
 
 export class Jugador extends Schema {
     @type("string") nombre: string = "";
