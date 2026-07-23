@@ -152,6 +152,38 @@ export class MyRoom extends Room {
         }
     });
 
+    this.onMessage("jugar_carta", (client, idCarta) => {
+        // 1. Verificamos que sea el turno del jugador que hizo clic
+        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
+            
+            let jugador = this.state.jugadores.get(client.sessionId);
+            if (jugador) {
+                // 2. Buscamos en qué posición de la mano está esa carta específica
+                let indiceCarta = jugador.mano.findIndex((c: any) => c.id === idCarta);
+                
+                // Si la carta existe en su mano (índice diferente a -1)
+                if (indiceCarta !== -1) {
+                    let cartaJugada = jugador.mano[indiceCarta];
+                    
+                    // 3. Evaluamos el EFECTO de la carta
+                    if (cartaJugada.nombre === "Botiquín") {
+                        jugador.vidas++; // (Nota: Más adelante le pondremos el límite de vidas máximas)
+                        console.log(`🩹 ${jugador.nombre} usó un Botiquín y subió a ${jugador.vidas} vidas.`);
+                        this.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
+                        
+                        // 4. Sacamos la carta de la mano y la tiramos al descarte
+                        jugador.mano.splice(indiceCarta, 1);
+                        this.state.descarte.push(cartaJugada);
+                        
+                    } else if (cartaJugada.nombre === "BANG!") {
+                        // Como aún no tenemos el sistema de apuntado, lo dejamos en pausa
+                        console.log(`🔫 ${jugador.nombre} intentó usar un BANG!, pero falta el selector de objetivos.`);
+                    }
+                }
+            }
+        }
+    });
+
     this.onMessage("disparar", (client, message) => {
         // 1. Verificamos que sea el turno del jugador que dispara
         if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
