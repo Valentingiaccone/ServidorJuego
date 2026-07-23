@@ -15,6 +15,7 @@ export class Jugador extends Schema {
     @type("string") rol: string = "";
     @type("number") vidas: number = 4;
     @type("boolean") estaVivo: boolean = true;
+    @type("number") vidasMaximas: number = 4;
     
     // --- MAGIA NUEVA: La mano del jugador ---
     @type([Carta]) mano = new ArraySchema<Carta>();

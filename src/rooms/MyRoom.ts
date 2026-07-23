@@ -62,6 +62,8 @@ export class MyRoom extends Room {
                     j.vidas = 4;
                 }
 
+                j.vidasMaximas = j.vidas;
+
                 console.log(`🎭 Jugador ${j.nombre} (${sessionId}) -> Rol: ${j.rol} | Vidas: ${j.vidas}`);
                 i++;
             });
@@ -167,13 +169,19 @@ export class MyRoom extends Room {
                     
                     // 3. Evaluamos el EFECTO de la carta
                     if (cartaJugada.nombre === "Botiquín") {
-                        jugador.vidas++; // (Nota: Más adelante le pondremos el límite de vidas máximas)
-                        console.log(`🩹 ${jugador.nombre} usó un Botiquín y subió a ${jugador.vidas} vidas.`);
-                        this.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
-                        
-                        // 4. Sacamos la carta de la mano y la tiramos al descarte
-                        jugador.mano.splice(indiceCarta, 1);
-                        this.state.descarte.push(cartaJugada);
+                        // --- MAGIA ACTUALIZADA: Candado de Vidas Máximas ---
+                        if (jugador.vidas < jugador.vidasMaximas) {
+                            jugador.vidas++; 
+                            console.log(`🩹 ${jugador.nombre} usó un Botiquín y subió a ${jugador.vidas} vidas.`);
+                            this.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
+                            
+                            // 4. Sacamos la carta de la mano y la tiramos al descarte
+                            jugador.mano.splice(indiceCarta, 1);
+                            this.state.descarte.push(cartaJugada);
+                        } else {
+                            // El jugador está al máximo, ignoramos el clic para que no gaste la carta
+                            console.log(`🚫 ${jugador.nombre} intentó usar un Botiquín pero ya tiene la vida al tope (${jugador.vidasMaximas}).`);
+                        }
                         
                     } else if (cartaJugada.nombre === "BANG!") {
                         // Como aún no tenemos el sistema de apuntado, lo dejamos en pausa
