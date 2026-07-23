@@ -121,13 +121,44 @@ export class MyRoom extends Room {
                 // 4. Verificamos si el jugador objetivo fue eliminado
                 if (jugadorObjetivo.vidas <= 0) {
                     jugadorObjetivo.estaVivo = false;
-                    jugadorObjetivo.vidas = 0; // Para que no quede en números negativos
+                    jugadorObjetivo.vidas = 0; 
                     
                     console.log(`💀 ${jugadorObjetivo.nombre} ha sido eliminado.`);
                     this.broadcast("notificacion_turno", `💀 ¡${jugadorObjetivo.nombre} ha caído!`);
                     
-                    // Más adelante, acá agregaremos la lógica para ver si el juego termina 
-                    // (ej: si murió el Sheriff).
+                    // --- MAGIA NUEVA: El Árbitro revisa si terminó la partida ---
+                    let sheriffVivo = false;
+                    let forajidosVivos = 0;
+                    let renegadoVivo = false;
+                    let vivosTotales = 0;
+
+                    // Contamos quiénes quedan en pie
+                    this.state.jugadores.forEach((j) => {
+                        if (j.estaVivo) {
+                            vivosTotales++;
+                            if (j.rol === "Sheriff") sheriffVivo = true;
+                            if (j.rol === "Forajido") forajidosVivos++;
+                            if (j.rol === "Renegado") renegadoVivo = true;
+                        }
+                    });
+
+                    // Regla 1: Si el Sheriff muere
+                    if (!sheriffVivo) {
+                        this.state.estadoJuego = "Terminado";
+                        
+                        // Si el Renegado es el ÚNICO vivo, gana él. Si no, ganan los Forajidos.
+                        if (renegadoVivo && vivosTotales === 1) {
+                            this.broadcast("notificacion_turno", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
+                        } else {
+                            this.broadcast("notificacion_turno", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
+                        }
+                    } 
+                    // Regla 2: Si mueren todos los Forajidos y el Renegado
+                    else if (forajidosVivos === 0 && !renegadoVivo) {
+                        this.state.estadoJuego = "Terminado";
+                        this.broadcast("notificacion_turno", "🏆 ¡LA LEY GANA LA PARTIDA! (Sheriff y Alguaciles)");
+                    }
+                    // -------------------------------------------------------------
                 }
             }
         }
