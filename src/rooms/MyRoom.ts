@@ -1,5 +1,5 @@
 import { Room, Client, CloseCode } from "colyseus";
-import { Jugador, MyRoomState } from "./schema/MyRoomState.js";
+import { Carta, Jugador, MyRoomState } from "./schema/MyRoomState.js";
 
 export class MyRoom extends Room {
   // Lo preparamos para los 8 jugadores que mencionaste
@@ -65,6 +65,47 @@ export class MyRoom extends Room {
                 console.log(`🎭 Jugador ${j.nombre} (${sessionId}) -> Rol: ${j.rol} | Vidas: ${j.vidas}`);
                 i++;
             });
+
+            this.state.mazo.clear();
+            
+            for (let c = 0; c < 15; c++) {
+                const nuevaCarta = new Carta();
+                nuevaCarta.id = `bang_${c}`;
+                nuevaCarta.nombre = "BANG!";
+                nuevaCarta.descripcion = "Quita 1 vida a un jugador a tu alcance.";
+                this.state.mazo.push(nuevaCarta);
+            }
+            
+            for (let c = 0; c < 5; c++) {
+                const nuevaCarta = new Carta();
+                nuevaCarta.id = `botiquin_${c}`;
+                nuevaCarta.nombre = "Botiquín";
+                nuevaCarta.descripcion = "Recupera 1 vida.";
+                this.state.mazo.push(nuevaCarta);
+            }
+
+            // B. Mezclamos el mazo (Barajado aleatorio)
+            let arrayTemporal = Array.from(this.state.mazo);
+            arrayTemporal.sort(() => Math.random() - 0.5);
+            this.state.mazo.clear();
+            arrayTemporal.forEach(carta => this.state.mazo.push(carta));
+            console.log(`🃏 El mazo ha sido barajado con ${this.state.mazo.length} cartas.`);
+
+            // C. Repartimos a cada jugador tantas cartas como vidas tenga
+            this.state.jugadores.forEach((j, sessionId) => {
+                // Vaciamos la mano por las dudas (útil si reinician la partida)
+                j.mano.clear();
+                
+                // Le damos una carta por cada bala que tenga
+                for (let balas = 0; balas < j.vidas; balas++) {
+                    if (this.state.mazo.length > 0) {
+                        const cartaRobada = this.state.mazo.pop();
+                        j.mano.push(cartaRobada);
+                    }
+                }
+                console.log(`🖐️ ${j.nombre} recibió ${j.mano.length} cartas en su mano.`);
+            });
+            // ------------------------------------------------
 
             // 4. Cambiamos el estado de la sala a Jugando y cerramos la puerta
             this.state.estadoJuego = "Jugando";

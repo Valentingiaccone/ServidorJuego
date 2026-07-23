@@ -1,22 +1,33 @@
-import { Schema, type, MapSchema } from "@colyseus/schema";
-// falta importar Context
+import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
-// 1. Definimos el "molde" de un Jugador
+// --- MAGIA NUEVA: El molde orientado a objetos de nuestra Carta ---
+export class Carta extends Schema {
+    @type("string") id: string = "";
+    @type("string") nombre: string = "";
+    @type("string") descripcion: string = "";
+}
+// -----------------------------------------------------------------
+
 export class Jugador extends Schema {
-    @type("string") nombre: string = "Vaquero Misterioso";
+    @type("string") nombre: string = "";
     @type("number") avatar: number = 1;
     @type("boolean") esAnfitrion: boolean = false;
-    @type("number") vidas: number = 0; // Las balas que le quedan
-    @type("string") rol: string = "";  // Sheriff, Forajido, Renegado, Alguacil
+    @type("string") rol: string = "";
+    @type("number") vidas: number = 4;
     @type("boolean") estaVivo: boolean = true;
+    
+    // --- MAGIA NUEVA: La mano del jugador ---
+    @type([Carta]) mano = new ArraySchema<Carta>();
+    // ----------------------------------------
 }
 
-// 2. Definimos la Pizarra Central de la Sala
 export class MyRoomState extends Schema {
-    // --- MAGIA NUEVA: Control de la partida ---
-    @type("string") estadoJuego: string = "Lobby"; // Empezamos siempre en el "Lobby"
-    @type("string") turnoActual: string = "";      // Acá guardaremos el ID del jugador al que le toca
-    // ------------------------------------------
-
     @type({ map: Jugador }) jugadores = new MapSchema<Jugador>();
+    @type("string") estadoJuego: string = "Lobby";
+    @type("string") turnoActual: string = "";
+
+    // --- MAGIA NUEVA: Los mazos de la mesa ---
+    @type([Carta]) mazo = new ArraySchema<Carta>();
+    @type([Carta]) descarte = new ArraySchema<Carta>();
+    // -----------------------------------------
 }
