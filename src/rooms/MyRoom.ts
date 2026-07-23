@@ -75,6 +75,9 @@ export class MyRoom extends Room {
     this.onMessage("pasar_turno", (client, message) => {
         if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
             
+            // Tu mensaje personalizado:
+            this.broadcast("notificacion_turno", `¡El jugador ${client.sessionId} ha pasado su turno!`);
+
             const idsJugadores = Array.from(this.state.jugadores.keys());
             const indiceActual = idsJugadores.indexOf(client.sessionId);
             
