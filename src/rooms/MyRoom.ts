@@ -204,6 +204,41 @@ export class MyRoom extends Room {
         }
     });
 
+    this.onMessage("disparar_jugador", (client, datosDelDisparo) => {
+        let atacante = this.state.jugadores.get(client.sessionId);
+        let victima = this.state.jugadores.get(datosDelDisparo.objetivoId);
+        
+        // Verificamos que sea el turno del atacante y que la víctima esté viva
+        if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo) {
+            
+            // Buscamos el BANG! en la mano del atacante
+            let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
+            
+            if (indiceCarta !== -1) {
+                let carta = atacante.mano[indiceCarta];
+                
+                if (carta.nombre === "BANG!") {
+                    // ¡Impacto! Le restamos una vida
+                    victima.vidas--;
+                    
+                    // Si se queda sin vidas, lo eliminamos
+                    if (victima.vidas <= 0) {
+                        victima.estaVivo = false;
+                        victima.vidas = 0;
+                        console.log(`☠️ ${victima.nombre} ha sido ELIMINADO por ${atacante.nombre}`);
+                    }
+                    
+                    // Sacamos la carta de la mano y va al descarte
+                    atacante.mano.splice(indiceCarta, 1);
+                    this.state.descarte.push(carta);
+                    
+                    // Anunciamos el tiro a toda la sala
+                    this.broadcast("notificacion_turno", `🔫 ¡${atacante.nombre} le disparó a ${victima.nombre}!`);
+                }
+            }
+        }
+    });
+
     this.onMessage("descartar_carta", (client, idCarta) => {
         let jugador = this.state.jugadores.get(client.sessionId);
         
