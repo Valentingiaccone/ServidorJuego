@@ -226,6 +226,38 @@ export class MyRoom extends Room {
                         victima.estaVivo = false;
                         victima.vidas = 0;
                         console.log(`☠️ ${victima.nombre} ha sido ELIMINADO por ${atacante.nombre}`);
+
+                        // --- MAGIA NUEVA: El Juez de la partida (Condiciones de Victoria) ---
+                        let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
+                        let totalVivos = 0;
+
+                        // Paso 1: Contamos rigurosamente quiénes siguen en pie
+                        this.state.jugadores.forEach((j) => {
+                            if (j.estaVivo) {
+                                if (j.rol === "Sheriff") vivos.Sheriff++;
+                                else if (j.rol === "Forajido") vivos.Forajido++;
+                                else if (j.rol === "Renegado") vivos.Renegado++;
+                                else if (j.rol === "Alguacil") vivos.Alguacil++;
+                                totalVivos++;
+                            }
+                        });
+
+                        // Paso 2: Evaluamos las reglas oficiales de finalización
+                        if (vivos.Sheriff === 0) {
+                            // Si el Sheriff muere, el juego termina inmediatamente
+                            this.state.estadoJuego = "Terminado";
+                            
+                            if (totalVivos === 1 && vivos.Renegado === 1) {
+                                this.broadcast("notificacion_turno", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
+                            } else {
+                                this.broadcast("notificacion_turno", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
+                            }
+                        } else if (vivos.Forajido === 0 && vivos.Renegado === 0) {
+                            // Si ya no quedan villanos, gana la ley
+                            this.state.estadoJuego = "Terminado";
+                            this.broadcast("notificacion_turno", "🏆 ¡LA LEY GANA LA PARTIDA!");
+                        }
+                        // ---------------------------------------------------------------------
                     }
                     
                     // Sacamos la carta de la mano y va al descarte
@@ -253,70 +285,6 @@ export class MyRoom extends Room {
                 jugador.mano.splice(indiceCarta, 1);
                 this.state.descarte.push(cartaDescartada);
                 console.log(`🗑️ ${jugador.nombre} descartó la carta: ${cartaDescartada.nombre}`);
-            }
-        }
-    });
-
-    this.onMessage("disparar", (client, message) => {
-        // 1. Verificamos que sea el turno del jugador que dispara
-        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
-            
-            // 2. Extraemos el ID de la víctima desde el mensaje que nos manda Cocos
-            const objetivoId = message.objetivo;
-            const jugadorObjetivo = this.state.jugadores.get(objetivoId);
-            const jugadorAtacante = this.state.jugadores.get(client.sessionId);
-
-            // 3. Verificamos que la víctima exista y siga con vida
-            if (jugadorObjetivo && jugadorObjetivo.estaVivo) {
-                
-                // Le restamos una bala (vida)
-                jugadorObjetivo.vidas -= 1;
-                
-                console.log(`💥 ${jugadorAtacante.nombre} le disparó a ${jugadorObjetivo.nombre}!`);
-                this.broadcast("notificacion_turno", `💥 ¡${jugadorAtacante.nombre} le disparó a ${jugadorObjetivo.nombre}!`);
-
-                // 4. Verificamos si el jugador objetivo fue eliminado
-                if (jugadorObjetivo.vidas <= 0) {
-                    jugadorObjetivo.estaVivo = false;
-                    jugadorObjetivo.vidas = 0; 
-                    
-                    console.log(`💀 ${jugadorObjetivo.nombre} ha sido eliminado.`);
-                    this.broadcast("notificacion_turno", `💀 ¡${jugadorObjetivo.nombre} ha caído!`);
-                    
-                    // --- MAGIA NUEVA: El Árbitro revisa si terminó la partida ---
-                    let sheriffVivo = false;
-                    let forajidosVivos = 0;
-                    let renegadoVivo = false;
-                    let vivosTotales = 0;
-
-                    // Contamos quiénes quedan en pie
-                    this.state.jugadores.forEach((j) => {
-                        if (j.estaVivo) {
-                            vivosTotales++;
-                            if (j.rol === "Sheriff") sheriffVivo = true;
-                            if (j.rol === "Forajido") forajidosVivos++;
-                            if (j.rol === "Renegado") renegadoVivo = true;
-                        }
-                    });
-
-                    // Regla 1: Si el Sheriff muere
-                    if (!sheriffVivo) {
-                        this.state.estadoJuego = "Terminado";
-                        
-                        // Si el Renegado es el ÚNICO vivo, gana él. Si no, ganan los Forajidos.
-                        if (renegadoVivo && vivosTotales === 1) {
-                            this.broadcast("notificacion_turno", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
-                        } else {
-                            this.broadcast("notificacion_turno", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
-                        }
-                    } 
-                    // Regla 2: Si mueren todos los Forajidos y el Renegado
-                    else if (forajidosVivos === 0 && !renegadoVivo) {
-                        this.state.estadoJuego = "Terminado";
-                        this.broadcast("notificacion_turno", "🏆 ¡LA LEY GANA LA PARTIDA! (Sheriff y Alguaciles)");
-                    }
-                    // -------------------------------------------------------------
-                }
             }
         }
     });
