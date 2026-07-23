@@ -118,6 +118,18 @@ export class MyRoom extends Room {
     this.onMessage("pasar_turno", (client, message) => {
         if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
             
+            // --- MAGIA NUEVA: Candado de Fase 3 (Límite de cartas) ---
+            let jugadorActual = this.state.jugadores.get(client.sessionId);
+            if (jugadorActual) {
+                if (jugadorActual.mano.length > jugadorActual.vidas) {
+                    let excedente = jugadorActual.mano.length - jugadorActual.vidas;
+                    // Le mandamos un mensaje PRIVADO solo a este jugador
+                    client.send("alerta_personal", `⚠️ Tenés demasiadas cartas. Descartá ${excedente} para pasar el turno.`);
+                    return; // IMPORTANTE: El 'return' corta la función acá. No lo deja pasar el turno.
+                }
+            }
+            // ---------------------------------------------------------
+
             this.broadcast("notificacion_turno", `¡El jugador ${client.sessionId} ha pasado su turno!`);
 
             const idsJugadores = Array.from(this.state.jugadores.keys());
@@ -188,6 +200,24 @@ export class MyRoom extends Room {
                         console.log(`🔫 ${jugador.nombre} intentó usar un BANG!, pero falta el selector de objetivos.`);
                     }
                 }
+            }
+        }
+    });
+
+    this.onMessage("descartar_carta", (client, idCarta) => {
+        let jugador = this.state.jugadores.get(client.sessionId);
+        
+        // Solo podés descartar si es tu turno
+        if (jugador && this.state.turnoActual === client.sessionId) {
+            let indiceCarta = jugador.mano.findIndex((c: any) => c.id === idCarta);
+            
+            if (indiceCarta !== -1) {
+                let cartaDescartada = jugador.mano[indiceCarta];
+                
+                // La sacamos de la mano y va directo al descarte sin hacer efecto
+                jugador.mano.splice(indiceCarta, 1);
+                this.state.descarte.push(cartaDescartada);
+                console.log(`🗑️ ${jugador.nombre} descartó la carta: ${cartaDescartada.nombre}`);
             }
         }
     });
