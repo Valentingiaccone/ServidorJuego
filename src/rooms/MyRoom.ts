@@ -227,6 +227,7 @@ export class MyRoom extends Room {
             
           if (atacante.yaDisparo) {
               client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
+              client.send("bajar_cartas")
               return; // Cortamos la función acá
           }
 
