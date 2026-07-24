@@ -132,13 +132,12 @@ export class MyRoom extends Room {
     this.onMessage("pasar_turno", (client, message) => {
         if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
             
-            // --- MAGIA NUEVA: Candado de Fase 3 (Límite de cartas) ---
             let jugadorActual = this.state.jugadores.get(client.sessionId);
             if (jugadorActual) {
                 if (jugadorActual.mano.length > jugadorActual.vidas) {
                     let excedente = jugadorActual.mano.length - jugadorActual.vidas;
                     // Le mandamos un mensaje PRIVADO solo a este jugador
-                    client.send("alerta_personal", `⚠️ Tenés demasiadas cartas. Descartá ${excedente} para pasar el turno.`);
+                    client.send("alerta_personal", `Tenés demasiadas cartas. Descartá ${excedente} para pasar el turno.`);
                     return; // IMPORTANTE: El 'return' corta la función acá. No lo deja pasar el turno.
                 }
             }
@@ -227,7 +226,7 @@ export class MyRoom extends Room {
         if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && this.state.jugadorEnPeligro === "") {
             
           if (atacante.yaDisparo) {
-              client.send("alerta_personal", "❌ Ya disparaste un BANG! en este turno.");
+              client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
               return; // Cortamos la función acá
           }
 
