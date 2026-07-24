@@ -100,6 +100,24 @@ export class MyRoom extends Room {
                 this.state.mazo.push(nuevaCarta);
             }
 
+            const armas = [
+                { id: "arma_1", nombre: "Schofield", descripcion: "Alcance: 2", alcance: 2 },
+                { id: "arma_2", nombre: "Schofield", descripcion: "Alcance: 2", alcance: 2 },
+                { id: "arma_3", nombre: "Remington", descripcion: "Alcance: 3", alcance: 3 },
+                { id: "arma_4", nombre: "Rev. Carabina", descripcion: "Alcance: 4", alcance: 4 },
+                { id: "arma_5", nombre: "Winchester", descripcion: "Alcance: 5", alcance: 5 }
+            ];
+
+            armas.forEach(arma => {
+                const nuevaCarta = new Carta();
+                nuevaCarta.id = arma.id;
+                nuevaCarta.nombre = arma.nombre;
+                nuevaCarta.descripcion = arma.descripcion;
+                nuevaCarta.tipoDeUso = "equipamiento";
+                nuevaCarta.efecto = `equipar_arma_${arma.alcance}`; // Ej: "equipar_arma_2"
+                this.state.mazo.push(nuevaCarta);
+            });
+
             // B. Mezclamos el mazo (Barajado aleatorio)
             let arrayTemporal = Array.from(this.state.mazo);
             arrayTemporal.sort(() => Math.random() - 0.5);
@@ -181,38 +199,52 @@ export class MyRoom extends Room {
     });
 
     this.onMessage("jugar_carta", (client, idCarta) => {
-        // 1. Verificamos que sea el turno del jugador que hizo clic
-        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
+        // 1. Verificamos turno, que el juego esté activo, y que NO haya pausas por tiroteos
+        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && this.state.jugadorEnPeligro === "") {
             
             let jugador = this.state.jugadores.get(client.sessionId);
             if (jugador) {
                 // 2. Buscamos en qué posición de la mano está esa carta específica
                 let indiceCarta = jugador.mano.findIndex((c: any) => c.id === idCarta);
                 
-                // Si la carta existe en su mano (índice diferente a -1)
                 if (indiceCarta !== -1) {
                     let cartaJugada = jugador.mano[indiceCarta];
                     
-                    // 3. Evaluamos el EFECTO de la carta
-                    if (cartaJugada.nombre === "Botiquín") {
-                        // --- MAGIA ACTUALIZADA: Candado de Vidas Máximas ---
+                    // 3. Evaluamos por EFECTO en lugar de NOMBRE (Diseño Orientado a Datos)
+                    
+                    // --- EFECTO: CURACIÓN ---
+                    if (cartaJugada.efecto === "curar_1") {
                         if (jugador.vidas < jugador.vidasMaximas) {
                             jugador.vidas++; 
-                            console.log(`🩹 ${jugador.nombre} usó un Botiquín y subió a ${jugador.vidas} vidas.`);
+                            console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
                             this.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
                             
-                            // 4. Sacamos la carta de la mano y la tiramos al descarte
+                            // Sacamos la carta de la mano y la tiramos al descarte
                             jugador.mano.splice(indiceCarta, 1);
                             this.state.descarte.push(cartaJugada);
                         } else {
-                            // El jugador está al máximo, ignoramos el clic para que no gaste la carta
-                            console.log(`🚫 ${jugador.nombre} intentó usar un Botiquín pero ya tiene la vida al tope (${jugador.vidasMaximas}).`);
+                            // Le avisamos con el nuevo sistema de alertas que está full vida
+                            client.send("alerta_personal", "Tu vida ya está al máximo.");
                         }
+                    } 
+                    // --- EFECTO: EQUIPAMIENTO DE ARMAS ---
+                    else if (cartaJugada.tipoDeUso === "equipamiento" && cartaJugada.efecto.startsWith("equipar_arma_")) {
+                        // Extraemos el número del alcance leyendo el final del string (Ej: de "equipar_arma_3" sacamos el 3)
+                        let nuevoAlcance = parseInt(cartaJugada.efecto.split("_")[2]);
                         
-                    } else if (cartaJugada.nombre === "BANG!") {
-                        // Como aún no tenemos el sistema de apuntado, lo dejamos en pausa
-                        console.log(`🔫 ${jugador.nombre} intentó usar un BANG!, pero falta el selector de objetivos.`);
+                        jugador.nombreArma = cartaJugada.nombre;
+                        jugador.alcanceArma = nuevoAlcance;
+                        
+                        console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
+                        this.broadcast("notificacion_turno", `🔫 ${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}.`);
+                        
+                        // Por ahora mandamos el arma al descarte tras extraer su poder
+                        jugador.mano.splice(indiceCarta, 1);
+                        this.state.descarte.push(cartaJugada);
                     }
+                    
+                    // (Nota: El BANG! ya no se evalúa acá, porque al ser tipoDeUso="objetivo", 
+                    // Cocos lo manda directamente al evento "disparar_jugador").
                 }
             }
         }
@@ -246,7 +278,7 @@ export class MyRoom extends Room {
             let distancia = Math.min(diferencia, n - diferencia);
 
             // 4. Verificamos si llega la bala (Por ahora, alcance base = 1)
-            let alcanceMaximo = 1; 
+            let alcanceMaximo = atacante.alcanceArma;
             
             if (distancia > alcanceMaximo) {
                 // Frenamos el ataque y le explicamos el motivo con tu nuevo sistema de alertas
