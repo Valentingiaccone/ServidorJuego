@@ -36,6 +36,7 @@ export class MyRoomState extends Schema {
     @type("string") jugadorEnPeligro: string = "";
     @type("string") jugadorDebeDescartar: string = "";
     @type("string") atacanteActual: string = "";
+    @type("string") jugadorBajoAtaqueIndio: string = "";
 
     @type([Carta]) mazo = new ArraySchema<Carta>();
     @type([Carta]) descarte = new ArraySchema<Carta>();

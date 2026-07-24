@@ -111,6 +111,23 @@ const GestorDeEfectos: Record<string, Function> = {
             client.send("bajar_cartas");
         }
     },
+
+    "indios": (sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
+        sala.colaIndios = [];
+        sala.state.jugadores.forEach((j: any, sessionId: string) => {
+            if (j.estaVivo && sessionId !== client.sessionId) sala.colaIndios.push(sessionId);
+        });
+
+        if (sala.colaIndios.length > 0) {
+            jugadorQueJuega.mano.splice(indiceCarta, 1);
+            sala.state.descarte.push(cartaJugada);
+            sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} lanzó un ataque de ¡Indios!`);
+            sala.avanzarColaIndios(); 
+        } else {
+            client.send("alerta_personal", "No hay nadie vivo para atacar.");
+            client.send("bajar_cartas");
+        }
+    },
 };
 
 export class MyRoom extends Room {
@@ -119,6 +136,7 @@ export class MyRoom extends Room {
   state = new MyRoomState();
 
   colaDePeligro: string[] = [];
+  colaIndios: string[] = [];
 
   avanzarColaDePeligro() {
       if (this.colaDePeligro.length > 0) {
@@ -136,6 +154,55 @@ export class MyRoom extends Room {
           this.broadcast("notificacion_turno", `💨 El ataque de Tiratachuela ha terminado.`);
       }
   }
+
+  avanzarColaIndios() {
+        if (this.colaIndios.length > 0) {
+            this.state.jugadorBajoAtaqueIndio = this.colaIndios.shift(); 
+            let victima = this.state.jugadores.get(this.state.jugadorBajoAtaqueIndio);
+            if (victima) this.broadcast("notificacion_turno", `🏹 ¡Los Indios atacan a ${victima.nombre}! ¿Tendrá un BANG!?`);
+        } else {
+            this.state.jugadorBajoAtaqueIndio = "";
+            this.broadcast("notificacion_turno", `⛺ El ataque de los Indios ha terminado.`);
+        }
+    }
+
+  evaluarMuerte(victima: any) {
+        if (victima.vidas <= 0) {
+            victima.estaVivo = false;
+            victima.vidas = 0;
+            console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
+
+            // Vaciamos bolsillos
+            victima.mano.forEach((carta: any) => this.state.descarte.push(carta));
+            victima.mano.clear();
+            if (victima.cartaArma) this.state.descarte.push(victima.cartaArma);
+            victima.nombreArma = "Colt .45";
+            victima.alcanceArma = 1;
+
+            // Contamos vivos y decidimos si termina el juego
+            let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
+            let totalVivos = 0;
+
+            this.state.jugadores.forEach((j) => {
+                if (j.estaVivo) {
+                    vivos[j.rol as keyof typeof vivos]++;
+                    totalVivos++;
+                }
+            });
+
+            if (vivos.Sheriff === 0) {
+                this.state.estadoJuego = "Terminado";
+                if (totalVivos === 1 && vivos.Renegado === 1) {
+                    this.broadcast("victoria", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
+                } else {
+                    this.broadcast("victoria", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
+                }
+            } else if (vivos.Forajido === 0 && vivos.Renegado === 0) {
+                this.state.estadoJuego = "Terminado";
+                this.broadcast("victoria", "🏆 ¡EL SHERIFF GANA LA PARTIDA!");
+            }
+        }
+    }
 
   // AQUÍ RECIBIMOS LOS MENSAJES DE COCOS:
   messages = {
@@ -287,6 +354,16 @@ export class MyRoom extends Room {
                 tira.tipoDeUso = "instantanea";
                 tira.efecto = "tiratachuela";   
                 this.state.mazo.push(tira);
+            }
+
+            for (let i = 0; i < 2; i++) { 
+                const indios = new Carta();
+                indios.id = `indios_${i}`;
+                indios.nombre = "¡Indios!";
+                indios.descripcion = "Todos los demás jugadores descartan un BANG! o pierden 1 vida.";
+                indios.tipoDeUso = "instantanea"; 
+                indios.efecto = "indios";   
+                this.state.mazo.push(indios);
             }
 
             const armas = [
@@ -516,6 +593,27 @@ export class MyRoom extends Room {
         this.state.jugadorDebeDescartar = "";
     });
 
+    this.onMessage("responder_indios", (client, datos) => {
+        if (this.state.jugadorBajoAtaqueIndio !== client.sessionId) return;
+
+        let victima = this.state.jugadores.get(client.sessionId);
+        
+        if (datos.accion === "descartar") {
+            let indiceBang = victima.mano.findIndex((c: any) => c.id === datos.idCarta);
+            if (indiceBang !== -1) {
+                let cartaDescartada = victima.mano.splice(indiceBang, 1)[0];
+                this.state.descarte.push(cartaDescartada);
+                this.broadcast("notificacion_turno", `🛡️ ${victima.nombre} descartó un BANG! y ahuyentó a los Indios.`);
+            }
+        } else if (datos.accion === "dano") {
+            victima.vidas--;
+            this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por los Indios!`);
+            this.evaluarMuerte(victima); // Usamos al Juez limpio
+        }
+
+        this.avanzarColaIndios(); // Siguiente víctima
+    });
+
     this.onMessage("disparar_jugador", (client, datosDelDisparo) => {
         let atacante = this.state.jugadores.get(client.sessionId);
         let victima = this.state.jugadores.get(datosDelDisparo.objetivoId);
@@ -594,52 +692,7 @@ export class MyRoom extends Room {
                 victima.vidas--;
                 this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
                 
-                // Mudamos al Juez acá: Si la víctima muere tras no esquivar
-                if (victima.vidas <= 0) {
-                    victima.estaVivo = false;
-                    victima.vidas = 0;
-                    console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
-
-                    victima.mano.forEach(carta => {
-                        this.state.descarte.push(carta);
-                    });
-                    victima.mano.clear(); // Vaciamos la mano
-
-                    // 2. Si tenía un arma física equipada, también va al descarte
-                    if (victima.cartaArma) {
-                        this.state.descarte.push(victima.cartaArma);
-                    }
-                    
-                    // 3. Reseteamos su estado visual al arma por defecto por prolijidad
-                    victima.nombreArma = "Colt .45";
-                    victima.alcanceArma = 1;
-                    console.log(`🗑️ Las cartas y el arma de ${victima.nombre} fueron al descarte.`);
-
-                    let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
-                    let totalVivos = 0;
-
-                    this.state.jugadores.forEach((j) => {
-                        if (j.estaVivo) {
-                            if (j.rol === "Sheriff") vivos.Sheriff++;
-                            else if (j.rol === "Forajido") vivos.Forajido++;
-                            else if (j.rol === "Renegado") vivos.Renegado++;
-                            else if (j.rol === "Alguacil") vivos.Alguacil++;
-                            totalVivos++;
-                        }
-                    });
-
-                    if (vivos.Sheriff === 0) {
-                        this.state.estadoJuego = "Terminado";
-                        if (totalVivos === 1 && vivos.Renegado === 1) {
-                            this.broadcast("victoria", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
-                        } else {
-                            this.broadcast("victoria", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
-                        }
-                    } else if (vivos.Forajido === 0 && vivos.Renegado === 0) {
-                        this.state.estadoJuego = "Terminado";
-                        this.broadcast("victoria", "🏆 ¡EL SHERIFF GANA LA PARTIDA!");
-                    }
-                }
+                this.evaluarMuerte(victima)
             }
         }
 
