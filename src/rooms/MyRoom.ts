@@ -187,7 +187,7 @@ export class MyRoom extends Room {
                 panico.id = `panico_${i}`;
                 panico.nombre = "¡Pánico!";
                 panico.descripcion = "Robale una carta de su mano o mesa a un jugador a distancia 1.";
-                panico.tipoDeUso = "objetivo"; // Toca la carta y luego al avatar
+                panico.tipoDeUso = "objetivo1"; // Toca la carta y luego al avatar
                 panico.efecto = "robar_enemigo"; 
                 this.state.mazo.push(panico);
             }
@@ -446,11 +446,9 @@ export class MyRoom extends Room {
             let diferencia = Math.abs(idxAtacante - idxVictima);
             let distancia = Math.min(diferencia, n - diferencia);
 
-            // 4. Verificamos si llega la bala (Por ahora, alcance base = 1)
             let alcanceMaximo = atacante.alcanceArma;
             
             if (distancia > alcanceMaximo) {
-                // Frenamos el ataque y le explicamos el motivo con tu nuevo sistema de alertas
                 client.send("alerta_personal", `${victima.nombre} está fuera de tu alcance.\n(Distancia de la victima: ${distancia} | Tu arma llega hasta: ${alcanceMaximo})`);
                 return; 
             }
