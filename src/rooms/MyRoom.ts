@@ -37,6 +37,21 @@ const GestorDeEfectos: Record<string, Function> = {
         
         console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
         sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}!`);
+    },
+
+    "robar": (sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
+        // Leemos cuántas cartas dice el efecto (Ej: "robar_2" -> 2)
+        let cantidad = parseInt(parametros[1]); 
+        
+        // Usamos la nueva herramienta de la sala para darle las cartas
+        sala.repartirCartas(jugador, cantidad);
+        
+        console.log(`🃏 ${jugador.nombre} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
+        sala.broadcast("notificacion_turno", `🃏 ${jugador.nombre} jugó un(a) ${cartaJugada.nombre}.`);
+        
+        // Consumimos la carta
+        jugador.mano.splice(indiceCarta, 1);
+        sala.state.descarte.push(cartaJugada);
     }
 };
 
@@ -137,6 +152,16 @@ export class MyRoom extends Room {
                 nuevaCarta.tipoDeUso = "reaccion"; // Solo se usa al ser atacado
                 nuevaCarta.efecto = "esquivar";    // Cancela el daño
                 this.state.mazo.push(nuevaCarta);
+            }
+
+            for (let i = 0; i < 3; i++) {
+                const diligencia = new Carta();
+                diligencia.id = `diligencia_${i}`;
+                diligencia.nombre = "Diligencia";
+                diligencia.descripcion = "Roba 2 cartas del mazo.";
+                diligencia.tipoDeUso = "instantanea";
+                diligencia.efecto = "robar_2"; // Magia pura
+                this.state.mazo.push(diligencia);
             }
 
             const armas = [
@@ -482,4 +507,23 @@ export class MyRoom extends Room {
   onDispose() {
     console.log("room", this.roomId, "disposing...");
   }
+
+  repartirCartas(jugador: any, cantidad: number) {
+        for (let i = 0; i < cantidad; i++) {
+            // Si el mazo se vació, reciclamos el descarte
+            if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
+                console.log("🔄 ¡Mazo vacío! Mezclando la pila de descarte...");
+                let arrayDescarte = Array.from(this.state.descarte);
+                arrayDescarte.sort(() => Math.random() - 0.5);
+                this.state.descarte.clear();
+                arrayDescarte.forEach(carta => this.state.mazo.push(carta));
+            }
+
+            // Repartimos la carta
+            if (this.state.mazo.length > 0) {
+                const cartaRobada = this.state.mazo.pop();
+                jugador.mano.push(cartaRobada);
+            }
+        }
+    }
 }
