@@ -484,7 +484,7 @@ export class MyRoom extends Room {
 
     this.onMessage("jugar_carta", (client, idCarta) => {
         // 1. Verificamos turno, que el juego esté activo, y que NO haya pausas por tiroteos o robos
-        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && this.state.jugadorEnPeligro === "" && this.state.jugadorDebeDescartar === "") {
+        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && !this.juegoPausado()) {
             
             let jugador = this.state.jugadores.get(client.sessionId);
             if (jugador) {
@@ -512,8 +512,7 @@ export class MyRoom extends Room {
     });
 
     this.onMessage("panico", (client, datos) => {
-        if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.state.jugadorEnPeligro !== "" || this.state.jugadorDebeDescartar !== "") return;
-
+        if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.juegoPausado()) return;
         let atacante = this.state.jugadores.get(client.sessionId);
         let victima = this.state.jugadores.get(datos.idObjetivo);
         
@@ -555,6 +554,8 @@ export class MyRoom extends Room {
     });
 
     this.onMessage("lanzar_cocoroch", (client, datos) => {
+      if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.juegoPausado()) return
+
         let atacante = this.state.jugadores.get(client.sessionId);
         let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
         
@@ -619,7 +620,7 @@ export class MyRoom extends Room {
         let victima = this.state.jugadores.get(datosDelDisparo.objetivoId);
         
         // Verificamos que sea el turno del atacante y que NO haya otro jugador en peligro
-        if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && this.state.jugadorEnPeligro === "" || this.state.jugadorDebeDescartar !== "") {
+        if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && !this.juegoPausado()) {
             
           if (atacante.yaDisparo) {
               client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
@@ -771,21 +772,27 @@ export class MyRoom extends Room {
   }
 
   repartirCartas(jugador: any, cantidad: number) {
-        for (let i = 0; i < cantidad; i++) {
-            // Si el mazo se vació, reciclamos el descarte
-            if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
-                console.log("🔄 ¡Mazo vacío! Mezclando la pila de descarte...");
-                let arrayDescarte = Array.from(this.state.descarte);
-                arrayDescarte.sort(() => Math.random() - 0.5);
-                this.state.descarte.clear();
-                arrayDescarte.forEach(carta => this.state.mazo.push(carta));
-            }
+      for (let i = 0; i < cantidad; i++) {
+          // Si el mazo se vació, reciclamos el descarte
+          if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
+              console.log("🔄 ¡Mazo vacío! Mezclando la pila de descarte...");
+              let arrayDescarte = Array.from(this.state.descarte);
+              arrayDescarte.sort(() => Math.random() - 0.5);
+              this.state.descarte.clear();
+              arrayDescarte.forEach(carta => this.state.mazo.push(carta));
+          }
 
-            // Repartimos la carta
-            if (this.state.mazo.length > 0) {
-                const cartaRobada = this.state.mazo.pop();
-                jugador.mano.push(cartaRobada);
-            }
-        }
-    }
+          // Repartimos la carta
+          if (this.state.mazo.length > 0) {
+              const cartaRobada = this.state.mazo.pop();
+              jugador.mano.push(cartaRobada);
+          }
+      }
+  }
+
+  juegoPausado(): boolean {
+      return (this.state.jugadorEnPeligro !== "" || 
+              this.state.jugadorDebeDescartar !== "" || 
+              this.state.jugadorBajoAtaqueIndio !== "");
+  }
 }
