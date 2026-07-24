@@ -179,7 +179,7 @@ export class MyRoom extends Room {
                 cat.id = `cocoroch_${i}`;
                 cat.nombre = "Cocoroch";
                 cat.descripcion = "Haz que un jugador descarte una carta de la mano o de la mesa.";
-                cat.tipoDeUso = "objetivo"; // Toca la carta y luego al avatar
+                cat.tipoDeUso = "objetivoGlobal";
                 cat.efecto = "forzar_enemigo"; 
                 this.state.mazo.push(cat);
 
