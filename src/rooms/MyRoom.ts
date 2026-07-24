@@ -52,13 +52,90 @@ const GestorDeEfectos: Record<string, Function> = {
         // Consumimos la carta
         jugador.mano.splice(indiceCarta, 1);
         sala.state.descarte.push(cartaJugada);
-    }
+    },
+
+    "curarATodos": (sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
+        let alguienNecesitaCura = false;
+        
+        // 1. Verificamos si AL MENOS UN jugador vivo necesita curación
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo && j.vidas < j.vidasMaximas) {
+                alguienNecesitaCura = true;
+            }
+        });
+
+        // 2. Si absolutamente todos están al máximo, rebotamos la carta
+        if (!alguienNecesitaCura) {
+            client.send("alerta_personal", "❌ No podés jugar esta carta ahora.\nTodos los jugadores vivos ya tienen la salud al máximo.");
+            client.send("bajar_cartas"); // Limpiamos la UI por las dudas
+            return; // Cortamos acá, la carta NO se consume y vuelve a tu mano.
+        }
+
+        // 3. Si pasamos la validación, repartimos la salud a los heridos
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo && j.vidas < j.vidasMaximas) {
+                j.vidas++;
+            }
+        });
+
+        console.log(`✨ ${jugadorQueJuega.nombre} usó ${cartaJugada.nombre} y curó a todos 1 vida.`);
+        sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó un(a) ${cartaJugada.nombre} y curó a todos!`);
+        
+        // 4. Consumimos la carta y va al descarte
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.state.descarte.push(cartaJugada);
+    },
+
+    "tiratachuela": (sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
+        // 1. Limpiamos la cola por las dudas
+        sala.colaDePeligro = [];
+        
+        // 2. Metemos a todos los jugadores vivos (menos a vos) en la lista de ejecución
+        sala.state.jugadores.forEach((j: any, sessionId: string) => {
+            if (j.estaVivo && sessionId !== client.sessionId) {
+                sala.colaDePeligro.push(sessionId);
+            }
+        });
+
+        if (sala.colaDePeligro.length > 0) {
+            // 3. Consumimos la carta
+            jugadorQueJuega.mano.splice(indiceCarta, 1);
+            sala.state.descarte.push(cartaJugada);
+
+            // 4. Activamos el ataque masivo
+            sala.state.atacanteActual = client.sessionId;
+            sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
+            sala.avanzarColaDePeligro(); // Arranca el primer disparo
+        } else {
+            client.send("alerta_personal", "No hay nadie vivo para atacar.");
+            client.send("bajar_cartas");
+        }
+    },
 };
 
 export class MyRoom extends Room {
   // Lo preparamos para los 8 jugadores que mencionaste
   maxClients = 8;
   state = new MyRoomState();
+
+  colaDePeligro: string[] = [];
+
+  avanzarColaDePeligro() {
+      if (this.colaDePeligro.length > 0) {
+          // Sacamos al primero de la lista y lo ponemos frente al cañón
+          this.state.jugadorEnPeligro = this.colaDePeligro.shift(); 
+          
+          let victima = this.state.jugadores.get(this.state.jugadorEnPeligro);
+          if (victima) {
+              this.broadcast("notificacion_turno", `⚠️ ¡El Tiratachuela apunta a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
+          }
+      } else {
+          // Se acabaron las balas
+          this.state.jugadorEnPeligro = "";
+          this.state.atacanteActual = "";
+          this.broadcast("notificacion_turno", `💨 El ataque de Tiratachuela ha terminado.`);
+      }
+  }
 
   // AQUÍ RECIBIMOS LOS MENSAJES DE COCOS:
   messages = {
@@ -187,9 +264,29 @@ export class MyRoom extends Room {
                 panico.id = `panico_${i}`;
                 panico.nombre = "¡Pánico!";
                 panico.descripcion = "Robale una carta de su mano o mesa a un jugador a distancia 1.";
-                panico.tipoDeUso = "objetivo1"; // Toca la carta y luego al avatar
+                panico.tipoDeUso = "objetivo1";
                 panico.efecto = "robar_enemigo"; 
                 this.state.mazo.push(panico);
+            }
+
+            for (let i = 0; i < 1; i++) {
+                const poco = new Carta();
+                poco.id = `poco_${i}`;
+                poco.nombre = "Poco";
+                poco.descripcion = "Recupera 1 vida a todos los jugadores vivos en la mesa.";
+                poco.tipoDeUso = "instantanea";
+                poco.efecto = "curarATodos";
+                this.state.mazo.push(poco);
+            }
+
+            for (let i = 0; i < 1; i++) { 
+                const tira = new Carta();
+                tira.id = `tiratachuela_${i}`;
+                tira.nombre = "Tiratachuela";
+                tira.descripcion = "Dispara a todos los demás jugadores uno por uno.";
+                tira.tipoDeUso = "instantanea";
+                tira.efecto = "tiratachuela";   
+                this.state.mazo.push(tira);
             }
 
             const armas = [
@@ -546,10 +643,13 @@ export class MyRoom extends Room {
             }
         }
 
-        // --- APAGAMOS LA ALARMA DE PELIGRO ---
-        // El turno del atacante continúa normalmente
-        this.state.jugadorEnPeligro = "";
-        this.state.atacanteActual = "";
+        if (this.colaDePeligro && this.colaDePeligro.length > 0) {
+            this.avanzarColaDePeligro();
+        } else {
+            // Si era un BANG normal (cola vacía), o la tachuela ya terminó, apagamos todo
+            this.state.jugadorEnPeligro = "";
+            this.state.atacanteActual = "";
+        }
     });
 
     this.onMessage("descartar_carta", (client, idCarta) => {
