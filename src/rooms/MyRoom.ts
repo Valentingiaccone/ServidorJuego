@@ -337,7 +337,7 @@ export class MyRoom extends Room {
         }
     });
 
-    this.onMessage("sabotear_jugador", (client, datos) => {
+    this.onMessage("panico", (client, datos) => {
         if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.state.jugadorEnPeligro !== "") return;
 
         let atacante = this.state.jugadores.get(client.sessionId);
@@ -373,16 +373,50 @@ export class MyRoom extends Room {
             atacante.mano.push(cartaAfectada);
             console.log(`🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre} (Pánico!).`);
             this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
-        } 
-        else if (accion === "descartar") {
-            this.state.descarte.push(cartaAfectada);
-            console.log(`💥 ${atacante.nombre} le descartó una carta a ${victima.nombre} (Cat Balou).`);
-            this.broadcast("notificacion_turno", `💥 ${atacante.nombre} le descartó una carta a ${victima.nombre}.`);
         }
 
         // 3. Consumimos la carta de sabotaje del atacante
         atacante.mano.splice(indiceCartaJugada, 1);
         this.state.descarte.push(cartaSabotaje);
+    });
+
+    this.onMessage("lanzar_cocoroch", (client, datos) => {
+        let atacante = this.state.jugadores.get(client.sessionId);
+        let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
+        
+        if (indiceCartaJugada !== -1) {
+            let carta = atacante.mano.splice(indiceCartaJugada, 1)[0];
+            this.state.descarte.push(carta);
+
+            // ¡Ponemos a la víctima contra la espada y la pared!
+            this.state.jugadorDebeDescartar = datos.idObjetivo;
+            this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
+        }
+    });
+
+    // 2. La víctima elige qué carta sacrificar
+    this.onMessage("responder_descarte", (client, datos) => {
+        if (this.state.jugadorDebeDescartar !== client.sessionId) return; // Seguridad
+
+        let victima = this.state.jugadores.get(client.sessionId);
+        let cartaAfectada = null;
+
+        if (datos.zona === "mano") {
+            cartaAfectada = victima.mano.splice(datos.indice, 1)[0];
+        } else if (datos.zona === "equipamiento") {
+            cartaAfectada = victima.cartaArma;
+            victima.cartaArma = null;
+            victima.nombreArma = "Colt .45";
+            victima.alcanceArma = 1;
+        }
+
+        if (cartaAfectada) {
+            this.state.descarte.push(cartaAfectada);
+            this.broadcast("notificacion_turno", `🗑️ ${victima.nombre} decidió descartar su ${cartaAfectada.nombre}.`);
+        }
+
+        // Liberamos a la víctima y el juego sigue
+        this.state.jugadorDebeDescartar = "";
     });
 
     this.onMessage("disparar_jugador", (client, datosDelDisparo) => {
