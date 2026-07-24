@@ -230,6 +230,29 @@ export class MyRoom extends Room {
               return; // Cortamos la función acá
           }
 
+           let vivos: string[] = [];
+            this.state.jugadores.forEach((j, id) => {
+                if (j.estaVivo) vivos.push(id);
+            });
+
+            // 2. Buscamos en qué índice del círculo están el atacante y la víctima
+            let idxAtacante = vivos.indexOf(client.sessionId);
+            let idxVictima = vivos.indexOf(datosDelDisparo.objetivoId);
+
+            // 3. Aplicamos la fórmula de distancia circular mínima
+            let n = vivos.length;
+            let diferencia = Math.abs(idxAtacante - idxVictima);
+            let distancia = Math.min(diferencia, n - diferencia);
+
+            // 4. Verificamos si llega la bala (Por ahora, alcance base = 1)
+            let alcanceMaximo = 1; 
+            
+            if (distancia > alcanceMaximo) {
+                // Frenamos el ataque y le explicamos el motivo con tu nuevo sistema de alertas
+                client.send("alerta_personal", `${victima.nombre} está fuera de tu alcance.\n(Distancia de la victima: ${distancia} | Tu arma llega hasta: ${alcanceMaximo})`);
+                return; 
+            }
+
             let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
             
             if (indiceCarta !== -1 && atacante.mano[indiceCarta].efecto === "dano_1") {
