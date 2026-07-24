@@ -406,8 +406,8 @@ export class MyRoom extends Room {
     });
 
     this.onMessage("jugar_carta", (client, idCarta) => {
-        // 1. Verificamos turno, que el juego esté activo, y que NO haya pausas por tiroteos
-        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && this.state.jugadorEnPeligro === "") {
+        // 1. Verificamos turno, que el juego esté activo, y que NO haya pausas por tiroteos o robos
+        if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && this.state.jugadorEnPeligro === "" && this.state.jugadorDebeDescartar === "") {
             
             let jugador = this.state.jugadores.get(client.sessionId);
             if (jugador) {
@@ -435,7 +435,7 @@ export class MyRoom extends Room {
     });
 
     this.onMessage("panico", (client, datos) => {
-        if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.state.jugadorEnPeligro !== "") return;
+        if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.state.jugadorEnPeligro !== "" || this.state.jugadorDebeDescartar !== "") return;
 
         let atacante = this.state.jugadores.get(client.sessionId);
         let victima = this.state.jugadores.get(datos.idObjetivo);
@@ -521,7 +521,7 @@ export class MyRoom extends Room {
         let victima = this.state.jugadores.get(datosDelDisparo.objetivoId);
         
         // Verificamos que sea el turno del atacante y que NO haya otro jugador en peligro
-        if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && this.state.jugadorEnPeligro === "") {
+        if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && this.state.jugadorEnPeligro === "" || this.state.jugadorDebeDescartar !== "") {
             
           if (atacante.yaDisparo) {
               client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
