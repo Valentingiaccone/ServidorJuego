@@ -163,6 +163,7 @@ export class MyRoom extends Room {
             this.state.turnoActual = siguienteId;
             
             if (jugadorSiguiente) {
+              jugadorSiguiente.yaDisparo = false;
                 for (let i = 0; i < 2; i++) {
                     // Si todavía hay cartas en el mazo, le damos una
                     if (this.state.mazo.length > 0) {
@@ -225,11 +226,17 @@ export class MyRoom extends Room {
         // Verificamos que sea el turno del atacante y que NO haya otro jugador en peligro
         if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && this.state.jugadorEnPeligro === "") {
             
+          if (atacante.yaDisparo) {
+              client.send("alerta_personal", "❌ Ya disparaste un BANG! en este turno.");
+              return; // Cortamos la función acá
+          }
+
             let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
             
             if (indiceCarta !== -1 && atacante.mano[indiceCarta].efecto === "dano_1") {
                 let carta = atacante.mano[indiceCarta];
                 
+                atacante.yaDisparo = true;
                 // Sacamos la carta del atacante y la descartamos
                 atacante.mano.splice(indiceCarta, 1);
                 this.state.descarte.push(carta);
