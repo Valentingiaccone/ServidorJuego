@@ -358,6 +358,21 @@ export class MyRoom extends Room {
                     victima.vidas = 0;
                     console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
 
+                    victima.mano.forEach(carta => {
+                        this.state.descarte.push(carta);
+                    });
+                    victima.mano.clear(); // Vaciamos la mano
+
+                    // 2. Si tenía un arma física equipada, también va al descarte
+                    if (victima.cartaArma) {
+                        this.state.descarte.push(victima.cartaArma);
+                    }
+                    
+                    // 3. Reseteamos su estado visual al arma por defecto por prolijidad
+                    victima.nombreArma = "Colt .45";
+                    victima.alcanceArma = 1;
+                    console.log(`🗑️ Las cartas y el arma de ${victima.nombre} fueron al descarte.`);
+
                     let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
                     let totalVivos = 0;
 
