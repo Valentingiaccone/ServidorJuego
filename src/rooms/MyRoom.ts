@@ -1,6 +1,45 @@
 import { Room, Client, CloseCode } from "colyseus";
 import { Carta, Jugador, MyRoomState } from "./schema/MyRoomState.js";
 
+const GestorDeEfectos: Record<string, Function> = {
+    
+    // Lógica para cartas tipo "curar_X"
+    "curar": (sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
+        if (jugador.vidas < jugador.vidasMaximas) {
+            jugador.vidas++; 
+            console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
+            sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
+            
+            // Consumimos la carta
+            jugador.mano.splice(indiceCarta, 1);
+            sala.state.descarte.push(cartaJugada);
+        } else {
+            client.send("alerta_personal", "Tu vida ya está al máximo.");
+        }
+    },
+
+    // Lógica para cartas tipo "equipar_arma_X"
+    "equipar": (sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
+        // Los parametros vienen de cortar el texto. Ej: ["equipar", "arma", "3"]
+        let nuevoAlcance = parseInt(parametros[2]); 
+        
+        if (jugador.cartaArma) {
+            sala.state.descarte.push(jugador.cartaArma);
+            console.log(`🗑️ El arma vieja de ${jugador.nombre} fue al descarte.`);
+        }
+        
+        jugador.nombreArma = cartaJugada.nombre;
+        jugador.alcanceArma = nuevoAlcance;
+        jugador.cartaArma = cartaJugada;
+        
+        // Consumimos la carta a la mesa
+        jugador.mano.splice(indiceCarta, 1);
+        
+        console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
+        sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}!`);
+    }
+};
+
 export class MyRoom extends Room {
   // Lo preparamos para los 8 jugadores que mencionaste
   maxClients = 8;
@@ -221,52 +260,24 @@ export class MyRoom extends Room {
             
             let jugador = this.state.jugadores.get(client.sessionId);
             if (jugador) {
-                // 2. Buscamos en qué posición de la mano está esa carta específica
                 let indiceCarta = jugador.mano.findIndex((c: any) => c.id === idCarta);
                 
                 if (indiceCarta !== -1) {
                     let cartaJugada = jugador.mano[indiceCarta];
                     
-                    // 3. Evaluamos por EFECTO en lugar de NOMBRE (Diseño Orientado a Datos)
-                    
-                    // --- EFECTO: CURACIÓN ---
-                    if (cartaJugada.efecto === "curar_1") {
-                        if (jugador.vidas < jugador.vidasMaximas) {
-                            jugador.vidas++; 
-                            console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
-                            this.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
-                            
-                            // Sacamos la carta de la mano y la tiramos al descarte
-                            jugador.mano.splice(indiceCarta, 1);
-                            this.state.descarte.push(cartaJugada);
-                        } else {
-                            // Le avisamos con el nuevo sistema de alertas que está full vida
-                            client.send("alerta_personal", "Tu vida ya está al máximo.");
-                        }
-                    } 
-                    // --- EFECTO: EQUIPAMIENTO DE ARMAS ---
-                    else if (cartaJugada.tipoDeUso === "equipamiento" && cartaJugada.efecto.startsWith("equipar_arma_")) {
-                        let nuevoAlcance = parseInt(cartaJugada.efecto.split("_")[2]);
-                        
-                        // 1. Si el jugador ya tenía un arma física equipada, la mandamos al descarte
-                        if (jugador.cartaArma) {
-                            this.state.descarte.push(jugador.cartaArma);
-                            console.log(`🗑️ El arma vieja de ${jugador.nombre} fue al descarte.`);
-                        }
-                        
-                        // 2. Le asignamos los nuevos stats y guardamos la carta física en su "bolsillo"
-                        jugador.nombreArma = cartaJugada.nombre;
-                        jugador.alcanceArma = nuevoAlcance;
-                        jugador.cartaArma = cartaJugada;
-                        
-                        // 3. Sacamos la carta de la mano (¡Y NO LA TIRAMOS AL DESCARTE, se queda en la mesa!)
-                        jugador.mano.splice(indiceCarta, 1);
-                        
-                        console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
-                        
-                        // Mandamos la alerta flotante a todos para que se enteren
-                        this.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}!`);
+                    // --- MAGIA NUEVA: EL DESPACHADOR ---
+                    // Separamos el string: "curar_1" -> ["curar", "1"] | "equipar_arma_3" -> ["equipar", "arma", "3"]
+                    let partesEfecto = cartaJugada.efecto.split("_");
+                    let accionPrincipal = partesEfecto[0]; 
+
+                    // Verificamos si la acción existe en nuestro diccionario de arriba
+                    if (GestorDeEfectos[accionPrincipal]) {
+                        // ¡Ejecutamos la función aislada enviándole todo lo que necesita!
+                        GestorDeEfectos[accionPrincipal](this, client, jugador, cartaJugada, indiceCarta, partesEfecto);
+                    } else {
+                        console.log(`⚠️ Efecto no programado o desconocido: ${cartaJugada.efecto}`);
                     }
+                    // -----------------------------------
                 }
             }
         }
