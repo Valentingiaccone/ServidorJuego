@@ -182,7 +182,24 @@ export class MyRoom extends Room {
             if (jugadorSiguiente) {
               jugadorSiguiente.yaDisparo = false;
                 for (let i = 0; i < 2; i++) {
-                    // Si todavía hay cartas en el mazo, le damos una
+                    if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
+                        console.log("🔄 ¡Mazo vacío! Mezclando la pila de descarte...");
+                        
+                        // 1. Agarramos todas las cartas del descarte
+                        let arrayDescarte = Array.from(this.state.descarte);
+                        
+                        // 2. Las mezclamos al azar
+                        arrayDescarte.sort(() => Math.random() - 0.5);
+                        
+                        // 3. Vaciamos la pila de descarte
+                        this.state.descarte.clear();
+                        
+                        // 4. Las metemos todas de vuelta en el mazo
+                        arrayDescarte.forEach(carta => this.state.mazo.push(carta));
+                    }
+                    // ---------------------------------------
+
+                    // Ahora sí, robamos con total seguridad
                     if (this.state.mazo.length > 0) {
                         const cartaRobada = this.state.mazo.pop();
                         jugadorSiguiente.mano.push(cartaRobada);
@@ -229,22 +246,27 @@ export class MyRoom extends Room {
                     } 
                     // --- EFECTO: EQUIPAMIENTO DE ARMAS ---
                     else if (cartaJugada.tipoDeUso === "equipamiento" && cartaJugada.efecto.startsWith("equipar_arma_")) {
-                        // Extraemos el número del alcance leyendo el final del string (Ej: de "equipar_arma_3" sacamos el 3)
                         let nuevoAlcance = parseInt(cartaJugada.efecto.split("_")[2]);
                         
+                        // 1. Si el jugador ya tenía un arma física equipada, la mandamos al descarte
+                        if (jugador.cartaArma) {
+                            this.state.descarte.push(jugador.cartaArma);
+                            console.log(`🗑️ El arma vieja de ${jugador.nombre} fue al descarte.`);
+                        }
+                        
+                        // 2. Le asignamos los nuevos stats y guardamos la carta física en su "bolsillo"
                         jugador.nombreArma = cartaJugada.nombre;
                         jugador.alcanceArma = nuevoAlcance;
+                        jugador.cartaArma = cartaJugada;
+                        
+                        // 3. Sacamos la carta de la mano (¡Y NO LA TIRAMOS AL DESCARTE, se queda en la mesa!)
+                        jugador.mano.splice(indiceCarta, 1);
                         
                         console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
-                        this.broadcast("notificacion_turno", `🔫 ${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}.`);
                         
-                        // Por ahora mandamos el arma al descarte tras extraer su poder
-                        jugador.mano.splice(indiceCarta, 1);
-                        this.state.descarte.push(cartaJugada);
+                        // Mandamos la alerta flotante a todos para que se enteren
+                        this.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}!`);
                     }
-                    
-                    // (Nota: El BANG! ya no se evalúa acá, porque al ser tipoDeUso="objetivo", 
-                    // Cocos lo manda directamente al evento "disparar_jugador").
                 }
             }
         }
