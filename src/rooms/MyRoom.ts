@@ -176,11 +176,11 @@ export class MyRoom extends Room {
 
             for (let i = 0; i < 4; i++) {
                 const cat = new Carta();
-                cat.id = `cat_${i}`;
-                cat.nombre = "Cat Balou";
+                cat.id = `cocoroch_${i}`;
+                cat.nombre = "Cocoroch";
                 cat.descripcion = "Haz que un jugador descarte una carta de la mano o de la mesa.";
                 cat.tipoDeUso = "objetivo"; // Toca la carta y luego al avatar
-                cat.efecto = "descartar_enemigo"; 
+                cat.efecto = "forzar_enemigo"; 
                 this.state.mazo.push(cat);
 
                 const panico = new Carta();
