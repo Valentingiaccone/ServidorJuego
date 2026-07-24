@@ -178,7 +178,7 @@ export class MyRoom extends Room {
                 const cat = new Carta();
                 cat.id = `cat_${i}`;
                 cat.nombre = "Cat Balou";
-                cat.descripcion = "Haz que un jugador descarte una carta.";
+                cat.descripcion = "Haz que un jugador descarte una carta de la mano o de la mesa.";
                 cat.tipoDeUso = "objetivo"; // Toca la carta y luego al avatar
                 cat.efecto = "descartar_enemigo"; 
                 this.state.mazo.push(cat);
@@ -186,7 +186,7 @@ export class MyRoom extends Room {
                 const panico = new Carta();
                 panico.id = `panico_${i}`;
                 panico.nombre = "¡Pánico!";
-                panico.descripcion = "Róbale una carta a un jugador a distancia 1.";
+                panico.descripcion = "Robale una carta de su mano o mesa a un jugador a distancia 1.";
                 panico.tipoDeUso = "objetivo"; // Toca la carta y luego al avatar
                 panico.efecto = "robar_enemigo"; 
                 this.state.mazo.push(panico);
