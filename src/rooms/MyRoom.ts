@@ -124,7 +124,7 @@ export class MyRoom extends Room {
 
             this.state.mazo.clear();
             
-            for (let c = 0; c < 15; c++) {
+            for (let c = 0; c < 25; c++) {
                 const nuevaCarta = new Carta();
                 nuevaCarta.id = `bang_${c}`;
                 nuevaCarta.nombre = "BANG!";
@@ -134,7 +134,7 @@ export class MyRoom extends Room {
                 this.state.mazo.push(nuevaCarta);
             }
             
-            for (let c = 0; c < 5; c++) {
+            for (let c = 0; c < 6; c++) {
                 const nuevaCarta = new Carta();
                 nuevaCarta.id = `botiquin_${c}`;
                 nuevaCarta.nombre = "Botiquín";
@@ -154,22 +154,51 @@ export class MyRoom extends Room {
                 this.state.mazo.push(nuevaCarta);
             }
 
-            for (let i = 0; i < 3; i++) {
+            for (let i = 0; i < 2; i++) {
                 const diligencia = new Carta();
                 diligencia.id = `diligencia_${i}`;
                 diligencia.nombre = "Diligencia";
                 diligencia.descripcion = "Roba 2 cartas del mazo.";
                 diligencia.tipoDeUso = "instantanea";
-                diligencia.efecto = "robar_2"; // Magia pura
+                diligencia.efecto = "robar_2";
                 this.state.mazo.push(diligencia);
+            }
+
+            for (let i = 0; i < 1; i++) {
+                const diligencia = new Carta();
+                diligencia.id = `wells fargo_${i}`;
+                diligencia.nombre = "Wells Fargo";
+                diligencia.descripcion = "Roba 3 cartas del mazo.";
+                diligencia.tipoDeUso = "instantanea";
+                diligencia.efecto = "robar_3";
+                this.state.mazo.push(diligencia);
+            }
+
+            for (let i = 0; i < 4; i++) {
+                const cat = new Carta();
+                cat.id = `cat_${i}`;
+                cat.nombre = "Cat Balou";
+                cat.descripcion = "Haz que un jugador descarte una carta.";
+                cat.tipoDeUso = "objetivo"; // Toca la carta y luego al avatar
+                cat.efecto = "descartar_enemigo"; 
+                this.state.mazo.push(cat);
+
+                const panico = new Carta();
+                panico.id = `panico_${i}`;
+                panico.nombre = "¡Pánico!";
+                panico.descripcion = "Róbale una carta a un jugador a distancia 1.";
+                panico.tipoDeUso = "objetivo"; // Toca la carta y luego al avatar
+                panico.efecto = "robar_enemigo"; 
+                this.state.mazo.push(panico);
             }
 
             const armas = [
                 { id: "arma_1", nombre: "Schofield", descripcion: "Alcance: 2", alcance: 2 },
                 { id: "arma_2", nombre: "Schofield", descripcion: "Alcance: 2", alcance: 2 },
-                { id: "arma_3", nombre: "Remington", descripcion: "Alcance: 3", alcance: 3 },
-                { id: "arma_4", nombre: "Rev. Carabina", descripcion: "Alcance: 4", alcance: 4 },
-                { id: "arma_5", nombre: "Winchester", descripcion: "Alcance: 5", alcance: 5 }
+                { id: "arma_3", nombre: "Schofield", descripcion: "Alcance: 2", alcance: 2 },
+                { id: "arma_4", nombre: "Remington", descripcion: "Alcance: 3", alcance: 3 },
+                { id: "arma_5", nombre: "Rev. Carabina", descripcion: "Alcance: 4", alcance: 4 },
+                { id: "arma_6", nombre: "Winchester", descripcion: "Alcance: 5", alcance: 5 }
             ];
 
             armas.forEach(arma => {
@@ -306,6 +335,54 @@ export class MyRoom extends Room {
                 }
             }
         }
+    });
+
+    this.onMessage("sabotear_jugador", (client, datos) => {
+        if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.state.jugadorEnPeligro !== "") return;
+
+        let atacante = this.state.jugadores.get(client.sessionId);
+        let victima = this.state.jugadores.get(datos.idObjetivo);
+        
+        if (!atacante || !victima || !victima.estaVivo) return;
+
+        // Buscamos la carta de sabotaje en la mano del atacante
+        let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
+        if (indiceCartaJugada === -1) return;
+        
+        let cartaSabotaje = atacante.mano[indiceCartaJugada];
+        let accion = cartaSabotaje.efecto.split("_")[0]; // "robar" o "descartar"
+        let cartaAfectada = null;
+
+        // 1. Extraemos la carta de la víctima (de su mano o de su mesa)
+        if (datos.zonaObjetivo === "mano" && datos.indiceCarta >= 0 && datos.indiceCarta < victima.mano.length) {
+            // Sacamos la carta de la mano del enemigo
+            cartaAfectada = victima.mano.splice(datos.indiceCarta, 1)[0];
+        } 
+        else if (datos.zonaObjetivo === "equipamiento" && victima.cartaArma) {
+            // Le sacamos el arma
+            cartaAfectada = victima.cartaArma;
+            victima.cartaArma = null;
+            victima.nombreArma = "Colt .45";
+            victima.alcanceArma = 1;
+        }
+
+        if (!cartaAfectada) return; // Fallo de seguridad por si mandan un índice inválido
+
+        // 2. Aplicamos el destino de la carta (Pánico te la da, Cat Balou la destruye)
+        if (accion === "robar") {
+            atacante.mano.push(cartaAfectada);
+            console.log(`🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre} (Pánico!).`);
+            this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
+        } 
+        else if (accion === "descartar") {
+            this.state.descarte.push(cartaAfectada);
+            console.log(`💥 ${atacante.nombre} le descartó una carta a ${victima.nombre} (Cat Balou).`);
+            this.broadcast("notificacion_turno", `💥 ${atacante.nombre} le descartó una carta a ${victima.nombre}.`);
+        }
+
+        // 3. Consumimos la carta de sabotaje del atacante
+        atacante.mano.splice(indiceCartaJugada, 1);
+        this.state.descarte.push(cartaSabotaje);
     });
 
     this.onMessage("disparar_jugador", (client, datosDelDisparo) => {
