@@ -300,8 +300,8 @@ export class MyRoom extends Room {
 
             for (let i = 0; i < 2; i++) {
                 const diligencia = new Carta();
-                diligencia.id = `diligencia_${i}`;
-                diligencia.nombre = "Diligencia";
+                diligencia.id = `cofre_${i}`;
+                diligencia.nombre = "Cofre";
                 diligencia.descripcion = "Roba 2 cartas del mazo.";
                 diligencia.tipoDeUso = "instantanea";
                 diligencia.efecto = "robar_2";
@@ -310,8 +310,8 @@ export class MyRoom extends Room {
 
             for (let i = 0; i < 1; i++) {
                 const diligencia = new Carta();
-                diligencia.id = `wells fargo_${i}`;
-                diligencia.nombre = "Wells Fargo";
+                diligencia.id = `cofre super magico_${i}`;
+                diligencia.nombre = "Cofre super magico";
                 diligencia.descripcion = "Roba 3 cartas del mazo.";
                 diligencia.tipoDeUso = "instantanea";
                 diligencia.efecto = "robar_3";
@@ -338,8 +338,8 @@ export class MyRoom extends Room {
 
             for (let i = 0; i < 1; i++) {
                 const poco = new Carta();
-                poco.id = `poco_${i}`;
-                poco.nombre = "Poco";
+                poco.id = `musicoterapia_${i}`;
+                poco.nombre = "Musicoterapia";
                 poco.descripcion = "Recupera 1 vida a todos los jugadores vivos en la mesa.";
                 poco.tipoDeUso = "instantanea";
                 poco.efecto = "curarATodos";
@@ -367,12 +367,12 @@ export class MyRoom extends Room {
             }
 
             const armas = [
-                { id: "arma_1", nombre: "Schofield", descripcion: "Alcance: 2", alcance: 2 },
-                { id: "arma_2", nombre: "Schofield", descripcion: "Alcance: 2", alcance: 2 },
-                { id: "arma_3", nombre: "Schofield", descripcion: "Alcance: 2", alcance: 2 },
-                { id: "arma_4", nombre: "Remington", descripcion: "Alcance: 3", alcance: 3 },
-                { id: "arma_5", nombre: "Rev. Carabina", descripcion: "Alcance: 4", alcance: 4 },
-                { id: "arma_6", nombre: "Winchester", descripcion: "Alcance: 5", alcance: 5 }
+                { id: "arma_1", nombre: "Schofield", descripcion: "Obtén alcance: 2", alcance: 2 },
+                { id: "arma_2", nombre: "Schofield", descripcion: "Obtén alcance: 2", alcance: 2 },
+                { id: "arma_3", nombre: "Schofield", descripcion: "Obtén alcance: 2", alcance: 2 },
+                { id: "arma_4", nombre: "Remington", descripcion: "Obtén alcance: 3", alcance: 3 },
+                { id: "arma_5", nombre: "Rev. Carabina", descripcion: "Obtén alcance: 4", alcance: 4 },
+                { id: "arma_6", nombre: "Winchester", descripcion: "Obtén alcance: 5", alcance: 5 }
             ];
 
             armas.forEach(arma => {
@@ -498,6 +498,7 @@ export class MyRoom extends Room {
                     let partesEfecto = cartaJugada.efecto.split("_");
                     let accionPrincipal = partesEfecto[0]; 
 
+                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
                     // Verificamos si la acción existe en nuestro diccionario de arriba
                     if (GestorDeEfectos[accionPrincipal]) {
                         // ¡Ejecutamos la función aislada enviándole todo lo que necesita!
@@ -545,6 +546,8 @@ export class MyRoom extends Room {
         if (accion === "robar") {
             atacante.mano.push(cartaAfectada);
             console.log(`🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre} (Pánico!).`);
+            let cartaSabotaje = atacante.mano[indiceCartaJugada];
+            this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion });
             this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
         }
 
@@ -566,6 +569,8 @@ export class MyRoom extends Room {
             // ¡Ponemos a la víctima contra la espada y la pared!
             this.state.jugadorDebeDescartar = datos.idObjetivo;
             this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
+            let cartaUsada = atacante.mano[indiceCartaJugada];
+            this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion });
         }
     });
 
@@ -664,7 +669,8 @@ export class MyRoom extends Room {
                 this.state.atacanteActual = client.sessionId;
                 
                 this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le disparó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-            }
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion });
+              }
         }
     });
 
@@ -686,7 +692,8 @@ export class MyRoom extends Room {
                     this.state.descarte.push(carta);
                     
                     this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
-                }
+                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion });
+                  }
             } 
             // ESCENARIO B: La víctima no mandó carta, recibe el balazo
             else {
