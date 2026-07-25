@@ -66,7 +66,7 @@ const GestorDeEfectos: Record<string, Function> = {
 
         // 2. Si absolutamente todos están al máximo, rebotamos la carta
         if (!alguienNecesitaCura) {
-            client.send("alerta_personal", "❌ No podés jugar esta carta ahora.\nTodos los jugadores vivos ya tienen la salud al máximo.");
+            client.send("alerta_personal", "No podés jugar esta carta ahora.\nTodos los jugadores vivos ya tienen la salud al máximo.");
             client.send("bajar_cartas"); // Limpiamos la UI por las dudas
             return; // Cortamos acá, la carta NO se consume y vuelve a tu mano.
         }
@@ -293,7 +293,7 @@ export class MyRoom extends Room {
                 nuevaCarta.id = `fallo_${c}`;
                 nuevaCarta.nombre = "¡Fallo!";
                 nuevaCarta.descripcion = "Esquiva un BANG! que te hayan disparado.";
-                nuevaCarta.tipoDeUso = "reaccion"; // Solo se usa al ser atacado
+                nuevaCarta.tipoDeUso = "oculto"; // Solo se usa al ser atacado
                 nuevaCarta.efecto = "esquivar";    // Cancela el daño
                 this.state.mazo.push(nuevaCarta);
             }
