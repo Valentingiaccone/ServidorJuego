@@ -253,10 +253,10 @@ export class MyRoom extends Room {
 
             // --- REPARTO DE PERSONAJES ---
             let listaPersonajes = [
-                { nombre: "Cole Casiddy", habilidad: "Cada vez que pierde 1 vida, roba inmediatamente 1 carta.", vidas: 4 },
-                { nombre: "Mandy", habilidad: "Considera a todos los demás jugadores a distancia -1.", vidas: 4 },
-                { nombre: "Berry", habilidad: "En su turno, puede descartar 2 cartas para recuperar 1 vida tantas veces quiera.", vidas: 4 },
-                { nombre: "Maton", habilidad: "Puede jugar cualquier cantidad de BANG! durante su turno.", vidas: 4 }
+                { nombre: "Cole Casiddy", habilidad: "Recarga en la recamara\nCada vez que pierde 1 vida, roba inmediatamente 1 carta.", vidas: 4 },
+                { nombre: "Mandy", habilidad: "Concentracion\nConsidera a todos los demás jugadores a distancia -1.", vidas: 4 },
+                { nombre: "Berry", habilidad: "Cartas curativas\nEn su turno, puede descartar 2 cartas para recuperar 1 vida tantas veces quiera.", vidas: 4 },
+                { nombre: "Maton", habilidad: "Ametralladora infinita\nPuede jugar cualquier cantidad de BANG! durante su turno.", vidas: 4 }
             ];
 
             // Mezclamos los personajes (algoritmo Fisher-Yates)
@@ -397,9 +397,11 @@ export class MyRoom extends Room {
                 { id: "arma_1", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
                 { id: "arma_2", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
                 { id: "arma_3", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
-                { id: "arma_4", nombre: "Revolver de Casiddy", descripcion: "Equipa esta arma para obtener alcance: 3", alcance: 3 },
-                { id: "arma_5", nombre: "Rifle de Ashe", descripcion: "Equipa esta arma para obtener alcance: 4", alcance: 4 },
-                { id: "arma_6", nombre: "Francotirador", descripcion: "Equipa esta arma para obtener alcance: 5", alcance: 5 }
+                { id: "arma_4", nombre: "Pistola de Tracer", descripcion: "Equipa esta arma para no tener limite de uso de BANG!", alcance: 1 },
+                { id: "arma_5", nombre: "Pistola de Tracer", descripcion: "Equipa esta arma para no tener limite de uso de BANG!", alcance: 1 },
+                { id: "arma_6", nombre: "Revolver de Casiddy", descripcion: "Equipa esta arma para obtener alcance: 3", alcance: 3 },
+                { id: "arma_7", nombre: "Rifle de Ashe", descripcion: "Equipa esta arma para obtener alcance: 4", alcance: 4 },
+                { id: "arma_8", nombre: "Francotirador", descripcion: "Equipa esta arma para obtener alcance: 5", alcance: 5 }
             ];
 
             armas.forEach(arma => {
@@ -666,7 +668,7 @@ export class MyRoom extends Room {
         // Verificamos que sea el turno del atacante y que NO haya otro jugador en peligro
         if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && !this.juegoPausado()) {
             
-          if (atacante.yaDisparo && atacante.personaje !== "Maton") {
+          if (atacante.yaDisparo && (atacante.personaje !== "Maton" || atacante.nombreArma !== "Pistola de Tracer")) {
               client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
               client.send("bajar_cartas")
               return; // Cortamos la función acá
