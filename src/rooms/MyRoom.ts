@@ -141,6 +141,7 @@ export class MyRoom extends Room {
 
   colaDePeligro: string[] = [];
   colaIndios: string[] = [];
+  descartesEnEsteTurno: number = 0
 
   avanzarColaDePeligro() {
       if (this.colaDePeligro.length > 0) {
@@ -250,18 +251,40 @@ export class MyRoom extends Room {
             // 2. Mezclamos el mazo de roles (Algoritmo de barajado)
             mazoRoles.sort(() => Math.random() - 0.5);
 
-            // 3. Repartimos un rol y asignamos vidas a cada jugador
+            // --- REPARTO DE PERSONAJES ---
+            let listaPersonajes = [
+                { nombre: "Cole Casiddy", habilidad: "Cada vez que pierde 1 vida, roba inmediatamente 1 carta.", vidas: 4 },
+                { nombre: "Mandy", habilidad: "Considera a todos los demás jugadores a distancia -1.", vidas: 4 },
+                { nombre: "Berry", habilidad: "En su turno, puede descartar 2 cartas para recuperar 1 vida tantas veces quiera.", vidas: 4 },
+                { nombre: "Maton", habilidad: "Puede jugar cualquier cantidad de BANG! durante su turno.", vidas: 4 }
+            ];
+
+            // Mezclamos los personajes (algoritmo Fisher-Yates)
+            for (let i = listaPersonajes.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [listaPersonajes[i], listaPersonajes[j]] = [listaPersonajes[j], listaPersonajes[i]];
+            }
+
+            // Asignamos un personaje a cada jugador (también reiniciamos sus contadores)
+            let indicePersonaje = 0;
+            this.state.jugadores.forEach((jugador) => {
+                let proximoPersonaje = listaPersonajes[indicePersonaje % listaPersonajes.length];
+                jugador.personaje = proximoPersonaje.nombre;
+                jugador.habilidad = proximoPersonaje.habilidad;
+                jugador.vidas = proximoPersonaje.vidas
+                indicePersonaje++;
+            });
+            // -----------------------------
+
             let i = 0;
             this.state.jugadores.forEach((j, sessionId) => {
                 const rolAsignado = mazoRoles[i];
                 j.rol = rolAsignado;
 
                 if (rolAsignado === "Sheriff") {
-                    j.vidas = 5;
+                    j.vidas++
                     this.state.turnoActual = sessionId;
                     // ---------------------------------------
-                } else {
-                    j.vidas = 4;
                 }
 
                 j.vidasMaximas = j.vidas;
@@ -437,6 +460,8 @@ export class MyRoom extends Room {
             // ---------------------------------------------------------
 
             this.broadcast("notificacion_turno", `¡El jugador ${client.sessionId} ha pasado su turno!`);
+
+            this.descartesEnEsteTurno = 0
 
             const idsJugadores = Array.from(this.state.jugadores.keys());
             const indiceActual = idsJugadores.indexOf(client.sessionId);
@@ -624,6 +649,10 @@ export class MyRoom extends Room {
         } else if (datos.accion === "dano") {
             victima.vidas--;
             this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por los Indios!`);
+            if (victima.personaje === "Cole Casiddy" && victima.vidas > 0) {
+                this.repartirCartas(victima, 1);
+                this.broadcast("notificacion_turno", `🤠 Cole Casiddy robó 1 carta por el daño recibido.`);
+            }
             this.evaluarMuerte(victima); // Usamos al Juez limpio
         }
 
@@ -637,7 +666,7 @@ export class MyRoom extends Room {
         // Verificamos que sea el turno del atacante y que NO haya otro jugador en peligro
         if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && !this.juegoPausado()) {
             
-          if (atacante.yaDisparo) {
+          if (atacante.yaDisparo && atacante.personaje !== "Maton") {
               client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
               client.send("bajar_cartas")
               return; // Cortamos la función acá
@@ -709,7 +738,10 @@ export class MyRoom extends Room {
             else {
                 victima.vidas--;
                 this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
-                
+                if (victima.personaje === "Cole Casiddy" && victima.vidas > 0) {
+                    this.repartirCartas(victima, 1);
+                    this.broadcast("notificacion_turno", `🤠 Cole Casiddy robó 1 carta por el daño recibido.`);
+                }
                 this.evaluarMuerte(victima)
             }
         }
@@ -733,10 +765,18 @@ export class MyRoom extends Room {
             if (indiceCarta !== -1) {
                 let cartaDescartada = jugador.mano[indiceCarta];
                 
-                // La sacamos de la mano y va directo al descarte sin hacer efecto
                 jugador.mano.splice(indiceCarta, 1);
                 this.state.descarte.push(cartaDescartada);
                 console.log(`🗑️ ${jugador.nombre} descartó la carta: ${cartaDescartada.nombre}`);
+                if (jugador.personaje === "Berry"){
+                  this.descartesEnEsteTurno++
+                  if (this.descartesEnEsteTurno >= 2){
+                    this.descartesEnEsteTurno = 0
+                    if (jugador.vidas < jugador.vidasMaximas){
+                      jugador.vidas++
+                    }
+                  }
+                }
             }
         }
     });

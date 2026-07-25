@@ -23,6 +23,8 @@ export class Jugador extends Schema {
     @type("string") nombreArma: string = "Colt .45"; // El arma por defecto
     @type("number") alcanceArma: number = 1;         // Alcance base
     @type(Carta) cartaArma: Carta;
+    @type("string") personaje: string = "";
+    @type("string") habilidad: string = "";
     
     // --- MAGIA NUEVA: La mano del jugador ---
     @type([Carta]) mano = new ArraySchema<Carta>();
