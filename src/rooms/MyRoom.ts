@@ -37,6 +37,7 @@ const GestorDeEfectos: Record<string, Function> = {
         
         console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
         sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}!`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
     },
 
     "robar": (sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
@@ -48,6 +49,7 @@ const GestorDeEfectos: Record<string, Function> = {
         
         console.log(`🃏 ${jugador.nombre} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
         sala.broadcast("notificacion_turno", `🃏 ${jugador.nombre} jugó un(a) ${cartaJugada.nombre}.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
         
         // Consumimos la carta
         jugador.mano.splice(indiceCarta, 1);
@@ -105,6 +107,7 @@ const GestorDeEfectos: Record<string, Function> = {
             // 4. Activamos el ataque masivo
             sala.state.atacanteActual = client.sessionId;
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
+            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
             sala.avanzarColaDePeligro(); // Arranca el primer disparo
         } else {
             client.send("alerta_personal", "No hay nadie vivo para atacar.");
@@ -122,6 +125,7 @@ const GestorDeEfectos: Record<string, Function> = {
             jugadorQueJuega.mano.splice(indiceCarta, 1);
             sala.state.descarte.push(cartaJugada);
             sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} lanzó un ataque de ¡Indios!`);
+            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
             sala.avanzarColaIndios(); 
         } else {
             client.send("alerta_personal", "No hay nadie vivo para atacar.");
