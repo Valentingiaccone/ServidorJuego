@@ -406,9 +406,13 @@ export class MyRoom extends Room {
                 }
                 console.log(`🖐️ ${j.nombre} recibió ${j.mano.length} cartas en su mano.`);
             });
-            // ------------------------------------------------
+            
+            let sheriff = this.state.jugadores.get(this.state.turnoActual);
+            if (sheriff) {
+              // el sheriff roba 2 cartas extras al inicio
+                this.repartirCartas(sheriff, 2);
+            }
 
-            // 4. Cambiamos el estado de la sala a Jugando y cerramos la puerta
             this.state.estadoJuego = "Jugando";
             this.lock(); 
         }
