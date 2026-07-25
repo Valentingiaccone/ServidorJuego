@@ -668,7 +668,7 @@ export class MyRoom extends Room {
         // Verificamos que sea el turno del atacante y que NO haya otro jugador en peligro
         if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && !this.juegoPausado()) {
             
-          if (atacante.yaDisparo && (atacante.personaje !== "Maton" || atacante.nombreArma !== "Pistola de Tracer")) {
+          if (atacante.yaDisparo && atacante.personaje !== "Maton" && atacante.nombreArma !== "Pistola de Tracer") {
               client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
               client.send("bajar_cartas")
               return; // Cortamos la función acá
