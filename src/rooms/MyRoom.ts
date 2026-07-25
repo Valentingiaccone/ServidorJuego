@@ -367,12 +367,12 @@ export class MyRoom extends Room {
             }
 
             const armas = [
-                { id: "arma_1", nombre: "Schofield", descripcion: "Obtén alcance: 2", alcance: 2 },
-                { id: "arma_2", nombre: "Schofield", descripcion: "Obtén alcance: 2", alcance: 2 },
-                { id: "arma_3", nombre: "Schofield", descripcion: "Obtén alcance: 2", alcance: 2 },
-                { id: "arma_4", nombre: "Remington", descripcion: "Obtén alcance: 3", alcance: 3 },
-                { id: "arma_5", nombre: "Rev. Carabina", descripcion: "Obtén alcance: 4", alcance: 4 },
-                { id: "arma_6", nombre: "Winchester", descripcion: "Obtén alcance: 5", alcance: 5 }
+                { id: "arma_1", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
+                { id: "arma_2", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
+                { id: "arma_3", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
+                { id: "arma_4", nombre: "Revolver de Casiddy", descripcion: "Equipa esta arma para obtener alcance: 3", alcance: 3 },
+                { id: "arma_5", nombre: "Rifle de Ashe", descripcion: "Equipa esta arma para obtener alcance: 4", alcance: 4 },
+                { id: "arma_6", nombre: "Francotirador", descripcion: "Equipa esta arma para obtener alcance: 5", alcance: 5 }
             ];
 
             armas.forEach(arma => {
