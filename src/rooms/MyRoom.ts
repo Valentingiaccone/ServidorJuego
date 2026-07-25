@@ -9,7 +9,7 @@ const GestorDeEfectos: Record<string, Function> = {
             jugador.vidas++; 
             console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
-            
+            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
             // Consumimos la carta
             jugador.mano.splice(indiceCarta, 1);
             sala.state.descarte.push(cartaJugada);
@@ -80,7 +80,7 @@ const GestorDeEfectos: Record<string, Function> = {
 
         console.log(`✨ ${jugadorQueJuega.nombre} usó ${cartaJugada.nombre} y curó a todos 1 vida.`);
         sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó un(a) ${cartaJugada.nombre} y curó a todos!`);
-        
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
         // 4. Consumimos la carta y va al descarte
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.state.descarte.push(cartaJugada);
@@ -502,7 +502,7 @@ export class MyRoom extends Room {
                     let partesEfecto = cartaJugada.efecto.split("_");
                     let accionPrincipal = partesEfecto[0]; 
 
-                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
+                    
                     // Verificamos si la acción existe en nuestro diccionario de arriba
                     if (GestorDeEfectos[accionPrincipal]) {
                         // ¡Ejecutamos la función aislada enviándole todo lo que necesita!
@@ -567,14 +567,16 @@ export class MyRoom extends Room {
         let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
         
         if (indiceCartaJugada !== -1) {
-            let carta = atacante.mano.splice(indiceCartaJugada, 1)[0];
-            this.state.descarte.push(carta);
+            let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
+            this.state.descarte.push(cartaUsada);
+
+            this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion });
 
             // ¡Ponemos a la víctima contra la espada y la pared!
             this.state.jugadorDebeDescartar = datos.idObjetivo;
             this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
-            let cartaUsada = atacante.mano[indiceCartaJugada];
-            this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion });
+            
+            
         }
     });
 
