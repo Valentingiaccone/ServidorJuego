@@ -129,6 +129,43 @@ export class EfectoIndios implements IEfectoCarta {
     }
 }
 
+export class EfectoTiendaGriff implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+        // 1. Encontrar a todos los vivos en orden (empezando por el que la jugó)
+        let vivosIds: string[] = [];
+        let idsJugadores = Array.from(sala.state.jugadores.keys());
+        let indiceInicial = idsJugadores.indexOf(client.sessionId);
+        
+        for(let i = 0; i < idsJugadores.length; i++) {
+            let idx = (indiceInicial + i) % idsJugadores.length;
+            let sessionId = idsJugadores[idx] as string;
+            let j = sala.state.jugadores.get(sessionId);
+            if(j && j.estaVivo) vivosIds.push(sessionId);
+        }
+
+        sala.colaTienda = vivosIds;
+        sala.state.cartasTienda.clear();
+
+        // 2. Sacar 1 carta por jugador vivo
+        for(let i = 0; i < vivosIds.length; i++) {
+            if (sala.state.mazo.length === 0 && sala.state.descarte.length > 0) {
+                let arrayDescarte = Array.from(sala.state.descarte);
+                arrayDescarte.sort(() => Math.random() - 0.5);
+                sala.state.descarte.clear();
+                arrayDescarte.forEach((c: any) => sala.state.mazo.push(c));
+            }
+            if (sala.state.mazo.length > 0) sala.state.cartasTienda.push(sala.state.mazo.pop());
+        }
+
+        // 3. Consumir la carta e iniciar la tienda
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.state.descarte.push(cartaJugada);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
+        
+        sala.avanzarColaTienda();
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -137,7 +174,8 @@ export class DespachadorDeCartas {
         "robar": new EfectoRobar(),
         "curarATodos": new EfectoCurarATodos(),
         "tiratachuela": new EfectoTiratachuela(),
-        "indios": new EfectoIndios()
+        "indios": new EfectoIndios(),
+        "tienda": new EfectoTiendaGriff()
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[]) {

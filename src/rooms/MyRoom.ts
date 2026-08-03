@@ -9,6 +9,7 @@ export class MyRoom extends Room {
 
     colaDePeligro: string[] = [];
     colaIndios: string[] = [];
+    colaTienda: string[] = [];
     
     // Instanciamos nuestros nuevos motores
     despachadorCartas = new DespachadorDeCartas();
@@ -36,6 +37,18 @@ export class MyRoom extends Room {
         } else {
             this.state.jugadorBajoAtaqueIndio = "";
             this.broadcast("notificacion_turno", `⛺ El ataque de los Indios ha terminado.`);
+        }
+    }
+
+    avanzarColaTienda() {
+        if (this.colaTienda.length > 0) {
+            this.state.jugadorEligiendoTienda = this.colaTienda.shift();
+            let jugador = this.state.jugadores.get(this.state.jugadorEligiendoTienda);
+            this.broadcast("notificacion_turno", `🏪 ${jugador?.nombre} está eligiendo en La tienda de Griff.`);
+        } else {
+            this.state.jugadorEligiendoTienda = "";
+            this.state.cartasTienda.clear(); // Limpieza por si sobraron (ej. alguien murió)
+            this.broadcast("notificacion_turno", `🏪 La tienda de Griff ha cerrado.`);
         }
     }
 
@@ -206,6 +219,16 @@ export class MyRoom extends Room {
                     indios.tipoDeUso = "instantanea"; 
                     indios.efecto = "indios";   
                     this.state.mazo.push(indios);
+                }
+
+                for (let i = 0; i < 2; i++) { 
+                    const tienda = new Carta();
+                    tienda.id = `tienda_griff_${i}`;
+                    tienda.nombre = "La tienda de Griff";
+                    tienda.descripcion = "Revela cartas, empezando por vos, cada jugador elige una.";
+                    tienda.tipoDeUso = "instantanea";
+                    tienda.efecto = "tienda";   
+                    this.state.mazo.push(tienda);
                 }
 
                 const armas = [
@@ -534,6 +557,21 @@ export class MyRoom extends Room {
                 }
             }
         });
+
+        this.onMessage("elegir_carta_tienda", (client, idCarta) => {
+            if (this.state.jugadorEligiendoTienda !== client.sessionId) return;
+
+            let jugador = this.state.jugadores.get(client.sessionId);
+            let indiceCarta = this.state.cartasTienda.findIndex((c: any) => c.id === idCarta);
+
+            if (jugador && indiceCarta !== -1) {
+                let cartaElegida = this.state.cartasTienda.splice(indiceCarta, 1)[0];
+                jugador.mano.push(cartaElegida);
+
+                this.broadcast("notificacion_turno", `🛍️ ${jugador.nombre} agarró una carta.`);
+                this.avanzarColaTienda();
+            }
+        });
     }
 
     onJoin (client: Client, options: any) {
@@ -578,6 +616,7 @@ export class MyRoom extends Room {
     juegoPausado(): boolean {
         return (this.state.jugadorEnPeligro !== "" || 
                 this.state.jugadorDebeDescartar !== "" || 
-                this.state.jugadorBajoAtaqueIndio !== "");
+                this.state.jugadorBajoAtaqueIndio !== "" ||
+                this.state.jugadorEligiendoTienda !== "");
     }
 }
