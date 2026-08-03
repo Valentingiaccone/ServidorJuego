@@ -1,0 +1,130 @@
+// Personajes.ts
+
+// 1. EL CONTRATO ENRIQUECIDO: Ahora pasamos TODO el contexto de la mesa
+export interface IPersonaje {
+    nombre: string;
+    habilidad: string;
+    vidasBase: number;
+    
+    // Hooks con esteroides (Ganchos a eventos del juego)
+    // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
+    onRecibirDano?(sala: any, victima: any, atacante: any, causa: string): void;
+    
+    // motivo puede ser: "VOLUNTARIO", "COCOROCH", "EXCESO_CARTAS"
+    onDescartarCarta?(sala: any, jugador: any, cartaDescartada: any, motivo: string): void;
+    
+    onPasarTurno?(sala: any, jugador: any): void;
+    
+    puedeDispararBang?(sala: any, atacante: any, victima: any): boolean;
+    
+    modificarDistancia?(sala: any, observador: any, objetivo: any, distanciaBase: number): number;
+}
+
+// 2. LAS CLASES DE PERSONAJES
+
+export class ColeCasiddy implements IPersonaje {
+    nombre = "Cole Casiddy";
+    habilidad = "Recarga en la recámara\nCada vez que pierde 1 vida, roba inmediatamente 1 carta.";
+    vidasBase = 4;
+
+    // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+        if (victima.vidas > 0) {
+            sala.repartirCartas(victima, 1);
+            sala.broadcast("notificacion_turno", `🤠 Cole Casiddy robó 1 carta tras recibir daño por ${causa}.`);
+            
+            // Ejemplo a futuro (comentado): 
+            // Si quisieras robarle al atacante directamente:
+            // if (atacante && atacante.mano.length > 0) { ... lógica de robo ... }
+        }
+    }
+}
+
+export class Berry implements IPersonaje {
+    nombre = "Berry";
+    habilidad = "Cartas curativas\nEn su turno, puede descartar 2 cartas para recuperar 1 vida.";
+    vidasBase = 4;
+
+    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
+        // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
+        if (motivo !== "VOLUNTARIO") return;
+
+        if (!jugador.contadorDescartes) jugador.contadorDescartes = 0;
+        
+        jugador.contadorDescartes++;
+        if (jugador.contadorDescartes >= 2) {
+            jugador.contadorDescartes = 0;
+            if (jugador.vidas < jugador.vidasMaximas) {
+                jugador.vidas++;
+                sala.broadcast("notificacion_turno", `🍓 Berry recuperó 1 vida por su pasiva.`);
+            }
+        }
+    }
+
+    onPasarTurno(_sala: any, jugador: any) {
+        jugador.contadorDescartes = 0; 
+    }
+}
+
+export class Maton implements IPersonaje {
+    nombre = "Maton";
+    habilidad = "Ametralladora infinita\nPuede jugar cualquier cantidad de BANG! durante su turno.";
+    vidasBase = 4;
+
+    puedeDispararBang(_sala: any, _atacante: any, _victima: any): boolean {
+        return true; 
+    }
+}
+
+export class Mandy implements IPersonaje {
+    nombre = "Mandy";
+    habilidad = "Concentración\nConsidera a todos los demás jugadores a distancia -1.";
+    vidasBase = 4;
+
+    modificarDistancia(_sala: any, _observador: any, _objetivo: any, distanciaBase: number): number {
+        return Math.max(0, distanciaBase - 1);
+    }
+}
+
+export class Tralalero implements IPersonaje {
+    nombre = "Tralalero";
+    habilidad = "Pasiva de Supervivencia\nAl pasar el turno, si no tiene cartas en la mano, recupera 1 vida.";
+    vidasBase = 4;
+
+    onPasarTurno(sala: any, jugador: any) {
+        if (jugador.mano.length === 0 && jugador.vidas < jugador.vidasMaximas) {
+            jugador.vidas++;
+            sala.broadcast("notificacion_turno", `🎵 Tralalero recuperó 1 vida gracias a su pasiva.`);
+        }
+    }
+}
+
+// 3. EL GESTOR DE PERSONAJES
+export class GestorPersonajes {
+    private personajes: Record<string, IPersonaje> = {};
+
+    constructor() {
+        this.registrar(new ColeCasiddy());
+        this.registrar(new Berry());
+        this.registrar(new Maton());
+        this.registrar(new Mandy());
+        this.registrar(new Tralalero());
+    }
+
+    private registrar(p: IPersonaje) {
+        this.personajes[p.nombre] = p;
+    }
+
+    public obtener(nombre: string): IPersonaje | null {
+        return this.personajes[nombre] || null;
+    }
+
+    public obtenerTodosParaRepartir(): any[] {
+        let lista = Object.values(this.personajes);
+        for (let i = lista.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [lista[i], lista[j]] = [lista[j], lista[i]];
+        }
+        return lista;
+    }
+}
