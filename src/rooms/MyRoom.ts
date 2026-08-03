@@ -1,138 +1,6 @@
 import { Room, Client, CloseCode } from "colyseus";
 import { Carta, Jugador, MyRoomState } from "./schema/MyRoomState.js";
-
-const GestorDeEfectos: Record<string, Function> = {
-    
-    // Lógica para cartas tipo "curar_X"
-    "curar": (sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
-        if (jugador.vidas < jugador.vidasMaximas) {
-            jugador.vidas++; 
-            console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
-            sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
-            // Consumimos la carta
-            jugador.mano.splice(indiceCarta, 1);
-            sala.state.descarte.push(cartaJugada);
-        } else {
-            client.send("alerta_personal", "Tu vida ya está al máximo.");
-        }
-    },
-
-    // Lógica para cartas tipo "equipar_arma_X"
-    "equipar": (sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
-        // Los parametros vienen de cortar el texto. Ej: ["equipar", "arma", "3"]
-        let nuevoAlcance = parseInt(parametros[2]); 
-        
-        if (jugador.cartaArma) {
-            sala.state.descarte.push(jugador.cartaArma);
-            console.log(`🗑️ El arma vieja de ${jugador.nombre} fue al descarte.`);
-        }
-        
-        jugador.nombreArma = cartaJugada.nombre;
-        jugador.alcanceArma = nuevoAlcance;
-        jugador.cartaArma = cartaJugada;
-        
-        // Consumimos la carta a la mesa
-        jugador.mano.splice(indiceCarta, 1);
-        
-        console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
-        sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
-    },
-
-    "robar": (sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
-        // Leemos cuántas cartas dice el efecto (Ej: "robar_2" -> 2)
-        let cantidad = parseInt(parametros[1]); 
-        
-        // Usamos la nueva herramienta de la sala para darle las cartas
-        sala.repartirCartas(jugador, cantidad);
-        
-        console.log(`🃏 ${jugador.nombre} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
-        sala.broadcast("notificacion_turno", `🃏 ${jugador.nombre} jugó un(a) ${cartaJugada.nombre}.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
-        
-        // Consumimos la carta
-        jugador.mano.splice(indiceCarta, 1);
-        sala.state.descarte.push(cartaJugada);
-    },
-
-    "curarATodos": (sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
-        let alguienNecesitaCura = false;
-        
-        // 1. Verificamos si AL MENOS UN jugador vivo necesita curación
-        sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo && j.vidas < j.vidasMaximas) {
-                alguienNecesitaCura = true;
-            }
-        });
-
-        // 2. Si absolutamente todos están al máximo, rebotamos la carta
-        if (!alguienNecesitaCura) {
-            client.send("alerta_personal", "No podés jugar esta carta ahora.\nTodos los jugadores vivos ya tienen la salud al máximo.");
-            client.send("bajar_cartas"); // Limpiamos la UI por las dudas
-            return; // Cortamos acá, la carta NO se consume y vuelve a tu mano.
-        }
-
-        // 3. Si pasamos la validación, repartimos la salud a los heridos
-        sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo && j.vidas < j.vidasMaximas) {
-                j.vidas++;
-            }
-        });
-
-        console.log(`✨ ${jugadorQueJuega.nombre} usó ${cartaJugada.nombre} y curó a todos 1 vida.`);
-        sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó un(a) ${cartaJugada.nombre} y curó a todos!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
-        // 4. Consumimos la carta y va al descarte
-        jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.state.descarte.push(cartaJugada);
-    },
-
-    "tiratachuela": (sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
-        // 1. Limpiamos la cola por las dudas
-        sala.colaDePeligro = [];
-        
-        // 2. Metemos a todos los jugadores vivos (menos a vos) en la lista de ejecución
-        sala.state.jugadores.forEach((j: any, sessionId: string) => {
-            if (j.estaVivo && sessionId !== client.sessionId) {
-                sala.colaDePeligro.push(sessionId);
-            }
-        });
-
-        if (sala.colaDePeligro.length > 0) {
-            // 3. Consumimos la carta
-            jugadorQueJuega.mano.splice(indiceCarta, 1);
-            sala.state.descarte.push(cartaJugada);
-
-            // 4. Activamos el ataque masivo
-            sala.state.atacanteActual = client.sessionId;
-            sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
-            sala.avanzarColaDePeligro(); // Arranca el primer disparo
-        } else {
-            client.send("alerta_personal", "No hay nadie vivo para atacar.");
-            client.send("bajar_cartas");
-        }
-    },
-
-    "indios": (sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) => {
-        sala.colaIndios = [];
-        sala.state.jugadores.forEach((j: any, sessionId: string) => {
-            if (j.estaVivo && sessionId !== client.sessionId) sala.colaIndios.push(sessionId);
-        });
-
-        if (sala.colaIndios.length > 0) {
-            jugadorQueJuega.mano.splice(indiceCarta, 1);
-            sala.state.descarte.push(cartaJugada);
-            sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} lanzó un ataque de ¡Indios!`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
-            sala.avanzarColaIndios(); 
-        } else {
-            client.send("alerta_personal", "No hay nadie vivo para atacar.");
-            client.send("bajar_cartas");
-        }
-    },
-};
+import { DespachadorDeCartas } from "./EfectosCartas.js";
 
 export class MyRoom extends Room {
   // Lo preparamos para los 8 jugadores que mencionaste
@@ -142,6 +10,8 @@ export class MyRoom extends Room {
   colaDePeligro: string[] = [];
   colaIndios: string[] = [];
   descartesEnEsteTurno: number = 0
+
+  despachadorCartas = new DespachadorDeCartas();
 
   avanzarColaDePeligro() {
       if (this.colaDePeligro.length > 0) {
@@ -518,7 +388,6 @@ export class MyRoom extends Room {
     });
 
     this.onMessage("jugar_carta", (client, idCarta) => {
-        // 1. Verificamos turno, que el juego esté activo, y que NO haya pausas por tiroteos o robos
         if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && !this.juegoPausado()) {
             
             let jugador = this.state.jugadores.get(client.sessionId);
@@ -528,20 +397,11 @@ export class MyRoom extends Room {
                 if (indiceCarta !== -1) {
                     let cartaJugada = jugador.mano[indiceCarta];
                     
-                    // --- MAGIA NUEVA: EL DESPACHADOR ---
-                    // Separamos el string: "curar_1" -> ["curar", "1"] | "equipar_arma_3" -> ["equipar", "arma", "3"]
                     let partesEfecto = cartaJugada.efecto.split("_");
                     let accionPrincipal = partesEfecto[0]; 
 
-                    
-                    // Verificamos si la acción existe en nuestro diccionario de arriba
-                    if (GestorDeEfectos[accionPrincipal]) {
-                        // ¡Ejecutamos la función aislada enviándole todo lo que necesita!
-                        GestorDeEfectos[accionPrincipal](this, client, jugador, cartaJugada, indiceCarta, partesEfecto);
-                    } else {
-                        console.log(`⚠️ Efecto no programado o desconocido: ${cartaJugada.efecto}`);
-                    }
-                    // -----------------------------------
+                    // Mandamos la orden al Despachador en lugar de leer el diccionario viejo
+                    this.despachadorCartas.ejecutarEfecto(accionPrincipal, this, client, jugador, cartaJugada, indiceCarta, partesEfecto);
                 }
             }
         }
