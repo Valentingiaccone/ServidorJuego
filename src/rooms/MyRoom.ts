@@ -512,6 +512,77 @@ export class MyRoom extends Room {
 
             this.state.jugadorDebeDescartar = "";
         });
+
+        this.onMessage("intentar_barril", (client, datos) => {
+            if (client.sessionId !== this.state.jugadorEnPeligro) return;
+            
+            let victima = this.state.jugadores.get(client.sessionId);
+            if (!victima || !victima.tieneBarril) return;
+
+            // 1. Sacamos la carta pero no la revelamos todavía
+            if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
+                let arrayDescarte = Array.from(this.state.descarte);
+                arrayDescarte.sort(() => Math.random() - 0.5);
+                this.state.descarte.clear();
+                arrayDescarte.forEach(carta => this.state.mazo.push(carta));
+            }
+
+            let cartaSacada = this.state.mazo.pop();
+            if (cartaSacada) {
+                // Copiamos los datos a la variable temporal de suspenso
+                this.state.cartaDesenfundada.id = cartaSacada.id;
+                this.state.cartaDesenfundada.nombre = cartaSacada.nombre;
+                this.state.cartaDesenfundada.descripcion = cartaSacada.descripcion;
+                this.state.cartaDesenfundada.palo = cartaSacada.palo;
+                this.state.cartaDesenfundada.valor = cartaSacada.valor;
+                
+                this.state.jugadorDesenfundando = client.sessionId;
+                this.state.motivoDesenfundar = "Barril";
+
+                this.broadcast("notificacion_turno", `🛢️ ¡${victima.nombre} está probando suerte con el Barril!`);
+            }
+        });
+
+        this.onMessage("voltear_carta", (client, datos) => {
+            if (this.state.jugadorDesenfundando !== client.sessionId) return;
+
+            let victima = this.state.jugadores.get(client.sessionId);
+            let carta = this.state.cartaDesenfundada;
+            
+            // 2. Avisamos a todos que se dio vuelta para la animación visual
+            this.broadcast("resultado_desenfundar", { 
+                palo: carta.palo, 
+                valor: carta.valor, 
+                nombre: carta.nombre,
+                exito: carta.palo === "Corazones" 
+            });
+
+            // Evaluamos la lógica
+            if (this.state.motivoDesenfundar === "Barril") {
+                if (carta.palo === "Corazones") {
+                    this.broadcast("notificacion_turno", `❤️ ¡Salió Corazones! El Barril salvó a ${victima?.nombre}.`);
+                    
+                    // Se salvó, cerramos el ataque
+                    if (this.colaDePeligro && this.colaDePeligro.length > 0) {
+                        this.avanzarColaDePeligro();
+                    } else {
+                        this.state.jugadorEnPeligro = "";
+                        this.state.atacanteActual = "";
+                    }
+                } else {
+                    this.broadcast("notificacion_turno", `💥 ¡Falló! Salió ${carta.palo}. El Barril no aguantó el disparo.`);
+                    // Falló. Sigue en peligro. El cliente (Cocos) detectará esto y volverá a abrir el panel de daño.
+                }
+            }
+
+            // Limpiamos el estado y mandamos la carta al descarte
+            let cartaAlDescarte = new Carta();
+            cartaAlDescarte.id = carta.id; cartaAlDescarte.nombre = carta.nombre; cartaAlDescarte.descripcion = carta.descripcion; cartaAlDescarte.palo = carta.palo; cartaAlDescarte.valor = carta.valor;
+            this.state.descarte.push(cartaAlDescarte);
+
+            this.state.jugadorDesenfundando = "";
+            this.state.motivoDesenfundar = "";
+        });
         
         this.onMessage("responder_indios", (client, datos) => {
             if (this.state.jugadorBajoAtaqueIndio !== client.sessionId) return;
@@ -779,6 +850,7 @@ export class MyRoom extends Room {
                 this.state.jugadorDebeDescartar !== "" || 
                 this.state.jugadorBajoAtaqueIndio !== "" ||
                 this.state.jugadorEligiendoTienda !== "" ||
-                this.state.jugadorEnDuelo !== "");
+                this.state.jugadorEnDuelo !== "" ||
+                this.state.jugadorDesenfundando !== "");
     }
 }

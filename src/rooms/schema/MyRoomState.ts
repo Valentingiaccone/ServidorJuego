@@ -50,4 +50,7 @@ export class MyRoomState extends Schema {
     @type("string") jugadorEligiendoTienda: string = "";
     @type("string") jugadorEnDuelo: string = "";
     @type("string") oponenteDuelo: string = "";
+    @type("string") jugadorDesenfundando: string = "";
+    @type("string") motivoDesenfundar: string = ""; // Puede ser "Barril", "Prision" o "Dinamita"
+    @type(Carta) cartaDesenfundada: Carta = new Carta();
 }
