@@ -25,6 +25,7 @@ export class MyRoom extends Room {
         } else {
             this.state.jugadorEnPeligro = "";
             this.state.atacanteActual = "";
+            this.state.yaUsoBarril = false;
             this.broadcast("notificacion_turno", `💨 El ataque de Tiratachuela ha terminado.`);
         }
     }
@@ -517,8 +518,8 @@ export class MyRoom extends Room {
             if (client.sessionId !== this.state.jugadorEnPeligro) return;
             
             let victima = this.state.jugadores.get(client.sessionId);
-            if (!victima || !victima.tieneBarril) return;
-
+            if (!victima || !victima.tieneBarril || this.state.yaUsoBarril) return
+            this.state.yaUsoBarril = true;
             // 1. Sacamos la carta pero no la revelamos todavía
             if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
                 let arrayDescarte = Array.from(this.state.descarte);
@@ -535,6 +536,8 @@ export class MyRoom extends Room {
                 this.state.cartaDesenfundada.descripcion = cartaSacada.descripcion;
                 this.state.cartaDesenfundada.palo = cartaSacada.palo;
                 this.state.cartaDesenfundada.valor = cartaSacada.valor;
+                this.state.cartaDesenfundada.tipoDeUso = cartaSacada.tipoDeUso;
+                this.state.cartaDesenfundada.efecto = cartaSacada.efecto;
                 
                 this.state.jugadorDesenfundando = client.sessionId;
                 this.state.motivoDesenfundar = "Barril";
@@ -568,6 +571,7 @@ export class MyRoom extends Room {
                     } else {
                         this.state.jugadorEnPeligro = "";
                         this.state.atacanteActual = "";
+                        this.state.yaUsoBarril = false;
                     }
                 } else {
                     this.broadcast("notificacion_turno", `💥 ¡Falló! Salió ${carta.palo}. El Barril no aguantó el disparo.`);
@@ -577,7 +581,13 @@ export class MyRoom extends Room {
 
             // Limpiamos el estado y mandamos la carta al descarte
             let cartaAlDescarte = new Carta();
-            cartaAlDescarte.id = carta.id; cartaAlDescarte.nombre = carta.nombre; cartaAlDescarte.descripcion = carta.descripcion; cartaAlDescarte.palo = carta.palo; cartaAlDescarte.valor = carta.valor;
+            cartaAlDescarte.id = carta.id;
+            cartaAlDescarte.nombre = carta.nombre;
+            cartaAlDescarte.descripcion = carta.descripcion;
+            cartaAlDescarte.palo = carta.palo;
+            cartaAlDescarte.valor = carta.valor;
+            cartaAlDescarte.tipoDeUso = carta.tipoDeUso;
+            cartaAlDescarte.efecto = carta.efecto;
             this.state.descarte.push(cartaAlDescarte);
 
             this.state.jugadorDesenfundando = "";
@@ -767,6 +777,7 @@ export class MyRoom extends Room {
             } else {
                 this.state.jugadorEnPeligro = "";
                 this.state.atacanteActual = "";
+                this.state.yaUsoBarril = false;
             }
         });
 
