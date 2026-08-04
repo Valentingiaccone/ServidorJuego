@@ -260,8 +260,8 @@ export class MyRoom extends Room {
                 
                 for (let i = 0; i < 1; i++) {
                     const mira = new Carta();
-                    mira.id = `mira_${i}`;
-                    mira.nombre = "Mira Telescópica";
+                    mira.id = `monoAldea_${i}`;
+                    mira.nombre = "Monoaldea";
                     mira.descripcion = "Ves a los demás a distancia -1.";
                     mira.tipoDeUso = "equipamiento";
                     mira.efecto = "equiparMira";
