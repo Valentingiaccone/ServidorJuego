@@ -231,6 +231,16 @@ export class MyRoom extends Room {
                     this.state.mazo.push(tienda);
                 }
 
+                for (let i = 0; i < 3; i++) {
+                    const duelo = new Carta();
+                    duelo.id = `duelo_${i}`;
+                    duelo.nombre = "Duelo";
+                    duelo.descripcion = "Desafía a cualquier jugador. Deben turnarse para descartar un BANG!. El primero que no lo haga, pierde 1 vida.";
+                    duelo.tipoDeUso = "objetivoGlobal"; // Alcance infinito
+                    duelo.efecto = "duelo"; 
+                    this.state.mazo.push(duelo);
+                }
+
                 const armas = [
                     { id: "arma_1", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
                     { id: "arma_2", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
@@ -497,6 +507,64 @@ export class MyRoom extends Room {
             }
         });
 
+        this.onMessage("lanzar_duelo", (client, datos) => {
+            if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.juegoPausado()) return;
+
+            let atacante = this.state.jugadores.get(client.sessionId);
+            let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
+            
+            if (indiceCartaJugada !== -1) {
+                let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
+                this.state.descarte.push(cartaUsada);
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion });
+
+                // Seteamos quién empieza defendiéndose y quién es el oponente
+                this.state.jugadorEnDuelo = datos.idObjetivo;
+                this.state.oponenteDuelo = client.sessionId;
+                
+                let victima = this.state.jugadores.get(datos.idObjetivo);
+                this.broadcast("notificacion_turno", `⚔️ ¡${atacante.nombre} retó a duelo a ${victima?.nombre}!`);
+            }
+        });
+
+        this.onMessage("responder_duelo", (client, datos) => {
+            if (this.state.jugadorEnDuelo !== client.sessionId) return;
+
+            let jugadorActual = this.state.jugadores.get(client.sessionId);
+            
+            if (datos.accion === "descartar") {
+                let indiceBang = jugadorActual.mano.findIndex((c: any) => c.id === datos.idCarta);
+                if (indiceBang !== -1) {
+                    let cartaDescartada = jugadorActual.mano.splice(indiceBang, 1)[0];
+                    this.state.descarte.push(cartaDescartada);
+                    
+                    this.broadcast("notificacion_turno", `🛡️ ${jugadorActual.nombre} descartó un BANG! ¡El duelo vuelve!`);
+                    
+                    // EFECTO PING-PONG: Intercambiamos los roles
+                    let temp = this.state.jugadorEnDuelo;
+                    this.state.jugadorEnDuelo = this.state.oponenteDuelo;
+                    this.state.oponenteDuelo = temp;
+                }
+            } else if (datos.accion === "dano") {
+                jugadorActual.vidas--;
+                
+                let ganadorDuelo = this.state.jugadores.get(this.state.oponenteDuelo);
+                this.broadcast("notificacion_turno", `🩸 ¡${jugadorActual.nombre} no pudo defenderse y perdió el duelo contra ${ganadorDuelo?.nombre}!`);
+                
+                // HOOK RECIBIR DAÑO
+                let pasivaVictima = this.gestorPersonajes.obtener(jugadorActual.personaje);
+                if (pasivaVictima && pasivaVictima.onRecibirDano) {
+                    pasivaVictima.onRecibirDano(this, jugadorActual, ganadorDuelo, "DUELO");
+                }
+                
+                this.evaluarMuerte(jugadorActual);
+                
+                // Fin del duelo
+                this.state.jugadorEnDuelo = "";
+                this.state.oponenteDuelo = "";
+            }
+        });
+
         this.onMessage("responder_ataque", (client, idCartaFallo) => {
             if (client.sessionId !== this.state.jugadorEnPeligro) return;
 
@@ -617,6 +685,7 @@ export class MyRoom extends Room {
         return (this.state.jugadorEnPeligro !== "" || 
                 this.state.jugadorDebeDescartar !== "" || 
                 this.state.jugadorBajoAtaqueIndio !== "" ||
-                this.state.jugadorEligiendoTienda !== "");
+                this.state.jugadorEligiendoTienda !== "" ||
+                this.state.jugadorEnDuelo !== "");
     }
 }
