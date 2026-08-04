@@ -68,7 +68,7 @@ export class Berry implements IPersonaje {
 
 export class Maton implements IPersonaje {
     nombre = "Maton";
-    habilidad = "Ametralladora infinita\nPuede jugar cualquier cantidad de BANG! durante su turno.";
+    habilidad = "Seisei koi kiki\nPuede jugar cualquier cantidad de BANG! durante su turno.";
     vidasBase = 4;
 
     puedeDispararBang(_sala: any, _atacante: any, _victima: any): boolean {
@@ -88,7 +88,7 @@ export class Mandy implements IPersonaje {
 
 export class Tralalero implements IPersonaje {
     nombre = "Tralalero";
-    habilidad = "Pasiva de Supervivencia\nAl pasar el turno, si no tiene cartas en la mano, recupera 1 vida.";
+    habilidad = "Los tralaleritos dicen tralalá\nAl pasar el turno, si no tiene cartas en la mano, recupera 1 vida.";
     vidasBase = 4;
 
     onPasarTurno(sala: any, jugador: any) {
@@ -97,6 +97,12 @@ export class Tralalero implements IPersonaje {
             sala.broadcast("notificacion_turno", `🎵 Tralalero recuperó 1 vida gracias a su pasiva.`);
         }
     }
+}
+
+export class Darryl implements IPersonaje {
+    nombre = "Darryl";
+    habilidad = "Darryl el Barryl\nTiene el efecto de la carta Barril siempre activo, si se equipa un barril, es como si tuviera dos.";
+    vidasBase = 4;
 }
 
 // 3. EL GESTOR DE PERSONAJES
@@ -109,6 +115,7 @@ export class GestorPersonajes {
         this.registrar(new Maton());
         this.registrar(new Mandy());
         this.registrar(new Tralalero());
+        this.registrar(new Darryl());
     }
 
     private registrar(p: IPersonaje) {

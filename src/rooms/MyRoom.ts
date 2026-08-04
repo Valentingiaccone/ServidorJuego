@@ -25,7 +25,7 @@ export class MyRoom extends Room {
         } else {
             this.state.jugadorEnPeligro = "";
             this.state.atacanteActual = "";
-            this.state.yaUsoBarril = false;
+            this.state.usosBarril = 0;
             this.broadcast("notificacion_turno", `💨 El ataque de Tiratachuela ha terminado.`);
         }
     }
@@ -518,8 +518,14 @@ export class MyRoom extends Room {
             if (client.sessionId !== this.state.jugadorEnPeligro) return;
             
             let victima = this.state.jugadores.get(client.sessionId);
-            if (!victima || !victima.tieneBarril || this.state.yaUsoBarril) return
-            this.state.yaUsoBarril = true;
+            let maxUsos = 0;
+            if (victima.tieneBarril) maxUsos++;
+            if (victima.personaje === "Darryl") maxUsos++;
+
+            // Si no tiene barriles o ya gastó todos sus intentos, bloqueamos
+            if (maxUsos === 0 || this.state.usosBarril >= maxUsos) return;
+
+            this.state.usosBarril++;
             // 1. Sacamos la carta pero no la revelamos todavía
             if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
                 let arrayDescarte = Array.from(this.state.descarte);
@@ -571,7 +577,7 @@ export class MyRoom extends Room {
                     } else {
                         this.state.jugadorEnPeligro = "";
                         this.state.atacanteActual = "";
-                        this.state.yaUsoBarril = false;
+                        this.state.usosBarril = 0;
                     }
                 } else {
                     this.broadcast("notificacion_turno", `💥 ¡Falló! Salió ${carta.palo}. El Barril no aguantó el disparo.`);
@@ -777,7 +783,7 @@ export class MyRoom extends Room {
             } else {
                 this.state.jugadorEnPeligro = "";
                 this.state.atacanteActual = "";
-                this.state.yaUsoBarril = false;
+                this.state.usosBarril = 0;
             }
         });
 
