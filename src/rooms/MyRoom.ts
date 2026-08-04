@@ -67,6 +67,9 @@ export class MyRoom extends Room {
             if (victima.cartaMira) this.state.descarte.push(victima.cartaMira);
             victima.tieneMira = false;
             victima.cartaMira = null;
+            if (victima.cartaBarril) this.state.descarte.push(victima.cartaBarril);
+            victima.tieneBarril = false;
+            victima.cartaBarril = null;
 
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
@@ -268,6 +271,16 @@ export class MyRoom extends Room {
                     this.state.mazo.push(mira);
                 }
 
+                for (let i = 0; i < 2; i++) {
+                    const barril = new Carta();
+                    barril.id = `barril_${i}`;
+                    barril.nombre = "Barril";
+                    barril.descripcion = "Si te disparan, probá suerte. Si sale Corazones, esquivás el tiro.";
+                    barril.tipoDeUso = "equipamiento";
+                    barril.efecto = "equiparBarril";
+                    this.state.mazo.push(barril);
+                }
+
                 const armas = [
                     { id: "arma_1", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
                     { id: "arma_2", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
@@ -286,6 +299,31 @@ export class MyRoom extends Room {
                     nuevaCarta.tipoDeUso = "equipamiento";
                     nuevaCarta.efecto = `equipar_arma_${arma.alcance}`;
                     this.state.mazo.push(nuevaCarta);
+                });
+
+                let palos = ["Corazones", "Picas", "Diamantes", "Treboles"];
+                let valores = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
+                let mazoPokerVirtual: any[] = [];
+                
+                // Creamos 2 barajas de póker enteras (104 cartas virtuales) para que no falten
+                for (let d = 0; d < 2; d++) {
+                    for (let p of palos) {
+                        for (let v of valores) {
+                            mazoPokerVirtual.push({ palo: p, valor: v });
+                        }
+                    }
+                }
+                
+                // Mezclamos la baraja virtual
+                mazoPokerVirtual.sort(() => Math.random() - 0.5);
+
+                // Le pegamos una identidad a cada carta generada de nuestro juego
+                this.state.mazo.forEach(carta => {
+                    let cartaPoker = mazoPokerVirtual.pop();
+                    if (cartaPoker) {
+                        carta.palo = cartaPoker.palo;
+                        carta.valor = cartaPoker.valor;
+                    }
                 });
 
                 let arrayTemporal = Array.from(this.state.mazo);
@@ -401,13 +439,17 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaMira;
                 victima.cartaMira = null;
                 victima.tieneMira = false;
+            } else if (datos.zonaObjetivo === "barril" && victima.cartaBarril) {
+                cartaAfectada = victima.cartaBarril;
+                victima.cartaBarril = null;
+                victima.tieneBarril = false;
             }
 
             if (!cartaAfectada) return; 
 
             if (accion === "robar") {
                 atacante.mano.push(cartaAfectada);
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion });
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion, palo: cartaSabotaje.palo, valor: cartaSabotaje.valor });
                 this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
             }
 
@@ -424,7 +466,7 @@ export class MyRoom extends Room {
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 this.state.descarte.push(cartaUsada);
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion });
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, palo: cartaUsada.palo, valor: cartaUsada.valor });
 
                 this.state.jugadorDebeDescartar = datos.idObjetivo;
                 this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
@@ -452,6 +494,10 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaMira;
                 victima.cartaMira = null;
                 victima.tieneMira = false;
+            } else if (datos.zona === "barril" && victima.cartaBarril) {
+                cartaAfectada = victima.cartaBarril;
+                victima.cartaBarril = null;
+                victima.tieneBarril = false;
             }
 
             if (cartaAfectada) {
@@ -549,7 +595,7 @@ export class MyRoom extends Room {
                     this.state.atacanteActual = client.sessionId;
                     
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le disparó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion });
+                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, palo: carta.palo, valor: carta.valor });
                 }
             }
         });
@@ -563,7 +609,7 @@ export class MyRoom extends Room {
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 this.state.descarte.push(cartaUsada);
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion });
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, palo: cartaUsada.palo, valor: cartaUsada.valor });
 
                 // Seteamos quién empieza defendiéndose y quién es el oponente
                 this.state.jugadorEnDuelo = datos.idObjetivo;
@@ -628,7 +674,7 @@ export class MyRoom extends Room {
                         this.state.descarte.push(carta);
                         
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
-                        this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion });
+                        this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, palo: carta.palo, valor: carta.valor });
                     }
                 } 
                 else {

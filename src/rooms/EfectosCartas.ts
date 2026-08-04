@@ -194,6 +194,20 @@ export class EfectoEquiparMira implements IEfectoCarta {
     }
 }
 
+export class EfectoEquiparBarril implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+        if (jugador.tieneBarril && jugador.cartaBarril) {
+            sala.state.descarte.push(jugador.cartaBarril); 
+        }
+        jugador.tieneBarril = true;
+        jugador.cartaBarril = cartaJugada;
+        jugador.mano.splice(indiceCarta, 1);
+        
+        sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -206,6 +220,7 @@ export class DespachadorDeCartas {
         "tienda": new EfectoTiendaGriff(),
         "equiparMustang": new EfectoEquiparMustang(),
         "equiparMira": new EfectoEquiparMira(),
+        "equiparBarril": new EfectoEquiparBarril()
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[]) {

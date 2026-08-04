@@ -4,10 +4,10 @@ export class Carta extends Schema {
     @type("string") id: string = "";
     @type("string") nombre: string = "";
     @type("string") descripcion: string = "";
-    
-    // --- MAGIA NUEVA: Diseño Orientado a Datos ---
     @type("string") tipoDeUso: string = ""; // Ej: "instantanea", "objetivo", "reaccion"
     @type("string") efecto: string = "";    // Ej: "curar_1", "dano_1"
+    @type("string") palo: string = "";  // "Corazones", "Picas", "Diamantes", "Treboles"
+    @type("string") valor: string = "";
     // ---------------------------------------------
 }
 
@@ -30,6 +30,8 @@ export class Jugador extends Schema {
     @type(Carta) cartaMira: Carta;
     @type("boolean") tieneMustang: boolean = false;
     @type("boolean") tieneMira: boolean = false;
+    @type("boolean") tieneBarril: boolean = false;
+    @type(Carta) cartaBarril: Carta;
     // ----------------------------------------
 }
 
