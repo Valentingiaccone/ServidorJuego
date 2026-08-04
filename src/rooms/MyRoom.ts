@@ -71,6 +71,9 @@ export class MyRoom extends Room {
             if (victima.cartaBarril) this.state.descarte.push(victima.cartaBarril);
             victima.tieneBarril = false;
             victima.cartaBarril = null;
+            if (victima.cartaPrision) this.state.descarte.push(victima.cartaPrision);
+            victima.estaEnPrision = false;
+            victima.cartaPrision = null;
 
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
@@ -282,6 +285,16 @@ export class MyRoom extends Room {
                     this.state.mazo.push(barril);
                 }
 
+                for (let i = 0; i < 3; i++) {
+                    const prision = new Carta();
+                    prision.id = `prision_${i}`;
+                    prision.nombre = "Prisión";
+                    prision.descripcion = "Equipala a otro jugador (menos al Sheriff). Debe sacar Corazones o perderá su turno.";
+                    prision.tipoDeUso = "objetivoGlobal"; 
+                    prision.efecto = "prision";
+                    this.state.mazo.push(prision);
+                }
+
                 const armas = [
                     { id: "arma_1", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
                     { id: "arma_2", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
@@ -367,30 +380,10 @@ export class MyRoom extends Room {
                     }
                 }
 
-                this.broadcast("notificacion_turno", `¡El jugador ${client.sessionId} ha pasado su turno!`);
-
-                const idsJugadores = Array.from(this.state.jugadores.keys());
-                const indiceActual = idsJugadores.indexOf(client.sessionId);
+                this.broadcast("notificacion_turno", `¡El jugador ${jugadorActual?.nombre} ha pasado su turno!`);
                 
-                let siguienteIndice = (indiceActual + 1) % idsJugadores.length;
-                let siguienteId = idsJugadores[siguienteIndice];
-                let jugadorSiguiente = this.state.jugadores.get(siguienteId);
-
-                while (jugadorSiguiente && !jugadorSiguiente.estaVivo) {
-                    siguienteIndice = (siguienteIndice + 1) % idsJugadores.length;
-                    siguienteId = idsJugadores[siguienteIndice];
-                    jugadorSiguiente = this.state.jugadores.get(siguienteId);
-                }
-                
-                this.state.turnoActual = siguienteId;
-                
-                if (jugadorSiguiente) {
-                    jugadorSiguiente.yaDisparo = false;
-                    this.repartirCartas(jugadorSiguiente, 2);
-                    console.log(`🃏 ${jugadorSiguiente.nombre} robó 2 cartas.`);
-                }
-                
-                this.broadcast("notificacion_turno", `¡Es el turno de ${jugadorSiguiente?.nombre}!`);
+                // ¡Llamamos a nuestra nueva función!
+                this.avanzarAlSiguienteTurno(client.sessionId);
             }
         });
 
@@ -444,6 +437,10 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaBarril;
                 victima.cartaBarril = null;
                 victima.tieneBarril = false;
+            } else if (datos.zonaObjetivo === "prision" && victima.cartaPrision) {
+                cartaAfectada = victima.cartaPrision;
+                victima.cartaPrision = null;
+                victima.estaEnPrision = false;
             }
 
             if (!cartaAfectada) return; 
@@ -499,6 +496,10 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaBarril;
                 victima.cartaBarril = null;
                 victima.tieneBarril = false;
+            } else if (datos.zona === "prision" && victima.cartaPrision) {
+                cartaAfectada = victima.cartaPrision;
+                victima.cartaPrision = null;
+                victima.estaEnPrision = false;
             }
 
             if (cartaAfectada) {
@@ -582,6 +583,24 @@ export class MyRoom extends Room {
                 } else {
                     this.broadcast("notificacion_turno", `💥 ¡Falló! Salió ${carta.palo}. El Barril no aguantó el disparo.`);
                     // Falló. Sigue en peligro. El cliente (Cocos) detectará esto y volverá a abrir el panel de daño.
+                }
+            } else if (this.state.motivoDesenfundar === "Prision") {
+                if (carta.palo === "Corazones") {
+                    this.broadcast("notificacion_turno", `❤️ ¡Salió Corazones! ${victima?.nombre} escapó de la cárcel.`);
+                    // Arranca su turno normal
+                    this.repartirCartas(victima, 2);
+                    this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
+                } else {
+                    this.broadcast("notificacion_turno", `⛓️ ¡Salió ${carta.palo}! ${victima?.nombre} se queda encerrado y pierde el turno.`);
+                    // Saltamos al siguiente de forma automática
+                    this.avanzarAlSiguienteTurno(client.sessionId);
+                }
+
+                // En ambos casos (éxito o fallo), la carta de prisión se destruye
+                if (victima && victima.cartaPrision) {
+                    this.state.descarte.push(victima.cartaPrision);
+                    victima.cartaPrision = null;
+                    victima.estaEnPrision = false;
                 }
             }
 
@@ -704,6 +723,41 @@ export class MyRoom extends Room {
                 
                 let victima = this.state.jugadores.get(datos.idObjetivo);
                 this.broadcast("notificacion_turno", `⚔️ ¡${atacante.nombre} retó a duelo a ${victima?.nombre}!`);
+            }
+        });
+
+        this.onMessage("encarcelar_jugador", (client, datos) => {
+            if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.juegoPausado()) return;
+
+            let atacante = this.state.jugadores.get(client.sessionId);
+            let victima = this.state.jugadores.get(datos.idObjetivo);
+            
+            if (!atacante || !victima) return;
+
+            // REGLAS: No al Sheriff, no a uno mismo, no si ya está preso
+            if (victima.rol === "Sheriff") {
+                client.send("alerta_personal", "No podés meter preso al Sheriff.");
+                return;
+            }
+            if (client.sessionId === datos.idObjetivo) {
+                client.send("alerta_personal", "No te podés meter preso a vos mismo.");
+                return;
+            }
+            if (victima.estaEnPrision) {
+                client.send("alerta_personal", `${victima.nombre} ya está en prisión.`);
+                return;
+            }
+
+            let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
+            if (indiceCartaJugada !== -1) {
+                let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
+                
+                // Le equipamos la prisión a la víctima
+                victima.estaEnPrision = true;
+                victima.cartaPrision = cartaUsada;
+                
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, palo: cartaUsada.palo, valor: cartaUsada.valor });
+                this.broadcast("notificacion_turno", `⛓️ ¡${atacante.nombre} mandó a la cárcel a ${victima.nombre}!`);
             }
         });
 
@@ -858,6 +912,58 @@ export class MyRoom extends Room {
             }
             if (this.state.mazo.length > 0) {
                 jugador.mano.push(this.state.mazo.pop());
+            }
+        }
+    }
+
+    avanzarAlSiguienteTurno(idJugadorActual: string) {
+        const idsJugadores = Array.from(this.state.jugadores.keys());
+        const indiceActual = idsJugadores.indexOf(idJugadorActual);
+        
+        let siguienteIndice = (indiceActual + 1) % idsJugadores.length;
+        let siguienteId = idsJugadores[siguienteIndice];
+        let jugadorSiguiente = this.state.jugadores.get(siguienteId);
+
+        while (jugadorSiguiente && !jugadorSiguiente.estaVivo) {
+            siguienteIndice = (siguienteIndice + 1) % idsJugadores.length;
+            siguienteId = idsJugadores[siguienteIndice];
+            jugadorSiguiente = this.state.jugadores.get(siguienteId);
+        }
+        
+        this.state.turnoActual = siguienteId;
+        
+        if (jugadorSiguiente) {
+            jugadorSiguiente.yaDisparo = false;
+            
+            // --- CHEQUEO DE PRISIÓN AL INICIO DEL TURNO ---
+            if (jugadorSiguiente.estaEnPrision) {
+                this.broadcast("notificacion_turno", `⚖️ ¡${jugadorSiguiente.nombre} está en Prisión! Debe desenfundar...`);
+                
+                if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
+                    let arrayDescarte = Array.from(this.state.descarte);
+                    arrayDescarte.sort(() => Math.random() - 0.5);
+                    this.state.descarte.clear();
+                    arrayDescarte.forEach(carta => this.state.mazo.push(carta));
+                }
+
+                let cartaSacada = this.state.mazo.pop();
+                if (cartaSacada) {
+                    this.state.cartaDesenfundada.id = cartaSacada.id;
+                    this.state.cartaDesenfundada.nombre = cartaSacada.nombre;
+                    this.state.cartaDesenfundada.descripcion = cartaSacada.descripcion;
+                    this.state.cartaDesenfundada.palo = cartaSacada.palo;
+                    this.state.cartaDesenfundada.valor = cartaSacada.valor;
+                    this.state.cartaDesenfundada.tipoDeUso = cartaSacada.tipoDeUso;
+                    this.state.cartaDesenfundada.efecto = cartaSacada.efecto;
+                    
+                    this.state.jugadorDesenfundando = siguienteId;
+                    this.state.motivoDesenfundar = "Prision";
+                }
+            } else {
+                // Si no está preso, arranca normal
+                this.repartirCartas(jugadorSiguiente, 2);
+                console.log(`🃏 ${jugadorSiguiente.nombre} robó 2 cartas.`);
+                this.broadcast("notificacion_turno", `¡Es el turno de ${jugadorSiguiente.nombre}!`);
             }
         }
     }
