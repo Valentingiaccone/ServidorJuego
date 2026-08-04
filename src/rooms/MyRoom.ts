@@ -273,7 +273,9 @@ export class MyRoom extends Room {
                     { id: "arma_2", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
                     { id: "arma_6", nombre: "Revolver de Casiddy", descripcion: "Equipa esta arma para obtener alcance: 3", alcance: 3 },
                     { id: "arma_7", nombre: "Rifle de Ashe", descripcion: "Equipa esta arma para obtener alcance: 4", alcance: 4 },
-                    { id: "arma_8", nombre: "Francotirador", descripcion: "Equipa esta arma para obtener alcance: 5", alcance: 5 }
+                    { id: "arma_8", nombre: "Francotirador", descripcion: "Equipa esta arma para obtener alcance: 5", alcance: 5 },
+                    { id: "arma_9", nombre: "Pistola de Tracer", descripcion: "Equipa esta arma para no tener limites de uso de BANG!", alcance: 1 },
+                    { id: "arma_10", nombre: "Pistola de Tracer", descripcion: "Equipa esta arma para no tener limites de uso de BANG!", alcance: 1 },
                 ];
 
                 armas.forEach(arma => {
@@ -502,7 +504,7 @@ export class MyRoom extends Room {
                 let pasivaAtacante = this.gestorPersonajes.obtener(atacante.personaje);
                 let puedeDispararExtra = pasivaAtacante && pasivaAtacante.puedeDispararBang ? pasivaAtacante.puedeDispararBang(this, atacante, victima) : false;
 
-                if (atacante.yaDisparo && !puedeDispararExtra) {
+                if (atacante.yaDisparo && !puedeDispararExtra && atacante.nombreArma !== "Pistola de Tracer") {
                     client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
                     return; 
                 }
