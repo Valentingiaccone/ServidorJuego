@@ -166,6 +166,34 @@ export class EfectoTiendaGriff implements IEfectoCarta {
     }
 }
 
+export class EfectoEquiparMustang implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+        if (jugador.tieneMustang && jugador.cartaMustang) {
+            sala.state.descarte.push(jugador.cartaMustang); // Si ya tenía uno, lo tira (no se acumulan)
+        }
+        jugador.tieneMustang = true;
+        jugador.cartaMustang = cartaJugada;
+        jugador.mano.splice(indiceCarta, 1);
+        
+        sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Mustang.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
+    }
+}
+
+export class EfectoEquiparMira implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+        if (jugador.tieneMira && jugador.cartaMira) {
+            sala.state.descarte.push(jugador.cartaMira); 
+        }
+        jugador.tieneMira = true;
+        jugador.cartaMira = cartaJugada;
+        jugador.mano.splice(indiceCarta, 1);
+        
+        sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Mira Telescópica.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion });
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -175,7 +203,9 @@ export class DespachadorDeCartas {
         "curarATodos": new EfectoCurarATodos(),
         "tiratachuela": new EfectoTiratachuela(),
         "indios": new EfectoIndios(),
-        "tienda": new EfectoTiendaGriff()
+        "tienda": new EfectoTiendaGriff(),
+        "equiparMustang": new EfectoEquiparMustang(),
+        "equiparMira": new EfectoEquiparMira(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[]) {

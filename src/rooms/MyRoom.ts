@@ -61,6 +61,13 @@ export class MyRoom extends Room {
             victima.mano.forEach((carta: any) => this.state.descarte.push(carta));
             victima.mano.clear();
             if (victima.cartaArma) this.state.descarte.push(victima.cartaArma);
+            if (victima.cartaMustang) this.state.descarte.push(victima.cartaMustang);
+            victima.tieneMustang = false;
+            victima.cartaMustang = null;
+            if (victima.cartaMira) this.state.descarte.push(victima.cartaMira);
+            victima.tieneMira = false;
+            victima.cartaMira = null;
+
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
 
@@ -239,6 +246,26 @@ export class MyRoom extends Room {
                     duelo.tipoDeUso = "objetivoGlobal"; // Alcance infinito
                     duelo.efecto = "duelo"; 
                     this.state.mazo.push(duelo);
+                }
+
+                for (let i = 0; i < 2; i++) {
+                    const mustang = new Carta();
+                    mustang.id = `caballo_${i}`;
+                    mustang.nombre = "Caballo";
+                    mustang.descripcion = "Los demás te ven a distancia +1.";
+                    mustang.tipoDeUso = "equipamiento";
+                    mustang.efecto = "equiparMustang";
+                    this.state.mazo.push(mustang);
+                }
+                
+                for (let i = 0; i < 1; i++) {
+                    const mira = new Carta();
+                    mira.id = `mira_${i}`;
+                    mira.nombre = "Mira Telescópica";
+                    mira.descripcion = "Ves a los demás a distancia -1.";
+                    mira.tipoDeUso = "equipamiento";
+                    mira.efecto = "equiparMira";
+                    this.state.mazo.push(mira);
                 }
 
                 const armas = [
@@ -476,6 +503,9 @@ export class MyRoom extends Room {
                 let n = vivos.length;
                 let diferencia = Math.abs(idxAtacante - idxVictima);
                 let distancia = Math.min(diferencia, n - diferencia);
+
+                if (atacante.tieneMira) distancia -= 1;
+                if (victima.tieneMustang) distancia += 1;
 
                 // --- HOOK MODIFICAR DISTANCIA ---
                 if (pasivaAtacante && pasivaAtacante.modificarDistancia) {

@@ -25,9 +25,11 @@ export class Jugador extends Schema {
     @type(Carta) cartaArma: Carta;
     @type("string") personaje: string = "";
     @type("string") habilidad: string = "";
-    
-    // --- MAGIA NUEVA: La mano del jugador ---
     @type([Carta]) mano = new ArraySchema<Carta>();
+    @type(Carta) cartaMustang: Carta;
+    @type(Carta) cartaMira: Carta;
+    @type("boolean") tieneMustang: boolean = false;
+    @type("boolean") tieneMira: boolean = false;
     // ----------------------------------------
 }
 
