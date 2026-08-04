@@ -383,14 +383,22 @@ export class MyRoom extends Room {
             let accion = cartaSabotaje.efecto.split("_")[0]; 
             let cartaAfectada = null;
 
+            // Extraemos la carta exacta que pidieron
             if (datos.zonaObjetivo === "mano" && datos.indiceCarta >= 0 && datos.indiceCarta < victima.mano.length) {
                 cartaAfectada = victima.mano.splice(datos.indiceCarta, 1)[0];
-            } 
-            else if (datos.zonaObjetivo === "equipamiento" && victima.cartaArma) {
+            } else if (datos.zonaObjetivo === "arma" && victima.cartaArma) {
                 cartaAfectada = victima.cartaArma;
                 victima.cartaArma = null;
                 victima.nombreArma = "Colt .45";
                 victima.alcanceArma = 1;
+            } else if (datos.zonaObjetivo === "mustang" && victima.cartaMustang) {
+                cartaAfectada = victima.cartaMustang;
+                victima.cartaMustang = null;
+                victima.tieneMustang = false;
+            } else if (datos.zonaObjetivo === "mira" && victima.cartaMira) {
+                cartaAfectada = victima.cartaMira;
+                victima.cartaMira = null;
+                victima.tieneMira = false;
             }
 
             if (!cartaAfectada) return; 
@@ -429,18 +437,25 @@ export class MyRoom extends Room {
 
             if (datos.zona === "mano") {
                 cartaAfectada = victima.mano.splice(datos.indice, 1)[0];
-            } else if (datos.zona === "equipamiento") {
+            } else if (datos.zona === "arma" && victima.cartaArma) {
                 cartaAfectada = victima.cartaArma;
                 victima.cartaArma = null;
                 victima.nombreArma = "Colt .45";
                 victima.alcanceArma = 1;
+            } else if (datos.zona === "mustang" && victima.cartaMustang) {
+                cartaAfectada = victima.cartaMustang;
+                victima.cartaMustang = null;
+                victima.tieneMustang = false;
+            } else if (datos.zona === "mira" && victima.cartaMira) {
+                cartaAfectada = victima.cartaMira;
+                victima.cartaMira = null;
+                victima.tieneMira = false;
             }
 
             if (cartaAfectada) {
                 this.state.descarte.push(cartaAfectada);
                 this.broadcast("notificacion_turno", `🗑️ ${victima.nombre} decidió descartar su ${cartaAfectada.nombre}.`);
                 
-                // --- HOOK DESCARTAR CARTA ---
                 let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictima && pasivaVictima.onDescartarCarta) {
                     pasivaVictima.onDescartarCarta(this, victima, cartaAfectada, "COCOROCH");
@@ -449,7 +464,7 @@ export class MyRoom extends Room {
 
             this.state.jugadorDebeDescartar = "";
         });
-
+        
         this.onMessage("responder_indios", (client, datos) => {
             if (this.state.jugadorBajoAtaqueIndio !== client.sessionId) return;
 
