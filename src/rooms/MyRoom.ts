@@ -4,7 +4,7 @@ import { DespachadorDeCartas } from "./EfectosCartas.js";
 import { GestorPersonajes } from "./Personajes.js";
 
 export class MyRoom extends Room {
-    maxClients = 8;
+    maxClients = 10;
     state = new MyRoomState();
 
     colaDePeligro: string[] = [];
@@ -117,10 +117,15 @@ export class MyRoom extends Room {
                 console.log(`🔥 ¡El Anfitrión dio la orden! Inicia la partida con ${totalJugadores} jugadores.`);
                 
                 let mazoRoles: string[] = [];
-                if (totalJugadores <= 4) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido"];
+                if (totalJugadores <= 2) mazoRoles = ["Sheriff", "Renegado"];
+                else if (totalJugadores === 3) mazoRoles = ["Sheriff", "Renegado", "Forajido"];
+                else if (totalJugadores === 4) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido"];
                 else if (totalJugadores === 5) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Alguacil"];
                 else if (totalJugadores === 6) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil"];
-                else mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"];
+                else if (totalJugadores === 7) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"];
+                else if (totalJugadores === 8) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"];
+                else if (totalJugadores === 9) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil"];
+                else if (totalJugadores === 10) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil"];
 
                 mazoRoles.sort(() => Math.random() - 0.5);
 
