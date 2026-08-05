@@ -105,6 +105,37 @@ export class Darryl implements IPersonaje {
     vidasBase = 4;
 }
 
+export class JetpackCat implements IPersonaje {
+    nombre = "Jetpack Cat";
+    habilidad = "Gato en las alturas\nLos demás jugadores lo consideran a distancia +1.";
+    vidasBase = 3;
+
+    modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
+        // Si alguien lo está mirando a él para atacarlo, le sumamos 1 a la distancia
+        if (objetivo.personaje === this.nombre) {
+            return distanciaBase + 1;
+        }
+        return distanciaBase;
+    }
+}
+
+export class KayFaraday implements IPersonaje {
+    nombre = "Kay Faraday";
+    habilidad = "La ladrona\nCada vez que pierde una vida por un jugador, roba una carta al azar de la mano de ese jugador.";
+    vidasBase = 3;
+
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+        // Solo roba si el atacante es un jugador real (no la dinamita) y si tiene cartas
+        if (atacante && atacante.mano.length > 0) {
+            let indiceAleatorio = Math.floor(Math.random() * atacante.mano.length);
+            let cartaRobada = atacante.mano.splice(indiceAleatorio, 1)[0];
+            victima.mano.push(cartaRobada);
+            
+            sala.broadcast("notificacion_turno", `🎭 ¡Mask Demasque perdió vida pero le robó una carta a ${atacante.nombre}!`);
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -116,6 +147,8 @@ export class GestorPersonajes {
         this.registrar(new Mandy());
         this.registrar(new Tralalero());
         this.registrar(new Darryl());
+        this.registrar(new JetpackCat());
+        this.registrar(new KayFaraday());
     }
 
     private registrar(p: IPersonaje) {
