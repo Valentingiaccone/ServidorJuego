@@ -74,6 +74,9 @@ export class MyRoom extends Room {
             if (victima.cartaPrision) this.state.descarte.push(victima.cartaPrision);
             victima.estaEnPrision = false;
             victima.cartaPrision = null;
+            if (victima.cartaDinamita) this.state.descarte.push(victima.cartaDinamita);
+            victima.tieneDinamita = false;
+            victima.cartaDinamita = null;
 
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
@@ -295,6 +298,16 @@ export class MyRoom extends Room {
                     this.state.mazo.push(prision);
                 }
 
+                for (let i = 0; i < 1; i++) {
+                    const dinamita = new Carta();
+                    dinamita.id = `dinamita_${i}`;
+                    dinamita.nombre = "Dinamita";
+                    dinamita.descripcion = "Si sacás Picas entre el 2 y el 9, explota (Perdés 3 vidas). Sino, pasa al siguiente.";
+                    dinamita.tipoDeUso = "equipamiento";
+                    dinamita.efecto = "equiparDinamita";
+                    this.state.mazo.push(dinamita);
+                }
+
                 const armas = [
                     { id: "arma_1", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
                     { id: "arma_2", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
@@ -441,6 +454,10 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaPrision;
                 victima.cartaPrision = null;
                 victima.estaEnPrision = false;
+            } else if (datos.zonaObjetivo === "dinamita" && victima.cartaDinamita) {
+                cartaAfectada = victima.cartaDinamita;
+                victima.cartaDinamita = null;
+                victima.tieneDinamita = false;
             }
 
             if (!cartaAfectada) return; 
@@ -500,6 +517,10 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaPrision;
                 victima.cartaPrision = null;
                 victima.estaEnPrision = false;
+            } else if (datos.zona === "dinamita" && victima.cartaDinamita) {
+                cartaAfectada = victima.cartaDinamita;
+                victima.cartaDinamita = null;
+                victima.tieneDinamita = false;
             }
 
             if (cartaAfectada) {
@@ -583,6 +604,44 @@ export class MyRoom extends Room {
                 } else {
                     this.broadcast("notificacion_turno", `💥 ¡Falló! Salió ${carta.palo}. El Barril no aguantó el disparo.`);
                     // Falló. Sigue en peligro. El cliente (Cocos) detectará esto y volverá a abrir el panel de daño.
+                }
+            } else if (this.state.motivoDesenfundar === "Dinamita") {
+                let valoresFatales = ["2", "3", "4", "5", "6", "7", "8", "9"];
+                let exploto = (carta.palo === "Picas" && valoresFatales.includes(carta.valor));
+
+                if (exploto) {
+                    this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió ${carta.valor} de ${carta.palo}. La dinamita explotó en la cara de ${victima?.nombre}.`);
+                    victima.vidas -= 3;
+                    
+                    if (victima.cartaDinamita) this.state.descarte.push(victima.cartaDinamita);
+                    victima.tieneDinamita = false;
+                    victima.cartaDinamita = null;
+
+                    // --- HOOK RECIBIR DAÑO ---
+                    let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
+                    if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA");
+
+                    this.evaluarMuerte(victima);
+                    
+                    if (victima.estaVivo) {
+                        this.evaluarFasePrision(client.sessionId); // Sigue vivo, evaluamos si tiene cárcel
+                    } else {
+                        this.avanzarAlSiguienteTurno(client.sessionId); // Murió, pasamos el turno directamente
+                    }
+                } else {
+                    this.broadcast("notificacion_turno", `💨 ¡Uf! Salió ${carta.valor} de ${carta.palo}. La Dinamita pasa al siguiente jugador.`);
+                    
+                    // Se la pasamos al que sigue
+                    let siguiente = this.obtenerSiguienteJugadorVivo(client.sessionId);
+                    if (siguiente.jugador) {
+                        siguiente.jugador.tieneDinamita = true;
+                        siguiente.jugador.cartaDinamita = victima.cartaDinamita;
+                    }
+                    
+                    victima.tieneDinamita = false;
+                    victima.cartaDinamita = null;
+
+                    this.evaluarFasePrision(client.sessionId); // Continuamos con el turno del actual
                 }
             } else if (this.state.motivoDesenfundar === "Prision") {
                 if (carta.palo === "Corazones") {
@@ -917,8 +976,67 @@ export class MyRoom extends Room {
     }
 
     avanzarAlSiguienteTurno(idJugadorActual: string) {
+        let siguiente = this.obtenerSiguienteJugadorVivo(idJugadorActual);
+        this.state.turnoActual = siguiente.id;
+        
+        if (siguiente.jugador) {
+            siguiente.jugador.yaDisparo = false;
+            this.evaluarFaseDinamita(siguiente.id);
+        }
+    }
+
+    evaluarFaseDinamita(idJugador: string) {
+        let jugador = this.state.jugadores.get(idJugador);
+        if (!jugador) return;
+
+        if (jugador.tieneDinamita) {
+            this.broadcast("notificacion_turno", `🧨 ¡La Dinamita arde frente a ${jugador.nombre}! Debe desenfundar...`);
+            this.prepararDesenfundar(idJugador, "Dinamita");
+        } else {
+            this.evaluarFasePrision(idJugador);
+        }
+    }
+
+    evaluarFasePrision(idJugador: string) {
+        let jugador = this.state.jugadores.get(idJugador);
+        if (!jugador) return;
+
+        if (jugador.estaEnPrision) {
+            this.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} está en Prisión! Debe desenfundar...`);
+            this.prepararDesenfundar(idJugador, "Prision");
+        } else {
+            this.repartirCartas(jugador, 2);
+            console.log(`🃏 ${jugador.nombre} robó 2 cartas.`);
+            this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.nombre}!`);
+        }
+    }
+
+    prepararDesenfundar(idJugador: string, motivo: string) {
+        if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
+            let arrayDescarte = Array.from(this.state.descarte);
+            arrayDescarte.sort(() => Math.random() - 0.5);
+            this.state.descarte.clear();
+            arrayDescarte.forEach(carta => this.state.mazo.push(carta));
+        }
+
+        let cartaSacada = this.state.mazo.pop();
+        if (cartaSacada) {
+            this.state.cartaDesenfundada.id = cartaSacada.id;
+            this.state.cartaDesenfundada.nombre = cartaSacada.nombre;
+            this.state.cartaDesenfundada.descripcion = cartaSacada.descripcion;
+            this.state.cartaDesenfundada.palo = cartaSacada.palo;
+            this.state.cartaDesenfundada.valor = cartaSacada.valor;
+            this.state.cartaDesenfundada.tipoDeUso = cartaSacada.tipoDeUso;
+            this.state.cartaDesenfundada.efecto = cartaSacada.efecto;
+            
+            this.state.jugadorDesenfundando = idJugador;
+            this.state.motivoDesenfundar = motivo;
+        }
+    }
+
+    obtenerSiguienteJugadorVivo(idActual: string): { id: string, jugador: any } {
         const idsJugadores = Array.from(this.state.jugadores.keys());
-        const indiceActual = idsJugadores.indexOf(idJugadorActual);
+        const indiceActual = idsJugadores.indexOf(idActual);
         
         let siguienteIndice = (indiceActual + 1) % idsJugadores.length;
         let siguienteId = idsJugadores[siguienteIndice];
@@ -929,43 +1047,7 @@ export class MyRoom extends Room {
             siguienteId = idsJugadores[siguienteIndice];
             jugadorSiguiente = this.state.jugadores.get(siguienteId);
         }
-        
-        this.state.turnoActual = siguienteId;
-        
-        if (jugadorSiguiente) {
-            jugadorSiguiente.yaDisparo = false;
-            
-            // --- CHEQUEO DE PRISIÓN AL INICIO DEL TURNO ---
-            if (jugadorSiguiente.estaEnPrision) {
-                this.broadcast("notificacion_turno", `⚖️ ¡${jugadorSiguiente.nombre} está en Prisión! Debe desenfundar...`);
-                
-                if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
-                    let arrayDescarte = Array.from(this.state.descarte);
-                    arrayDescarte.sort(() => Math.random() - 0.5);
-                    this.state.descarte.clear();
-                    arrayDescarte.forEach(carta => this.state.mazo.push(carta));
-                }
-
-                let cartaSacada = this.state.mazo.pop();
-                if (cartaSacada) {
-                    this.state.cartaDesenfundada.id = cartaSacada.id;
-                    this.state.cartaDesenfundada.nombre = cartaSacada.nombre;
-                    this.state.cartaDesenfundada.descripcion = cartaSacada.descripcion;
-                    this.state.cartaDesenfundada.palo = cartaSacada.palo;
-                    this.state.cartaDesenfundada.valor = cartaSacada.valor;
-                    this.state.cartaDesenfundada.tipoDeUso = cartaSacada.tipoDeUso;
-                    this.state.cartaDesenfundada.efecto = cartaSacada.efecto;
-                    
-                    this.state.jugadorDesenfundando = siguienteId;
-                    this.state.motivoDesenfundar = "Prision";
-                }
-            } else {
-                // Si no está preso, arranca normal
-                this.repartirCartas(jugadorSiguiente, 2);
-                console.log(`🃏 ${jugadorSiguiente.nombre} robó 2 cartas.`);
-                this.broadcast("notificacion_turno", `¡Es el turno de ${jugadorSiguiente.nombre}!`);
-            }
-        }
+        return { id: siguienteId, jugador: jugadorSiguiente };
     }
 
     juegoPausado(): boolean {

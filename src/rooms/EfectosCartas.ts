@@ -208,6 +208,20 @@ export class EfectoEquiparBarril implements IEfectoCarta {
     }
 }
 
+export class EfectoEquiparDinamita implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+        if (jugador.tieneDinamita && jugador.cartaDinamita) {
+            sala.state.descarte.push(jugador.cartaDinamita); 
+        }
+        jugador.tieneDinamita = true;
+        jugador.cartaDinamita = cartaJugada;
+        jugador.mano.splice(indiceCarta, 1);
+        
+        sala.broadcast("notificacion_turno", `🧨 ¡${jugador.nombre} encendió una Dinamita!`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {

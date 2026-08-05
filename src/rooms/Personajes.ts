@@ -42,7 +42,7 @@ export class ColeCasiddy implements IPersonaje {
 
 export class Berry implements IPersonaje {
     nombre = "Berry";
-    habilidad = "Cartas curativas\nEn su turno, puede descartar 2 cartas para recuperar 1 vida.";
+    habilidad = "Cartas curativas\nEn su turno, cada 2 cartas que descarta, recupera 1 de vida.";
     vidasBase = 4;
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {

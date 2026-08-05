@@ -34,6 +34,8 @@ export class Jugador extends Schema {
     @type(Carta) cartaBarril: Carta;
     @type("boolean") estaEnPrision: boolean = false;
     @type(Carta) cartaPrision: Carta;
+    @type("boolean") tieneDinamita: boolean = false;
+    @type(Carta) cartaDinamita: Carta;
     // ----------------------------------------
 }
 
