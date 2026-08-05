@@ -579,101 +579,103 @@ export class MyRoom extends Room {
 
             let victima = this.state.jugadores.get(client.sessionId);
             let carta = this.state.cartaDesenfundada;
-            
-            // Guardamos el motivo actual porque vamos a limpiar las variables ya mismo
             let motivoActual = this.state.motivoDesenfundar; 
             
+            // 1. LÓGICA VISUAL (Textos y colores correctos para Cocos)
+            let fueExito = false;
+            let textoVisual = "";
+            let valoresFatales = ["2", "3", "4", "5", "6", "7", "8", "9"];
+            let explotoDinamita = false;
+
+            if (motivoActual === "Barril" || motivoActual === "Prision") {
+                fueExito = (carta.palo === "Corazones");
+                textoVisual = fueExito ? "¡ÉXITO!" : "FALLÓ";
+            } else if (motivoActual === "Dinamita") {
+                explotoDinamita = (carta.palo === "Picas" && valoresFatales.includes(carta.valor));
+                fueExito = !explotoDinamita; // El éxito en dinamita es NO explotar
+                textoVisual = explotoDinamita ? "¡BOOM!" : "¡A SALVO!";
+            }
+
             this.broadcast("resultado_desenfundar", { 
                 palo: carta.palo, 
                 valor: carta.valor, 
                 nombre: carta.nombre,
-                exito: carta.palo === "Corazones" // (Solo afecta el texto visual temporal en Cocos)
+                exito: fueExito,
+                texto: textoVisual
             });
 
-            // --- 1. LIMPIAMOS EL ESTADO PRIMERO (Antes de encadenar fases) ---
-            let cartaAlDescarte = new Carta();
-            cartaAlDescarte.id = carta.id;
-            cartaAlDescarte.nombre = carta.nombre;
-            cartaAlDescarte.descripcion = carta.descripcion;
-            cartaAlDescarte.palo = carta.palo;
-            cartaAlDescarte.valor = carta.valor;
-            cartaAlDescarte.tipoDeUso = carta.tipoDeUso;
-            cartaAlDescarte.efecto = carta.efecto;
-            this.state.descarte.push(cartaAlDescarte);
+            // 2. EL SUSPENSO DEL SERVIDOR (Frenamos la ejecución 2.5 segundos)
+            this.clock.setTimeout(() => {
+                
+                // Mandamos la carta al descarte
+                let cartaAlDescarte = new Carta();
+                cartaAlDescarte.id = carta.id; cartaAlDescarte.nombre = carta.nombre; cartaAlDescarte.descripcion = carta.descripcion; cartaAlDescarte.palo = carta.palo; cartaAlDescarte.valor = carta.valor; cartaAlDescarte.tipoDeUso = carta.tipoDeUso; cartaAlDescarte.efecto = carta.efecto;
+                this.state.descarte.push(cartaAlDescarte);
 
-            this.state.jugadorDesenfundando = "";
-            this.state.motivoDesenfundar = "";
+                // Le decimos a Cocos que CIERRE EL PANEL INMEDIATAMENTE
+                this.state.jugadorDesenfundando = "";
+                this.state.motivoDesenfundar = "";
 
-            // --- 2. EVALUAMOS LA LÓGICA ---
-            if (motivoActual === "Barril") {
-                if (carta.palo === "Corazones") {
-                    this.broadcast("notificacion_turno", `❤️ ¡Salió Corazones! El Barril salvó a ${victima?.nombre}.`);
+                // Le damos 500ms a Cocos para respirar antes de encadenar la siguiente fase
+                this.clock.setTimeout(() => {
                     
-                    if (this.colaDePeligro && this.colaDePeligro.length > 0) {
-                        this.avanzarColaDePeligro();
-                    } else {
-                        this.state.jugadorEnPeligro = "";
-                        this.state.atacanteActual = "";
-                        this.state.usosBarril = 0;
+                    // 3. EJECUTAMOS LAS CONSECUENCIAS
+                    if (motivoActual === "Barril") {
+                        if (fueExito) {
+                            this.broadcast("notificacion_turno", `❤️ ¡Salió Corazones! El Barril salvó a ${victima?.nombre}.`);
+                            if (this.colaDePeligro && this.colaDePeligro.length > 0) this.avanzarColaDePeligro();
+                            else { this.state.jugadorEnPeligro = ""; this.state.atacanteActual = ""; this.state.usosBarril = 0; }
+                        } else {
+                            this.broadcast("notificacion_turno", `💥 ¡Falló! Salió ${carta.palo}. El Barril no aguantó el disparo.`);
+                        }
+                    } 
+                    else if (motivoActual === "Dinamita") {
+                        if (explotoDinamita) {
+                            this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió ${carta.valor} de ${carta.palo}. La dinamita explotó en la cara de ${victima?.nombre}.`);
+                            if (victima) victima.vidas -= 3;
+                            if (victima && victima.cartaDinamita) this.state.descarte.push(victima.cartaDinamita);
+                            if (victima) victima.tieneDinamita = false;
+                            if (victima) victima.cartaDinamita = null;
+
+                            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
+                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA");
+
+                            this.evaluarMuerte(victima);
+                            
+                            if (victima && victima.estaVivo) this.evaluarFasePrision(client.sessionId);
+                            else this.avanzarAlSiguienteTurno(client.sessionId);
+                        } else {
+                            this.broadcast("notificacion_turno", `💨 ¡Uf! Salió ${carta.valor} de ${carta.palo}. La Dinamita pasa al siguiente jugador.`);
+                            
+                            let siguiente = this.obtenerSiguienteJugadorVivo(client.sessionId);
+                            if (siguiente.jugador) {
+                                siguiente.jugador.tieneDinamita = true;
+                                siguiente.jugador.cartaDinamita = victima?.cartaDinamita;
+                            }
+                            if (victima) victima.tieneDinamita = false;
+                            if (victima) victima.cartaDinamita = null;
+
+                            this.evaluarFasePrision(client.sessionId);
+                        }
+                    } 
+                    else if (motivoActual === "Prision") {
+                        if (fueExito) {
+                            this.broadcast("notificacion_turno", `❤️ ¡Salió Corazones! ${victima?.nombre} escapó de la cárcel.`);
+                            this.repartirCartas(victima, 2);
+                            this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
+                        } else {
+                            this.broadcast("notificacion_turno", `⛓️ ¡Salió ${carta.palo}! ${victima?.nombre} se queda encerrado y pierde el turno.`);
+                            this.avanzarAlSiguienteTurno(client.sessionId);
+                        }
+                        if (victima && victima.cartaPrision) {
+                            this.state.descarte.push(victima.cartaPrision);
+                            victima.cartaPrision = null;
+                            victima.estaEnPrision = false;
+                        }
                     }
-                } else {
-                    this.broadcast("notificacion_turno", `💥 ¡Falló! Salió ${carta.palo}. El Barril no aguantó el disparo.`);
-                }
-            } 
-            else if (motivoActual === "Dinamita") {
-                let valoresFatales = ["2", "3", "4", "5", "6", "7", "8", "9"];
-                let exploto = (carta.palo === "Picas" && valoresFatales.includes(carta.valor));
+                }, 500); // Fin pausa encadenamiento
 
-                if (exploto) {
-                    this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió ${carta.valor} de ${carta.palo}. La dinamita explotó en la cara de ${victima?.nombre}.`);
-                    
-                    if (victima) victima.vidas -= 3;
-                    
-                    if (victima && victima.cartaDinamita) this.state.descarte.push(victima.cartaDinamita);
-                    if (victima) victima.tieneDinamita = false;
-                    if (victima) victima.cartaDinamita = null;
-
-                    let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-                    if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA");
-
-                    this.evaluarMuerte(victima);
-                    
-                    if (victima && victima.estaVivo) {
-                        this.evaluarFasePrision(client.sessionId); // Si sobrevivió a la bomba, chequeamos Prisión
-                    } else {
-                        this.avanzarAlSiguienteTurno(client.sessionId); // Si murió, pasamos de turno
-                    }
-                } else {
-                    this.broadcast("notificacion_turno", `💨 ¡Uf! Salió ${carta.valor} de ${carta.palo}. La Dinamita pasa al siguiente jugador.`);
-                    
-                    let siguiente = this.obtenerSiguienteJugadorVivo(client.sessionId);
-                    if (siguiente.jugador) {
-                        siguiente.jugador.tieneDinamita = true;
-                        siguiente.jugador.cartaDinamita = victima?.cartaDinamita;
-                    }
-                    
-                    if (victima) victima.tieneDinamita = false;
-                    if (victima) victima.cartaDinamita = null;
-
-                    this.evaluarFasePrision(client.sessionId); // Sigue su turno, chequeamos Prisión
-                }
-            } 
-            else if (motivoActual === "Prision") {
-                if (carta.palo === "Corazones") {
-                    this.broadcast("notificacion_turno", `❤️ ¡Salió Corazones! ${victima?.nombre} escapó de la cárcel.`);
-                    this.repartirCartas(victima, 2);
-                    this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
-                } else {
-                    this.broadcast("notificacion_turno", `⛓️ ¡Salió ${carta.palo}! ${victima?.nombre} se queda encerrado y pierde el turno.`);
-                    this.avanzarAlSiguienteTurno(client.sessionId);
-                }
-
-                if (victima && victima.cartaPrision) {
-                    this.state.descarte.push(victima.cartaPrision);
-                    victima.cartaPrision = null;
-                    victima.estaEnPrision = false;
-                }
-            }
+            }, 2500); // Fin pausa animación
         });
         
         this.onMessage("responder_indios", (client, datos) => {
