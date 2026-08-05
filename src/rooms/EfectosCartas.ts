@@ -234,7 +234,8 @@ export class DespachadorDeCartas {
         "tienda": new EfectoTiendaGriff(),
         "equiparMustang": new EfectoEquiparMustang(),
         "equiparMira": new EfectoEquiparMira(),
-        "equiparBarril": new EfectoEquiparBarril()
+        "equiparBarril": new EfectoEquiparBarril(),
+        "equiparDinamita": new EfectoEquiparDinamita()
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[]) {
