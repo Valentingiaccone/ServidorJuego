@@ -735,9 +735,15 @@ export class MyRoom extends Room {
                 if (atacante.tieneMira) distancia -= 1;
                 if (victima.tieneMustang) distancia += 1;
 
-                // --- HOOK MODIFICAR DISTANCIA ---
+                // --- HOOK MODIFICAR DISTANCIA (ATACANTE) ---
                 if (pasivaAtacante && pasivaAtacante.modificarDistancia) {
                     distancia = pasivaAtacante.modificarDistancia(this, atacante, victima, distancia);
+                }
+
+                // --- HOOK MODIFICAR DISTANCIA (VÍCTIMA) ---
+                let pasivaVictimaDistancia = this.gestorPersonajes.obtener(victima.personaje);
+                if (pasivaVictimaDistancia && pasivaVictimaDistancia.modificarDistancia) {
+                    distancia = pasivaVictimaDistancia.modificarDistancia(this, atacante, victima, distancia);
                 }
 
                 let alcanceMaximo = atacante.alcanceArma;
