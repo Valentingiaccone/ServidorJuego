@@ -565,8 +565,6 @@ export class MyRoom extends Room {
             let victima = this.state.jugadores.get(client.sessionId);
             let motivoActual = this.state.motivoDesenfundar; 
             
-            // 1. LA MATEMÁTICA PURA
-            // Barril/Prisión = 25% verde. Dinamita = 85% verde (salvarse)
             let probExito = (motivoActual === "Dinamita") ? 0.85 : 0.25;
 
             // --- HOOK CHESTER ---
@@ -575,15 +573,32 @@ export class MyRoom extends Room {
                 probExito = pasivaVictima.modificarSuerte(probExito);
             }
 
-            // Tiramos los dados invisibles
             let fueExito = Math.random() <= probExito;
             
             let textoVisual = fueExito ? "¡ÉXITO!" : "FALLÓ";
             if (motivoActual === "Dinamita") textoVisual = fueExito ? "¡A SALVO!" : "¡BOOM!";
 
+            // --- LA MAGIA DE LA SINCRONIZACIÓN VISUAL ---
+            // Le decimos a todos los clientes en qué punto exacto frenar la ruleta
+            let indiceObjetivo = 0;
+            
+            if (motivoActual === "Dinamita") {
+                let indicesRojos = [4, 12];
+                let indicesVerdes = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15];
+                let arrayElegido = fueExito ? indicesVerdes : indicesRojos;
+                indiceObjetivo = arrayElegido[Math.floor(Math.random() * arrayElegido.length)];
+            } else { 
+                // Barril o Prision
+                let indicesVerdes = [0, 4, 8, 12];
+                let indicesRojos = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
+                let arrayElegido = fueExito ? indicesVerdes : indicesRojos;
+                indiceObjetivo = arrayElegido[Math.floor(Math.random() * arrayElegido.length)];
+            }
+
             this.broadcast("resultado_ruleta", { 
                 exito: fueExito,
-                texto: textoVisual
+                texto: textoVisual,
+                objetivoIndex: indiceObjetivo // Mandamos el índice exacto a Cocos
             });
 
             // 2. EL SUSPENSO (Le damos 4.5 segundos a la animación visual en Cocos)
