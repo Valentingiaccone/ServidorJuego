@@ -609,7 +609,17 @@ export class MyRoom extends Room {
                 this.state.motivoDesenfundar = "";
 
                 this.clock.setTimeout(() => {
-                    // 3. EJECUTAMOS LAS CONSECUENCIAS (Idéntico a antes)
+
+                    // --- HELPER DE SEGURIDAD (Evita que Colyseus crashee el estado) ---
+                    let descartarEquipamientoSeguro = (cartaVieja: any) => {
+                        if (!cartaVieja) return;
+                        let clon = new Carta();
+                        clon.id = cartaVieja.id; clon.nombre = cartaVieja.nombre; clon.descripcion = cartaVieja.descripcion;
+                        clon.palo = cartaVieja.palo; clon.valor = cartaVieja.valor; clon.tipoDeUso = cartaVieja.tipoDeUso; clon.efecto = cartaVieja.efecto;
+                        this.state.descarte.push(clon);
+                    };
+
+                    // 3. EJECUTAMOS LAS CONSECUENCIAS
                     if (motivoActual === "Barril") {
                         if (fueExito) {
                             this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! El Barril salvó a ${victima?.nombre}.`);
@@ -623,10 +633,12 @@ export class MyRoom extends Room {
                         if (!fueExito) { // Explotó
                             this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió Rojo. La dinamita explotó en la cara de ${victima?.nombre}.`);
                             if (victima) victima.vidas -= 3;
-                            if (victima && victima.cartaDinamita) this.state.descarte.push(victima.cartaDinamita);
+                            
+                            if (victima && victima.cartaDinamita) descartarEquipamientoSeguro(victima.cartaDinamita);
                             if (victima) victima.tieneDinamita = false;
                             if (victima) victima.cartaDinamita = null;
 
+                            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
                             if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA");
 
                             this.evaluarMuerte(victima);
@@ -656,8 +668,9 @@ export class MyRoom extends Room {
                             this.broadcast("notificacion_turno", `⛓️ ¡Salió Rojo! ${victima?.nombre} se queda encerrado.`);
                             this.avanzarAlSiguienteTurno(client.sessionId);
                         }
+                        
                         if (victima && victima.cartaPrision) {
-                            this.state.descarte.push(victima.cartaPrision);
+                            descartarEquipamientoSeguro(victima.cartaPrision);
                             victima.cartaPrision = null;
                             victima.estaEnPrision = false;
                         }
