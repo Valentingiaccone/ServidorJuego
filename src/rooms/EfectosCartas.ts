@@ -1,19 +1,20 @@
 // EfectosCartas.ts
 
+import { GestorPersonajes } from "./Personajes.js";
+
 // 1. EL CONTRATO: Todas las cartas que agregues en el futuro DEBEN tener este método "ejecutar"
 export interface IEfectoCarta {
-    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): void;
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): void;
 }
 
 // 2. LAS ESTRATEGIAS: Cada efecto es una clase separada y limpia
 
 export class EfectoCurar implements IEfectoCarta {
-    gestorPersonajes: any;
-    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes) {
         if (jugador.vidas < jugador.vidasMaximas) {
             jugador.vidas++
 
-            let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
+            let pasivaJugadorActual = gestorPersonajes.obtener(jugador.personaje);
             if (pasivaJugadorActual && pasivaJugadorActual.modificarCuraBotiquin){
                 jugador.vidas += pasivaJugadorActual.modificarCuraBotiquin()
             }
@@ -245,10 +246,10 @@ export class DespachadorDeCartas {
         "equiparDinamita": new EfectoEquiparDinamita()
     };
 
-    public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[]) {
+    public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes) {
         let efecto = this.efectos[accion];
         if (efecto) {
-            efecto.ejecutar(sala, client, jugador, carta, indice, parametros);
+            efecto.ejecutar(sala, client, jugador, carta, indice, parametros, gestorPersonajes);
         } else {
             console.log(`⚠️ Efecto no programado o manejado en otra fase: ${accion}`);
         }

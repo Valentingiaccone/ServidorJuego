@@ -172,7 +172,7 @@ export class Trucy implements IPersonaje {
 export class Pam implements IPersonaje {
     nombre = "Pam";
     habilidad = "Beso materno\nCuando usa un botiquin se cura 2 en vez de 1.";
-    vidasBase = 3;
+    vidasBase = 4;
 
     modificarCuraBotiquin(): number {
         return 1

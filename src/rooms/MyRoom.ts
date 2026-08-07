@@ -425,7 +425,7 @@ export class MyRoom extends Room {
                         let partesEfecto = cartaJugada.efecto.split("_");
                         
                         // --- EL DESPACHADOR ACTÚA ---
-                        this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, client, jugador, cartaJugada, indiceCarta, partesEfecto);
+                        this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, client, jugador, cartaJugada, indiceCarta, partesEfecto, this.gestorPersonajes);
                     }
                 }
             }
