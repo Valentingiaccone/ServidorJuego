@@ -959,10 +959,9 @@ export class MyRoom extends Room {
     repartirCartas(jugador: any, cantidad: number) {
         let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
         if (pasivaJugadorActual && pasivaJugadorActual.modificarRepartirCarta) {
-            console.log("se suma 1")
             cantidad += pasivaJugadorActual.modificarRepartirCarta()
         }
-        console.log("se llama la funcion")
+
         for (let i = 0; i < cantidad; i++) {
             if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
                 let arrayDescarte = Array.from(this.state.descarte);
