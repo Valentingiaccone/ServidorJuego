@@ -187,13 +187,13 @@ export class GestorPersonajes {
         this.registrar(new ColeCasiddy());
         this.registrar(new Berry());
         this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
-        this.registrar(new Chester());
-        this.registrar(new Frank());
+        // this.registrar(new Mandy());
+        // this.registrar(new Tralalero());
+        // this.registrar(new Darryl());
+        // this.registrar(new JetpackCat());
+        // this.registrar(new KayFaraday());
+        // this.registrar(new Chester());
+        // this.registrar(new Frank());
         this.registrar(new Trucy());
     }
 
