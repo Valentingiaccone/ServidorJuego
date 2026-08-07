@@ -108,7 +108,7 @@ export class Darryl implements IPersonaje {
 export class JetpackCat implements IPersonaje {
     nombre = "Jetpack Cat";
     habilidad = "Gato en las alturas\nLos demás jugadores lo consideran a distancia +1.";
-    vidasBase = 3;
+    vidasBase = 4;
 
     modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
         // Si alguien lo está mirando a él para atacarlo, le sumamos 1 a la distancia
@@ -122,7 +122,7 @@ export class JetpackCat implements IPersonaje {
 export class KayFaraday implements IPersonaje {
     nombre = "Kay Faraday";
     habilidad = "La ladrona\nCada vez que pierde una vida por un jugador, roba una carta al azar de la mano de ese jugador.";
-    vidasBase = 3;
+    vidasBase = 4;
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
         // Solo roba si el atacante es un jugador real (no la dinamita) y si tiene cartas
