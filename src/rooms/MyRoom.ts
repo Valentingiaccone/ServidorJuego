@@ -549,100 +549,69 @@ export class MyRoom extends Room {
             if (victima.tieneBarril) maxUsos++;
             if (victima.personaje === "Darryl") maxUsos++;
 
-            // Si no tiene barriles o ya gastó todos sus intentos, bloqueamos
             if (maxUsos === 0 || this.state.usosBarril >= maxUsos) return;
 
             this.state.usosBarril++;
-            // 1. Sacamos la carta pero no la revelamos todavía
-            if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
-                let arrayDescarte = Array.from(this.state.descarte);
-                arrayDescarte.sort(() => Math.random() - 0.5);
-                this.state.descarte.clear();
-                arrayDescarte.forEach(carta => this.state.mazo.push(carta));
-            }
-
-            let cartaSacada = this.state.mazo.pop();
-            if (cartaSacada) {
-                // Copiamos los datos a la variable temporal de suspenso
-                this.state.cartaDesenfundada.id = cartaSacada.id;
-                this.state.cartaDesenfundada.nombre = cartaSacada.nombre;
-                this.state.cartaDesenfundada.descripcion = cartaSacada.descripcion;
-                this.state.cartaDesenfundada.palo = cartaSacada.palo;
-                this.state.cartaDesenfundada.valor = cartaSacada.valor;
-                this.state.cartaDesenfundada.tipoDeUso = cartaSacada.tipoDeUso;
-                this.state.cartaDesenfundada.efecto = cartaSacada.efecto;
-                
-                this.state.jugadorDesenfundando = client.sessionId;
-                this.state.motivoDesenfundar = "Barril";
-
-                this.broadcast("notificacion_turno", `🛢️ ¡${victima.nombre} está probando suerte con el Barril!`);
-            }
+            
+            // Solo avisamos y preparamos el estado
+            this.state.jugadorDesenfundando = client.sessionId;
+            this.state.motivoDesenfundar = "Barril";
+            this.broadcast("notificacion_turno", `🛢️ ¡${victima.nombre} tira de la ruleta del Barril!`);
         });
 
         this.onMessage("voltear_carta", (client, datos) => {
             if (this.state.jugadorDesenfundando !== client.sessionId) return;
 
             let victima = this.state.jugadores.get(client.sessionId);
-            let carta = this.state.cartaDesenfundada;
             let motivoActual = this.state.motivoDesenfundar; 
             
-            // 1. LÓGICA VISUAL (Textos y colores correctos para Cocos)
-            let fueExito = false;
-            let textoVisual = "";
-            let valoresFatales = ["2", "3", "4", "5", "6", "7", "8", "9"];
-            let explotoDinamita = false;
+            // 1. LA MATEMÁTICA PURA
+            // Barril/Prisión = 25% verde. Dinamita = 85% verde (salvarse)
+            let probExito = (motivoActual === "Dinamita") ? 0.85 : 0.25;
 
-            if (motivoActual === "Barril" || motivoActual === "Prision") {
-                fueExito = (carta.palo === "Corazones");
-                textoVisual = fueExito ? "¡ÉXITO!" : "FALLÓ";
-            } else if (motivoActual === "Dinamita") {
-                explotoDinamita = (carta.palo === "Picas" && valoresFatales.includes(carta.valor));
-                fueExito = !explotoDinamita; // El éxito en dinamita es NO explotar
-                textoVisual = explotoDinamita ? "¡BOOM!" : "¡A SALVO!";
+            // --- HOOK CHESTER ---
+            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
+            if (pasivaVictima && pasivaVictima.modificarSuerte) {
+                probExito = pasivaVictima.modificarSuerte(probExito);
             }
 
-            this.broadcast("resultado_desenfundar", { 
-                palo: carta.palo, 
-                valor: carta.valor, 
-                nombre: carta.nombre,
+            // Tiramos los dados invisibles
+            let fueExito = Math.random() <= probExito;
+            
+            let textoVisual = fueExito ? "¡ÉXITO!" : "FALLÓ";
+            if (motivoActual === "Dinamita") textoVisual = fueExito ? "¡A SALVO!" : "¡BOOM!";
+
+            this.broadcast("resultado_ruleta", { 
                 exito: fueExito,
                 texto: textoVisual
             });
 
-            // 2. EL SUSPENSO DEL SERVIDOR (Frenamos la ejecución 2.5 segundos)
+            // 2. EL SUSPENSO (Le damos 4.5 segundos a la animación visual en Cocos)
             this.clock.setTimeout(() => {
                 
-                // Mandamos la carta al descarte
-                let cartaAlDescarte = new Carta();
-                cartaAlDescarte.id = carta.id; cartaAlDescarte.nombre = carta.nombre; cartaAlDescarte.descripcion = carta.descripcion; cartaAlDescarte.palo = carta.palo; cartaAlDescarte.valor = carta.valor; cartaAlDescarte.tipoDeUso = carta.tipoDeUso; cartaAlDescarte.efecto = carta.efecto;
-                this.state.descarte.push(cartaAlDescarte);
-
-                // Le decimos a Cocos que CIERRE EL PANEL INMEDIATAMENTE
+                // Le decimos a Cocos que CIERRE EL PANEL 
                 this.state.jugadorDesenfundando = "";
                 this.state.motivoDesenfundar = "";
 
-                // Le damos 500ms a Cocos para respirar antes de encadenar la siguiente fase
                 this.clock.setTimeout(() => {
-                    
-                    // 3. EJECUTAMOS LAS CONSECUENCIAS
+                    // 3. EJECUTAMOS LAS CONSECUENCIAS (Idéntico a antes)
                     if (motivoActual === "Barril") {
                         if (fueExito) {
-                            this.broadcast("notificacion_turno", `❤️ ¡Salió Corazones! El Barril salvó a ${victima?.nombre}.`);
+                            this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! El Barril salvó a ${victima?.nombre}.`);
                             if (this.colaDePeligro && this.colaDePeligro.length > 0) this.avanzarColaDePeligro();
                             else { this.state.jugadorEnPeligro = ""; this.state.atacanteActual = ""; this.state.usosBarril = 0; }
                         } else {
-                            this.broadcast("notificacion_turno", `💥 ¡Falló! Salió ${carta.palo}. El Barril no aguantó el disparo.`);
+                            this.broadcast("notificacion_turno", `💥 ¡Salió Rojo! El Barril no aguantó el disparo.`);
                         }
                     } 
                     else if (motivoActual === "Dinamita") {
-                        if (explotoDinamita) {
-                            this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió ${carta.valor} de ${carta.palo}. La dinamita explotó en la cara de ${victima?.nombre}.`);
+                        if (!fueExito) { // Explotó
+                            this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió Rojo. La dinamita explotó en la cara de ${victima?.nombre}.`);
                             if (victima) victima.vidas -= 3;
                             if (victima && victima.cartaDinamita) this.state.descarte.push(victima.cartaDinamita);
                             if (victima) victima.tieneDinamita = false;
                             if (victima) victima.cartaDinamita = null;
 
-                            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
                             if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA");
 
                             this.evaluarMuerte(victima);
@@ -650,7 +619,7 @@ export class MyRoom extends Room {
                             if (victima && victima.estaVivo) this.evaluarFasePrision(client.sessionId);
                             else this.avanzarAlSiguienteTurno(client.sessionId);
                         } else {
-                            this.broadcast("notificacion_turno", `💨 ¡Uf! Salió ${carta.valor} de ${carta.palo}. La Dinamita pasa al siguiente jugador.`);
+                            this.broadcast("notificacion_turno", `💨 ¡Uf! Salió Verde. La Dinamita pasa al siguiente jugador.`);
                             
                             let siguiente = this.obtenerSiguienteJugadorVivo(client.sessionId);
                             if (siguiente.jugador) {
@@ -665,11 +634,11 @@ export class MyRoom extends Room {
                     } 
                     else if (motivoActual === "Prision") {
                         if (fueExito) {
-                            this.broadcast("notificacion_turno", `❤️ ¡Salió Corazones! ${victima?.nombre} escapó de la cárcel.`);
+                            this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.nombre} escapó de la cárcel.`);
                             this.repartirCartas(victima, 2);
                             this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
                         } else {
-                            this.broadcast("notificacion_turno", `⛓️ ¡Salió ${carta.palo}! ${victima?.nombre} se queda encerrado y pierde el turno.`);
+                            this.broadcast("notificacion_turno", `⛓️ ¡Salió Rojo! ${victima?.nombre} se queda encerrado.`);
                             this.avanzarAlSiguienteTurno(client.sessionId);
                         }
                         if (victima && victima.cartaPrision) {
@@ -678,9 +647,8 @@ export class MyRoom extends Room {
                             victima.estaEnPrision = false;
                         }
                     }
-                }, 500); // Fin pausa encadenamiento
-
-            }, 2500); // Fin pausa animación
+                }, 500); 
+            }, 4500); // <-- 4.5 segundos de ruleta
         });
         
         this.onMessage("responder_indios", (client, datos) => {
@@ -1025,26 +993,8 @@ export class MyRoom extends Room {
     }
 
     prepararDesenfundar(idJugador: string, motivo: string) {
-        if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
-            let arrayDescarte = Array.from(this.state.descarte);
-            arrayDescarte.sort(() => Math.random() - 0.5);
-            this.state.descarte.clear();
-            arrayDescarte.forEach(carta => this.state.mazo.push(carta));
-        }
-
-        let cartaSacada = this.state.mazo.pop();
-        if (cartaSacada) {
-            this.state.cartaDesenfundada.id = cartaSacada.id;
-            this.state.cartaDesenfundada.nombre = cartaSacada.nombre;
-            this.state.cartaDesenfundada.descripcion = cartaSacada.descripcion;
-            this.state.cartaDesenfundada.palo = cartaSacada.palo;
-            this.state.cartaDesenfundada.valor = cartaSacada.valor;
-            this.state.cartaDesenfundada.tipoDeUso = cartaSacada.tipoDeUso;
-            this.state.cartaDesenfundada.efecto = cartaSacada.efecto;
-            
-            this.state.jugadorDesenfundando = idJugador;
-            this.state.motivoDesenfundar = motivo;
-        }
+        this.state.jugadorDesenfundando = idJugador;
+        this.state.motivoDesenfundar = motivo;
     }
 
     obtenerSiguienteJugadorVivo(idActual: string): { id: string, jugador: any } {

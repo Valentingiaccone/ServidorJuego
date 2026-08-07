@@ -18,6 +18,8 @@ export interface IPersonaje {
     puedeDispararBang?(sala: any, atacante: any, victima: any): boolean;
     
     modificarDistancia?(sala: any, observador: any, objetivo: any, distanciaBase: number): number;
+
+    modificarSuerte?(probabilidadBase: number): number
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -136,6 +138,17 @@ export class KayFaraday implements IPersonaje {
     }
 }
 
+export class Chester implements IPersonaje {
+    nombre = "Chester";
+    habilidad = "Ruleta trucada\nDuplica la probabilidad de sacar algo bueno en las ruletas.";
+    vidasBase = 4;
+
+    modificarSuerte(probabilidadBase: number): number {
+        // Multiplica la probabilidad por 2, pero asegurándose de no pasar del 100% (1.0)
+        return Math.min(1.0, probabilidadBase * 2);
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -149,6 +162,7 @@ export class GestorPersonajes {
         this.registrar(new Darryl());
         this.registrar(new JetpackCat());
         this.registrar(new KayFaraday());
+        this.registrar(new Chester());
     }
 
     private registrar(p: IPersonaje) {
