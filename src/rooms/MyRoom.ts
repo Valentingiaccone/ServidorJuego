@@ -921,6 +921,8 @@ export class MyRoom extends Room {
                     let cartaDescartada = jugador.mano[indiceCarta];
                     jugador.mano.splice(indiceCarta, 1);
                     this.state.descarte.push(cartaDescartada);
+
+                    this.broadcast("notificacion_turno", `🗑️ ${jugador.nombre} descartó una carta.`);
                     
                     // --- HOOK DESCARTAR CARTA ---
                     let pasivaJugador = this.gestorPersonajes.obtener(jugador.personaje);
