@@ -8,9 +8,16 @@ export interface IEfectoCarta {
 // 2. LAS ESTRATEGIAS: Cada efecto es una clase separada y limpia
 
 export class EfectoCurar implements IEfectoCarta {
+    gestorPersonajes: any;
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
         if (jugador.vidas < jugador.vidasMaximas) {
-            jugador.vidas++; 
+            jugador.vidas++
+
+            let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
+            if (pasivaJugadorActual && pasivaJugadorActual.modificarCuraBotiquin){
+                jugador.vidas += pasivaJugadorActual.modificarCuraBotiquin()
+            }
+
             console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });

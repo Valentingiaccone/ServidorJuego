@@ -563,9 +563,8 @@ export class MyRoom extends Room {
 
             this.state.usosBarril++;
             
-            // Solo avisamos y preparamos el estado
-            this.state.jugadorDesenfundando = client.sessionId;
-            this.state.motivoDesenfundar = "Barril";
+            this.prepararDesenfundar(client.sessionId, "Barril");
+            
             this.broadcast("notificacion_turno", `🛢️ ¡${victima.nombre} tira de la ruleta del Barril!`);
         });
 
@@ -958,6 +957,11 @@ export class MyRoom extends Room {
     }
 
     repartirCartas(jugador: any, cantidad: number) {
+        let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
+        if (pasivaJugadorActual && pasivaJugadorActual.modificarRepartirCarta) {
+            cantidad += pasivaJugadorActual.modificarRepartirCarta()
+        }
+
         for (let i = 0; i < cantidad; i++) {
             if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
                 let arrayDescarte = Array.from(this.state.descarte);

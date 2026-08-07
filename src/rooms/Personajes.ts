@@ -20,6 +20,10 @@ export interface IPersonaje {
     modificarDistancia?(sala: any, observador: any, objetivo: any, distanciaBase: number): number;
 
     modificarSuerte?(probabilidadBase: number): number
+
+    modificarRepartirCarta?(): number
+
+    modificarCuraBotiquin?(): number
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -155,6 +159,26 @@ export class Frank implements IPersonaje {
     vidasBase = 5;
 }
 
+export class Trucy implements IPersonaje {
+    nombre = "Trucy";
+    habilidad = "Baraja de cartas\nRoba 3 cartas por turno.";
+    vidasBase = 3;
+
+    modificarRepartirCarta(): number {
+        return 1
+    }
+}
+
+export class Pam implements IPersonaje {
+    nombre = "Pam";
+    habilidad = "Beso materno\nCuando usa un botiquin se cura 2 en vez de 1.";
+    vidasBase = 3;
+
+    modificarCuraBotiquin(): number {
+        return 1
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -170,6 +194,7 @@ export class GestorPersonajes {
         this.registrar(new KayFaraday());
         this.registrar(new Chester());
         this.registrar(new Frank());
+        this.registrar(new Trucy());
     }
 
     private registrar(p: IPersonaje) {
