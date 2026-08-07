@@ -149,6 +149,12 @@ export class Chester implements IPersonaje {
     }
 }
 
+export class Frank implements IPersonaje {
+    nombre = "Frank";
+    habilidad = "Esponja\nTiene +1 de vida.";
+    vidasBase = 5;
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -163,6 +169,7 @@ export class GestorPersonajes {
         this.registrar(new JetpackCat());
         this.registrar(new KayFaraday());
         this.registrar(new Chester());
+        this.registrar(new Frank());
     }
 
     private registrar(p: IPersonaje) {

@@ -195,6 +195,16 @@ export class MyRoom extends Room {
                     this.state.mazo.push(diligencia);
                 }
 
+                for (let i = 0; i < 1; i++) {
+                    const diligencia = new Carta();
+                    diligencia.id = `cofreSuperMagico_${i}`;
+                    diligencia.nombre = "Cofre super magico";
+                    diligencia.descripcion = "Roba 3 cartas del mazo.";
+                    diligencia.tipoDeUso = "instantanea";
+                    diligencia.efecto = "robar_3";
+                    this.state.mazo.push(diligencia);
+                }
+
                 for (let i = 0; i < 4; i++) {
                     const cat = new Carta();
                     cat.id = `cocoroch_${i}`;
