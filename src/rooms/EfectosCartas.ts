@@ -13,7 +13,7 @@ export class EfectoCurar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes) {
         let totalVivos = 0;
 
-        sala.jugadores.forEach((j: { estaVivo: any; }) => {
+        sala.state.jugadores.forEach((j: any) => {
             if (j.estaVivo) {
                 totalVivos++;
             }
@@ -84,7 +84,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
         let totalVivos = 0;
 
-        sala.jugadores.forEach((j: { estaVivo: any; }) => {
+        sala.state.jugadores.forEach((j: any) => {
             if (j.estaVivo) {
                 totalVivos++;
             }
