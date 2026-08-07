@@ -131,7 +131,7 @@ export class KayFaraday implements IPersonaje {
             let cartaRobada = atacante.mano.splice(indiceAleatorio, 1)[0];
             victima.mano.push(cartaRobada);
             
-            sala.broadcast("notificacion_turno", `🎭 ¡Mask Demasque perdió vida pero le robó una carta a ${atacante.nombre}!`);
+            sala.broadcast("notificacion_turno", `🎭 ¡Kay Faraday perdió vida pero le robó una carta a ${atacante.nombre}!`);
         }
     }
 }

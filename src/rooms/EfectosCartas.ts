@@ -40,7 +40,7 @@ export class EfectoEquipar implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
-        sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó un(a) ${cartaJugada.nombre}!`);
+        sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
     }
 }
@@ -51,7 +51,7 @@ export class EfectoRobar implements IEfectoCarta {
         sala.repartirCartas(jugador, cantidad);
         
         console.log(`🃏 ${jugador.nombre} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
-        sala.broadcast("notificacion_turno", `🃏 ${jugador.nombre} jugó un(a) ${cartaJugada.nombre}.`);
+        sala.broadcast("notificacion_turno", `🃏 ${jugador.nombre} jugó ${cartaJugada.nombre}.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
         
         jugador.mano.splice(indiceCarta, 1);
@@ -76,7 +76,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
         });
 
         console.log(`✨ ${jugadorQueJuega.nombre} curó a todos.`);
-        sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó un(a) ${cartaJugada.nombre} y curó a todos!`);
+        sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre} y curó a todos!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
         
         jugadorQueJuega.mano.splice(indiceCarta, 1);
@@ -175,7 +175,7 @@ export class EfectoEquiparMustang implements IEfectoCarta {
         jugador.cartaMustang = cartaJugada;
         jugador.mano.splice(indiceCarta, 1);
         
-        sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Mustang.`);
+        sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
     }
 }
