@@ -169,7 +169,7 @@ export class MyRoom extends Room {
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `botiquin_${c}`;
                     nuevaCarta.nombre = "Botiquín";
-                    nuevaCarta.descripcion = "Recupera 1 vida.";
+                    nuevaCarta.descripcion = "Recupera 1 vida (No funciona cuando quedan 2 vivos).";
                     nuevaCarta.tipoDeUso = "instantanea";
                     nuevaCarta.efecto = "curar_1";
                     this.state.mazo.push(nuevaCarta);
@@ -227,7 +227,7 @@ export class MyRoom extends Room {
                     const poco = new Carta();
                     poco.id = `musicoterapia_${i}`;
                     poco.nombre = "Musicoterapia";
-                    poco.descripcion = "Recupera 1 vida a todos los jugadores vivos en la mesa.";
+                    poco.descripcion = "Recupera 1 vida a todos los jugadores vivos en la mesa (No funciona cuando quedan 2 vivos).";
                     poco.tipoDeUso = "instantanea";
                     poco.efecto = "curarATodos";
                     this.state.mazo.push(poco);

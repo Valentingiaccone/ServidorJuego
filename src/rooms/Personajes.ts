@@ -166,7 +166,7 @@ export class Frank implements IPersonaje {
 
 export class Trucy implements IPersonaje {
     nombre = "Trucy";
-    habilidad = "Baraja de cartas:\nRoba 3 cartas por turno.";
+    habilidad = "Baraja de cartas:\nCada vez que roba cartas, roba una extra.";
     vidasBase = 3;
 
     modificarRepartirCarta(): number {

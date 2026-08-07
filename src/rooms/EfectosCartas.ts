@@ -11,6 +11,19 @@ export interface IEfectoCarta {
 
 export class EfectoCurar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes) {
+        let totalVivos = 0;
+
+        sala.jugadores.forEach((j: { estaVivo: any; }) => {
+            if (j.estaVivo) {
+                totalVivos++;
+            }
+        });
+
+        if (totalVivos == 2){
+            client.send("alerta_personal", "No se puede usar curacion cuando quedan 2 jugadores.");
+            return
+        }
+        
         if (jugador.vidas < jugador.vidasMaximas) {
             jugador.vidas++
 
@@ -69,6 +82,19 @@ export class EfectoRobar implements IEfectoCarta {
 
 export class EfectoCurarATodos implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+        let totalVivos = 0;
+
+        sala.jugadores.forEach((j: { estaVivo: any; }) => {
+            if (j.estaVivo) {
+                totalVivos++;
+            }
+        });
+
+        if (totalVivos == 2){
+            client.send("alerta_personal", "No se puede usar curacion cuando quedan 2 jugadores.");
+            return
+        }
+        
         let alguienNecesitaCura = false;
         sala.state.jugadores.forEach((j: any) => {
             if (j.estaVivo && j.vidas < j.vidasMaximas) alguienNecesitaCura = true;
