@@ -661,8 +661,8 @@ export class MyRoom extends Room {
                             victima.estaEnPrision = false;
                         }
                     }
-                }, 500); 
-            }, 4500); // <-- 4.5 segundos de ruleta
+                }, 650); 
+            }, 5000); //<- ruleta
         });
         
         this.onMessage("responder_indios", (client, datos) => {
@@ -1018,17 +1018,19 @@ export class MyRoom extends Room {
         let victima = this.state.jugadores.get(idJugador);
         
         // 1. Definir probabilidad base
-        let probExito = (motivo === "Dinamita") ? 0.85 : 0.25;
+        let puntosVerdes = (motivo === "Dinamita") ? 14 : 4;
 
         // 2. Aplicar la pasiva de Chester (o cualquier otro personaje)
-        let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-        if (pasivaVictima && pasivaVictima.modificarSuerte) {
-            probExito = pasivaVictima.modificarSuerte(probExito); // Multiplicará 0.25 x 2 = 0.50
+        let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
+        if (motivo !== "Dinamita" && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
+            puntosVerdes += personajeVictima.modificarSuerteRuletaNormal();
+        } else if (motivo === "Dinamita" && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
+            puntosVerdes += personajeVictima.modificarSuerteRuletaDinamita();
         }
 
         // 3. Traducir probabilidad a cantidad exacta de puntos sobre 16
         let totalPuntos = 16;
-        let cantidadVerdes = Math.round(totalPuntos * probExito);
+        let cantidadVerdes = puntosVerdes
 
         // 4. Crear el array y llenarlo con la cantidad exacta de verdes y rojos
         let layout = [];

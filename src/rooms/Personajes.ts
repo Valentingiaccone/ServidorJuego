@@ -19,7 +19,9 @@ export interface IPersonaje {
     
     modificarDistancia?(sala: any, observador: any, objetivo: any, distanciaBase: number): number;
 
-    modificarSuerte?(probabilidadBase: number): number
+    modificarSuerteRuletaNormal?(): number
+
+    modificarSuerteRuletaDinamita?(): number
 
     modificarRepartirCarta?(): number
 
@@ -30,7 +32,7 @@ export interface IPersonaje {
 
 export class ColeCasiddy implements IPersonaje {
     nombre = "Cole Casiddy";
-    habilidad = "Recarga en la recámara\nCada vez que pierde 1 vida, roba inmediatamente 1 carta.";
+    habilidad = "Recarga en la recámara:\nCada vez que pierde 1 vida, roba inmediatamente 1 carta.";
     vidasBase = 4;
 
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
@@ -48,7 +50,7 @@ export class ColeCasiddy implements IPersonaje {
 
 export class Berry implements IPersonaje {
     nombre = "Berry";
-    habilidad = "Cartas curativas\nEn su turno, cada 2 cartas que descarta, recupera 1 de vida.";
+    habilidad = "Cartas curativas:\nEn su turno, cada 2 cartas que descarta, recupera 1 de vida.";
     vidasBase = 4;
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
@@ -74,7 +76,7 @@ export class Berry implements IPersonaje {
 
 export class Maton implements IPersonaje {
     nombre = "Maton";
-    habilidad = "Seisei koi kiki\nPuede jugar cualquier cantidad de BANG! durante su turno.";
+    habilidad = "Seisei koi kiki:\nPuede jugar cualquier cantidad de BANG! durante su turno.";
     vidasBase = 4;
 
     puedeDispararBang(_sala: any, _atacante: any, _victima: any): boolean {
@@ -84,7 +86,7 @@ export class Maton implements IPersonaje {
 
 export class Mandy implements IPersonaje {
     nombre = "Mandy";
-    habilidad = "Concentración\nConsidera a todos los demás jugadores a distancia -1.";
+    habilidad = "Concentración:\nConsidera a todos los demás jugadores a distancia -1.";
     vidasBase = 4;
 
     modificarDistancia(_sala: any, _observador: any, _objetivo: any, distanciaBase: number): number {
@@ -94,7 +96,7 @@ export class Mandy implements IPersonaje {
 
 export class Tralalero implements IPersonaje {
     nombre = "Tralalero";
-    habilidad = "Los tralaleritos dicen tralalá\nAl pasar el turno, si no tiene cartas en la mano, recupera 1 vida.";
+    habilidad = "Los tralaleritos dicen tralalá:\nAl pasar el turno, si no tiene cartas en la mano, recupera 1 vida.";
     vidasBase = 4;
 
     onPasarTurno(sala: any, jugador: any) {
@@ -107,13 +109,13 @@ export class Tralalero implements IPersonaje {
 
 export class Darryl implements IPersonaje {
     nombre = "Darryl";
-    habilidad = "Darryl el Barryl\nTiene el efecto de la carta Barril siempre activo, si se equipa un barril, es como si tuviera dos.";
+    habilidad = "Darryl el Barryl:\nTiene el efecto de la carta Barril siempre activo, si se equipa un barril, es como si tuviera dos.";
     vidasBase = 4;
 }
 
 export class JetpackCat implements IPersonaje {
     nombre = "Jetpack Cat";
-    habilidad = "Gato en las alturas\nLos demás jugadores lo consideran a distancia +1.";
+    habilidad = "Gato en las alturas:\nLos demás jugadores lo consideran a distancia +1.";
     vidasBase = 4;
 
     modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
@@ -127,7 +129,7 @@ export class JetpackCat implements IPersonaje {
 
 export class KayFaraday implements IPersonaje {
     nombre = "Kay Faraday";
-    habilidad = "La ladrona\nCada vez que pierde una vida por un jugador, roba una carta al azar de la mano de ese jugador.";
+    habilidad = "La ladrona:\nCada vez que pierde una vida por un jugador, roba una carta al azar de la mano de ese jugador.";
     vidasBase = 4;
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
@@ -144,24 +146,27 @@ export class KayFaraday implements IPersonaje {
 
 export class Chester implements IPersonaje {
     nombre = "Chester";
-    habilidad = "Ruleta trucada\nDuplica la probabilidad de sacar algo bueno en las ruletas.";
+    habilidad = "Ruleta trucada:\nTiene mucha mas suerte cuando usa la ruleta.";
     vidasBase = 4;
 
-    modificarSuerte(probabilidadBase: number): number {
-        // Multiplica la probabilidad por 2, pero asegurándose de no pasar del 100% (1.0)
-        return Math.min(1.0, probabilidadBase * 2);
+    modificarSuerteRuletaNormal(): number {
+        return 4
+    }
+
+    modificarSuerteRuletaDinamita(): number {
+        return 1
     }
 }
 
 export class Frank implements IPersonaje {
     nombre = "Frank";
-    habilidad = "Esponja\nTiene +1 de vida.";
+    habilidad = "Esponja:\nTiene +1 de vida.";
     vidasBase = 5;
 }
 
 export class Trucy implements IPersonaje {
     nombre = "Trucy";
-    habilidad = "Baraja de cartas\nRoba 3 cartas por turno.";
+    habilidad = "Baraja de cartas:\nRoba 3 cartas por turno.";
     vidasBase = 3;
 
     modificarRepartirCarta(): number {
@@ -171,7 +176,7 @@ export class Trucy implements IPersonaje {
 
 export class Pam implements IPersonaje {
     nombre = "Pam";
-    habilidad = "Beso materno\nCuando usa un botiquin se cura 2 en vez de 1.";
+    habilidad = "Beso materno:\nCuando usa un botiquin se cura 2 en vez de 1.";
     vidasBase = 4;
 
     modificarCuraBotiquin(): number {
