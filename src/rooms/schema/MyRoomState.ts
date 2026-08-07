@@ -47,7 +47,6 @@ export class MyRoomState extends Schema {
     @type("string") jugadorDebeDescartar: string = "";
     @type("string") atacanteActual: string = "";
     @type("string") jugadorBajoAtaqueIndio: string = "";
-
     @type([Carta]) mazo = new ArraySchema<Carta>();
     @type([Carta]) descarte = new ArraySchema<Carta>();
     @type([Carta]) cartasTienda = new ArraySchema<Carta>();
@@ -58,4 +57,5 @@ export class MyRoomState extends Schema {
     @type("string") motivoDesenfundar: string = ""; // Puede ser "Barril", "Prision" o "Dinamita"
     @type(Carta) cartaDesenfundada: Carta = new Carta();
     @type("number") usosBarril: number = 0;
+    @type(["boolean"]) layoutRuleta = new ArraySchema<boolean>();
 }

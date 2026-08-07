@@ -565,35 +565,12 @@ export class MyRoom extends Room {
             let victima = this.state.jugadores.get(client.sessionId);
             let motivoActual = this.state.motivoDesenfundar; 
             
-            let probExito = (motivoActual === "Dinamita") ? 0.85 : 0.25;
-
-            // --- HOOK CHESTER ---
-            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-            if (pasivaVictima && pasivaVictima.modificarSuerte) {
-                probExito = pasivaVictima.modificarSuerte(probExito);
-            }
-
-            let fueExito = Math.random() <= probExito;
+            // LA MAGIA AQUÍ: Elegimos un índice al azar de la ruleta generada
+            let indiceObjetivo = Math.floor(Math.random() * 16);
+            let fueExito = this.state.layoutRuleta[indiceObjetivo];
             
             let textoVisual = fueExito ? "¡ÉXITO!" : "FALLÓ";
             if (motivoActual === "Dinamita") textoVisual = fueExito ? "¡A SALVO!" : "¡BOOM!";
-
-            // --- LA MAGIA DE LA SINCRONIZACIÓN VISUAL ---
-            // Le decimos a todos los clientes en qué punto exacto frenar la ruleta
-            let indiceObjetivo = 0;
-            
-            if (motivoActual === "Dinamita") {
-                let indicesRojos = [4, 12];
-                let indicesVerdes = [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15];
-                let arrayElegido = fueExito ? indicesVerdes : indicesRojos;
-                indiceObjetivo = arrayElegido[Math.floor(Math.random() * arrayElegido.length)];
-            } else { 
-                // Barril o Prision
-                let indicesVerdes = [0, 4, 8, 12];
-                let indicesRojos = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
-                let arrayElegido = fueExito ? indicesVerdes : indicesRojos;
-                indiceObjetivo = arrayElegido[Math.floor(Math.random() * arrayElegido.length)];
-            }
 
             this.broadcast("resultado_ruleta", { 
                 exito: fueExito,
@@ -1023,6 +1000,34 @@ export class MyRoom extends Room {
     prepararDesenfundar(idJugador: string, motivo: string) {
         this.state.jugadorDesenfundando = idJugador;
         this.state.motivoDesenfundar = motivo;
+
+        let victima = this.state.jugadores.get(idJugador);
+        
+        // 1. Definir probabilidad base
+        let probExito = (motivo === "Dinamita") ? 0.85 : 0.25;
+
+        // 2. Aplicar la pasiva de Chester (o cualquier otro personaje)
+        let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
+        if (pasivaVictima && pasivaVictima.modificarSuerte) {
+            probExito = pasivaVictima.modificarSuerte(probExito); // Multiplicará 0.25 x 2 = 0.50
+        }
+
+        // 3. Traducir probabilidad a cantidad exacta de puntos sobre 16
+        let totalPuntos = 16;
+        let cantidadVerdes = Math.round(totalPuntos * probExito);
+
+        // 4. Crear el array y llenarlo con la cantidad exacta de verdes y rojos
+        let layout = [];
+        for (let i = 0; i < totalPuntos; i++) {
+            layout.push(i < cantidadVerdes); // true si es verde, false si es rojo
+        }
+
+        // 5. Mezclar el array (sin patrones, esparcidos aleatoriamente)
+        layout.sort(() => Math.random() - 0.5);
+
+        // 6. Guardarlo en el estado sincronizado
+        this.state.layoutRuleta.clear();
+        layout.forEach(esVerde => this.state.layoutRuleta.push(esVerde));
     }
 
     obtenerSiguienteJugadorVivo(idActual: string): { id: string, jugador: any } {
