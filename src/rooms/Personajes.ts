@@ -211,6 +211,18 @@ export class HongoUp implements IPersonaje {
     }
 }
 
+export class Hongo implements IPersonaje {
+    nombre = "Hongo";
+    habilidad = "NEEDAMUSHROOM:\nCuando otro personaje muere, roba 3 cartas.";
+    vidasBase = 4;
+
+    onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
+        const cartas: number = 3
+        sala.repartirCartas(jugador, cartas);
+        sala.broadcast("notificacion_turno", `🍄 Hongo robó ${cartas} cartas por su pasiva.`);
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -225,10 +237,11 @@ export class GestorPersonajes {
         // this.registrar(new JetpackCat());
         // this.registrar(new KayFaraday());
         // this.registrar(new Chester());
-        this.registrar(new Frank());
+        // this.registrar(new Frank());
         this.registrar(new Pam());
         this.registrar(new Trucy());
         this.registrar(new HongoUp());
+        this.registrar(new Hongo());
     }
 
     private registrar(p: IPersonaje) {
