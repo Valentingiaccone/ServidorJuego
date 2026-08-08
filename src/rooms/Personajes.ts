@@ -268,6 +268,7 @@ export class Mikotoba implements IPersonaje {
         } else {
             this.nombre = "Mikotoba flaco"
         }
+        jugador.personaje = this.nombre
     }
 }
 
