@@ -6,8 +6,6 @@ export class Carta extends Schema {
     @type("string") descripcion: string = "";
     @type("string") tipoDeUso: string = ""; // Ej: "instantanea", "objetivo", "reaccion"
     @type("string") efecto: string = "";    // Ej: "curar_1", "dano_1"
-    @type("string") palo: string = "";  // "Corazones", "Picas", "Diamantes", "Treboles"
-    @type("string") valor: string = "";
     // ---------------------------------------------
 }
 

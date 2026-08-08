@@ -348,31 +348,6 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 });
 
-                let palos = ["Corazones", "Picas", "Diamantes", "Treboles"];
-                let valores = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
-                let mazoPokerVirtual: any[] = [];
-                
-                // Creamos 2 barajas de póker enteras (104 cartas virtuales) para que no falten
-                for (let d = 0; d < 2; d++) {
-                    for (let p of palos) {
-                        for (let v of valores) {
-                            mazoPokerVirtual.push({ palo: p, valor: v });
-                        }
-                    }
-                }
-                
-                // Mezclamos la baraja virtual
-                mazoPokerVirtual.sort(() => Math.random() - 0.5);
-
-                // Le pegamos una identidad a cada carta generada de nuestro juego
-                this.state.mazo.forEach(carta => {
-                    let cartaPoker = mazoPokerVirtual.pop();
-                    if (cartaPoker) {
-                        carta.palo = cartaPoker.palo;
-                        carta.valor = cartaPoker.valor;
-                    }
-                });
-
                 let arrayTemporal = Array.from(this.state.mazo);
                 arrayTemporal.sort(() => Math.random() - 0.5);
                 this.state.mazo.clear();
@@ -489,7 +464,7 @@ export class MyRoom extends Room {
 
             if (accion === "robar") {
                 atacante.mano.push(cartaAfectada);
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion, palo: cartaSabotaje.palo, valor: cartaSabotaje.valor });
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion});
                 this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
             }
 
@@ -506,7 +481,7 @@ export class MyRoom extends Room {
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 this.state.descarte.push(cartaUsada);
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, palo: cartaUsada.palo, valor: cartaUsada.valor });
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion});
 
                 this.state.jugadorDebeDescartar = datos.idObjetivo;
                 this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
@@ -611,7 +586,7 @@ export class MyRoom extends Room {
                         if (!cartaVieja) return;
                         let clon = new Carta();
                         clon.id = cartaVieja.id; clon.nombre = cartaVieja.nombre; clon.descripcion = cartaVieja.descripcion;
-                        clon.palo = cartaVieja.palo; clon.valor = cartaVieja.valor; clon.tipoDeUso = cartaVieja.tipoDeUso; clon.efecto = cartaVieja.efecto;
+                        clon.tipoDeUso = cartaVieja.tipoDeUso; clon.efecto = cartaVieja.efecto;
                         this.state.descarte.push(clon);
                     };
 
@@ -763,7 +738,7 @@ export class MyRoom extends Room {
                     this.state.atacanteActual = client.sessionId;
                     
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le disparó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, palo: carta.palo, valor: carta.valor });
+                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion});
                 }
             }
         });
@@ -777,7 +752,7 @@ export class MyRoom extends Room {
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 this.state.descarte.push(cartaUsada);
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, palo: cartaUsada.palo, valor: cartaUsada.valor });
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion});
 
                 // Seteamos quién empieza defendiéndose y quién es el oponente
                 this.state.jugadorEnDuelo = datos.idObjetivo;
@@ -818,7 +793,7 @@ export class MyRoom extends Room {
                 victima.estaEnPrision = true;
                 victima.cartaPrision = cartaUsada;
                 
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, palo: cartaUsada.palo, valor: cartaUsada.valor });
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion});
                 this.broadcast("notificacion_turno", `⛓️ ¡${atacante.nombre} mandó a la cárcel a ${victima.nombre}!`);
             }
         });
@@ -877,7 +852,7 @@ export class MyRoom extends Room {
                         this.state.descarte.push(carta);
                         
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
-                        this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, palo: carta.palo, valor: carta.valor });
+                        this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion});
                     }
                 } 
                 else {
