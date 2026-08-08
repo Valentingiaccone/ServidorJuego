@@ -31,6 +31,9 @@ export class EfectoCurar implements IEfectoCarta {
             if (pasivaJugadorActual && pasivaJugadorActual.modificarCuraBotiquin){
                 jugador.vidas += pasivaJugadorActual.modificarCuraBotiquin()
             }
+            if (pasivaJugadorActual && pasivaJugadorActual.onRecibirCuracion){
+                pasivaJugadorActual.onRecibirCuracion(jugador)
+            }
 
             if (jugador.vidas >= jugador.vidasMaximas){
                 jugador.vidas = jugador.vidasMaximas
@@ -85,7 +88,7 @@ export class EfectoRobar implements IEfectoCarta {
 }
 
 export class EfectoCurarATodos implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes) {
         let totalVivos = 0;
 
         sala.state.jugadores.forEach((j: any) => {
@@ -106,11 +109,17 @@ export class EfectoCurarATodos implements IEfectoCarta {
 
         if (!alguienNecesitaCura) {
             client.send("alerta_personal", "Todos los jugadores vivos ya tienen la salud al máximo.");
-            return; 
+            return;
         }
 
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo && j.vidas < j.vidasMaximas) j.vidas++;
+            if (j.estaVivo && j.vidas < j.vidasMaximas){
+                j.vidas++;
+                let pasivaJugadorActual = gestorPersonajes.obtener(j.personaje);
+                if (pasivaJugadorActual && pasivaJugadorActual.onRecibirCuracion){
+                    pasivaJugadorActual.onRecibirCuracion(j)
+                }
+            } 
         });
 
         console.log(`✨ ${jugadorQueJuega.nombre} curó a todos.`);

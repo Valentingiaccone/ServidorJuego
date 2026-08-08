@@ -29,6 +29,8 @@ export interface IPersonaje {
     modificarCartasEnManoAlPasarTurno?(): number
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugadorConPasiva: any): void
+
+    onRecibirCuracion?(jugador: any): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -223,6 +225,47 @@ export class Hongo implements IPersonaje {
     }
 }
 
+export class Mikotoba implements IPersonaje {
+    nombre = "Mikotoba gordo";
+    habilidad = "Cambio de masa:\nSi tiene 3 o mas vidas, se vuelve GORDO, si no se vuelve FLACO, estando GORDO roba una carta extra cada que roba, pero la carta Fallo no sirve, estando FLACO, los botiquines curan 2 y al recibir daño roba una carta.";
+    vidasBase = 4;
+
+    onRecibirCuracion(jugador: any): void {
+        if (jugador.vidas >= 3){
+            this.nombre = "Mikotoba gordo"
+        } else {
+            this.nombre = "Mikotoba flaco"
+        }
+    }
+
+    modificarRepartirCarta(): number {
+        if (this.nombre == "Mikotoba gordo"){
+            return 1
+        } else {
+            return 0
+        }
+    }
+
+    modificarCuraBotiquin(): number {
+        if (this.nombre == "Mikotoba gordo"){
+            return 0
+        } else {
+            return 1
+        }
+    }
+
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+        if (this.nombre == "Mikotoba gordo"){
+            return
+        } else {
+            if (victima.vidas > 0) {
+                sala.repartirCartas(victima, 1);
+                sala.broadcast("notificacion_turno", `Mikotoba robó 1 carta tras recibir daño por ${causa}.`);
+            }
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -238,10 +281,11 @@ export class GestorPersonajes {
         // this.registrar(new KayFaraday());
         // this.registrar(new Chester());
         // this.registrar(new Frank());
-        this.registrar(new Pam());
+        // this.registrar(new Pam());
         this.registrar(new Trucy());
         this.registrar(new HongoUp());
         this.registrar(new Hongo());
+        this.registrar(new Mikotoba());
     }
 
     private registrar(p: IPersonaje) {
