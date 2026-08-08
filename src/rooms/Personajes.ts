@@ -314,7 +314,13 @@ export class GestorPersonajes {
     }
 
     public obtenerTodosParaRepartir(): any[] {
-        let lista = Object.values(this.personajes);
+        // 1. Extraemos los valores, pero los pasamos por un Set para borrar duplicados
+        let valoresUnicos = new Set(Object.values(this.personajes));
+        
+        // 2. Volvemos a convertir ese Set en un Array normal
+        let lista = Array.from(valoresUnicos);
+        
+        // 3. Mezclamos la lista limpia
         for (let i = lista.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [lista[i], lista[j]] = [lista[j], lista[i]];
