@@ -238,15 +238,15 @@ export class MyRoom extends Room {
                     this.state.mazo.push(poco);
                 }
 
-                for (let i = 0; i < 1; i++) { 
-                    const tira = new Carta();
-                    tira.id = `tiratachuela_${i}`;
-                    tira.nombre = "Tiratachuela";
-                    tira.descripcion = "Dispara a todos los demás jugadores uno por uno.";
-                    tira.tipoDeUso = "instantanea";
-                    tira.efecto = "tiratachuela";   
-                    this.state.mazo.push(tira);
-                }
+                // for (let i = 0; i < 1; i++) { 
+                //     const tira = new Carta();
+                //     tira.id = `tiratachuela_${i}`;
+                //     tira.nombre = "Tiratachuela";
+                //     tira.descripcion = "Dispara a todos los demás jugadores uno por uno.";
+                //     tira.tipoDeUso = "instantanea";
+                //     tira.efecto = "tiratachuela";   
+                //     this.state.mazo.push(tira);
+                // }
 
                 for (let i = 0; i < 2; i++) { 
                     const indios = new Carta();
