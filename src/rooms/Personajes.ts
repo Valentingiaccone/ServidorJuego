@@ -297,8 +297,8 @@ export class GestorPersonajes {
         // this.registrar(new Trucy());
         this.registrar(new HongoUp());
         this.registrar(new Hongo());
-        this.registrar(new Mikotoba());
         this.registrar(new Lesly());
+        this.registrar(new Mikotoba());
     }
 
     private registrar(p: IPersonaje) {
