@@ -9,7 +9,6 @@ export interface IPersonaje {
     // Hooks con esteroides (Ganchos a eventos del juego)
     // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
     onRecibirDano?(sala: any, victima: any, atacante: any, causa: string): void;
-    
     // motivo puede ser: "VOLUNTARIO", "COCOROCH", "EXCESO_CARTAS"
     onDescartarCarta?(sala: any, jugador: any, cartaDescartada: any, motivo: string): void;
     
@@ -197,7 +196,7 @@ export class HongoUp implements IPersonaje {
     habilidad = "Descomposicion:\nCuando otro personaje muere, aumenta su salud maxima en 1 y se cura 2 de vida.";
     vidasBase = 4;
 
-    onMuereOtroPersonaje(sala: any, jugador: any): void {
+    onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         let curacion: number = 0
         jugador.vidasMaximas++
         if (jugador.vidas < jugador.vidasMaximas){
