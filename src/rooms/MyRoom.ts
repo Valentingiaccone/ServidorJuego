@@ -392,17 +392,22 @@ export class MyRoom extends Room {
 
         this.onMessage("pasar_turno", (client, message) => {
             if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId) {
-                
+
+                let modificacion: number = 0
                 let jugadorActual = this.state.jugadores.get(client.sessionId);
+                let pasivaJugadorActual = this.gestorPersonajes.obtener(jugadorActual.personaje);
+                if (pasivaJugadorActual && pasivaJugadorActual.modificarCartasEnManoAlPasarTurno) {
+                    modificacion = pasivaJugadorActual.modificarCartasEnManoAlPasarTurno();
+                }
+
                 if (jugadorActual) {
-                    if (jugadorActual.mano.length > jugadorActual.vidas) {
+                    if (jugadorActual.mano.length > jugadorActual.vidas + modificacion) {
                         let excedente = jugadorActual.mano.length - jugadorActual.vidas;
                         client.send("alerta_personal", `Tenés demasiadas cartas. Descartá ${excedente} para pasar el turno.`);
                         return; 
                     }
 
                     // --- HOOK PASAR TURNO ---
-                    let pasivaJugadorActual = this.gestorPersonajes.obtener(jugadorActual.personaje);
                     if (pasivaJugadorActual && pasivaJugadorActual.onPasarTurno) {
                         pasivaJugadorActual.onPasarTurno(this, jugadorActual);
                     }

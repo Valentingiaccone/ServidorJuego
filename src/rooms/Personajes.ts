@@ -26,6 +26,8 @@ export interface IPersonaje {
     modificarRepartirCarta?(): number
 
     modificarCuraBotiquin?(): number
+
+    modificarCartasEnManoAlPasarTurno?(): number
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -166,11 +168,15 @@ export class Frank implements IPersonaje {
 
 export class Trucy implements IPersonaje {
     nombre = "Trucy";
-    habilidad = "Baraja de cartas:\nCada vez que roba cartas, roba una extra.";
-    vidasBase = 3;
+    habilidad = "Baraja de cartas:\nCada vez que roba cartas, roba una extra, pero para pasar el turno, sus cartas en mano deben ser su salud - 1.";
+    vidasBase = 4;
 
     modificarRepartirCarta(): number {
         return 1
+    }
+
+    modificarCartasEnManoAlPasarTurno(): number {
+        return -1
     }
 }
 
