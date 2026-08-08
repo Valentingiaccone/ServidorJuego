@@ -231,39 +231,31 @@ export class Mikotoba implements IPersonaje {
     vidasBase = 4;
 
     onRecibirCuracion(jugador: any): void {
-        console.log("Recibió curacion, actualizo el nombre...")
         this.actualizarNombre(jugador)
     }
 
     modificarRepartirCarta(): number {
         if (this.nombre == "Mikotoba gordo"){
-            console.log("Repartir siendo gordo")
             return 1
         } else {
-            console.log("Repartir siendo flaco")
             return 0
         }
     }
 
     modificarCuraBotiquin(): number {
         if (this.nombre == "Mikotoba gordo"){
-            console.log("Cura botiquin siendo gordo")
             return 0
         } else {
-            console.log("Cura botiquin siendo flaco")
             return 1
         }
     }
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
-        console.log("Mikotoba recibe daño, causa:", causa, "llamo a la funcion...")
         this.actualizarNombre(victima)
         if (this.nombre == "Mikotoba gordo"){
-            console.log("Recibe daño siendo gordo")
             return
         } else {
             if (victima.vidas > 0) {
-                console.log("Recibe daño siendo flaco")
                 sala.repartirCartas(victima, 1);
                 sala.broadcast("notificacion_turno", `Mikotoba robó 1 carta tras recibir daño por ${causa}.`);
             }
@@ -271,13 +263,11 @@ export class Mikotoba implements IPersonaje {
     }
 
     private actualizarNombre(jugador: any): void {
-        console.log("El personaje mikotoba tiene vidas:", jugador.vidas)
         if (jugador.vidas >= 3){
             this.nombre = "Mikotoba gordo"
         } else {
             this.nombre = "Mikotoba flaco"
         }
-        console.log("Personaje actualizado a:", this.nombre)
         jugador.personaje = this.nombre
     }
 }
@@ -287,17 +277,17 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy());
-        // this.registrar(new Berry());
-        // this.registrar(new Maton());
-        // this.registrar(new Mandy());
-        // this.registrar(new Tralalero());
-        // this.registrar(new Darryl());
-        // this.registrar(new JetpackCat());
-        // this.registrar(new KayFaraday());
-        // this.registrar(new Chester());
-        // this.registrar(new Frank());
-        // this.registrar(new Pam());
+        this.registrar(new ColeCasiddy());
+        this.registrar(new Berry());
+        this.registrar(new Maton());
+        this.registrar(new Mandy());
+        this.registrar(new Tralalero());
+        this.registrar(new Darryl());
+        this.registrar(new JetpackCat());
+        this.registrar(new KayFaraday());
+        this.registrar(new Chester());
+        this.registrar(new Frank());
+        this.registrar(new Pam());
         this.registrar(new Trucy());
         this.registrar(new HongoUp());
         this.registrar(new Hongo());
