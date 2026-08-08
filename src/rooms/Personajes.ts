@@ -306,6 +306,10 @@ export class GestorPersonajes {
 
     private registrar(p: IPersonaje) {
         this.personajes[p.nombre] = p;
+
+        if (p.nombre === "Mikotoba gordo") {
+            this.personajes["Mikotoba flaco"] = p;
+        }
     }
 
     public obtener(nombre: string): IPersonaje | null {
