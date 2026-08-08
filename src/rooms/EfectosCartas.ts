@@ -32,6 +32,10 @@ export class EfectoCurar implements IEfectoCarta {
                 jugador.vidas += pasivaJugadorActual.modificarCuraBotiquin()
             }
 
+            if (jugador.vidas >= jugador.vidasMaximas){
+                jugador.vidas = jugador.vidasMaximas
+            }
+
             console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
