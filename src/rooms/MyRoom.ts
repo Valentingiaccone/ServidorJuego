@@ -88,6 +88,10 @@ export class MyRoom extends Room {
                 if (j.estaVivo) {
                     vivos[j.rol as keyof typeof vivos]++;
                     totalVivos++;
+                    let pasivaJugadorActual = this.gestorPersonajes.obtener(j.personaje);
+                    if (pasivaJugadorActual && pasivaJugadorActual.onMuereOtroPersonaje) {
+                        pasivaJugadorActual.onMuereOtroPersonaje();
+                    }
                 }
             });
 

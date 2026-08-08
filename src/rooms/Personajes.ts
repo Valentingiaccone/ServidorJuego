@@ -28,6 +28,8 @@ export interface IPersonaje {
     modificarCuraBotiquin?(): number
 
     modificarCartasEnManoAlPasarTurno?(): number
+
+    onMuereOtroPersonaje?(sala: any, jugador: any): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -190,6 +192,26 @@ export class Pam implements IPersonaje {
     }
 }
 
+export class HongoUp implements IPersonaje {
+    nombre = "Hongo 1Up";
+    habilidad = "Descomposicion:\nCuando otro personaje muere, aumenta su salud maxima en 1 y se cura 2 de vida.";
+    vidasBase = 4;
+
+    onMuereOtroPersonaje(sala: any, jugador: any): void {
+        let curacion: number = 0
+        jugador.vidasMaximas++
+        if (jugador.vidas < jugador.vidasMaximas){
+            jugador.vidas++
+            curacion++
+        }
+        if (jugador.vidas < jugador.vidasMaximas){
+            jugador.vidas++
+            curacion++
+        }
+        sala.broadcast("notificacion_turno", `🍄 Hongo 1Up se curó ${curacion} y aumentó su salud maxima a ${jugador.vidasMaximas}.`);
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -203,10 +225,11 @@ export class GestorPersonajes {
         // this.registrar(new Darryl());
         // this.registrar(new JetpackCat());
         // this.registrar(new KayFaraday());
-        this.registrar(new Chester());
+        // this.registrar(new Chester());
         this.registrar(new Frank());
         this.registrar(new Pam());
         this.registrar(new Trucy());
+        this.registrar(new HongoUp());
     }
 
     private registrar(p: IPersonaje) {
