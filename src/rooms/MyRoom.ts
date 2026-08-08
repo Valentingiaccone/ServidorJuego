@@ -302,7 +302,7 @@ export class MyRoom extends Room {
                     const barril = new Carta();
                     barril.id = `barril_${i}`;
                     barril.nombre = "Barril";
-                    barril.descripcion = "Si te disparan, probá suerte. Si sale Corazones, esquivás el tiro.";
+                    barril.descripcion = "Si te disparan, podes usar el barril, tenes 25% de esquivar el tiro.";
                     barril.tipoDeUso = "equipamiento";
                     barril.efecto = "equiparBarril";
                     this.state.mazo.push(barril);
@@ -312,7 +312,7 @@ export class MyRoom extends Room {
                     const prision = new Carta();
                     prision.id = `prision_${i}`;
                     prision.nombre = "Prisión";
-                    prision.descripcion = "Equipala a otro jugador (menos al Sheriff). Debe sacar Corazones o perderá su turno.";
+                    prision.descripcion = "Equipala a otro jugador (menos al Sheriff). Tiene 25% de salir de la carcel o perder el turno.";
                     prision.tipoDeUso = "objetivoGlobal"; 
                     prision.efecto = "prision";
                     this.state.mazo.push(prision);
@@ -322,7 +322,7 @@ export class MyRoom extends Room {
                     const dinamita = new Carta();
                     dinamita.id = `dinamita_${i}`;
                     dinamita.nombre = "Dinamita";
-                    dinamita.descripcion = "Si sacás Picas entre el 2 y el 9, explota (Perdés 3 vidas). Sino, pasa al siguiente.";
+                    dinamita.descripcion = "Tenes 12,5% de que te explote la dinamita y perder 3 vidas, en caso contrario pasa al siguiente.";
                     dinamita.tipoDeUso = "equipamiento";
                     dinamita.efecto = "equiparDinamita";
                     this.state.mazo.push(dinamita);
