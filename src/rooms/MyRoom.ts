@@ -88,9 +88,10 @@ export class MyRoom extends Room {
                 if (j.estaVivo) {
                     vivos[j.rol as keyof typeof vivos]++;
                     totalVivos++;
+                    
                     let pasivaJugadorActual = this.gestorPersonajes.obtener(j.personaje);
                     if (pasivaJugadorActual && pasivaJugadorActual.onMuereOtroPersonaje) {
-                        pasivaJugadorActual.onMuereOtroPersonaje();
+                        pasivaJugadorActual.onMuereOtroPersonaje(this, victima, j);
                     }
                 }
             });
@@ -406,7 +407,7 @@ export class MyRoom extends Room {
 
                 if (jugadorActual) {
                     if (jugadorActual.mano.length > jugadorActual.vidas + modificacion) {
-                        let excedente = jugadorActual.mano.length - jugadorActual.vidas + modificacion;
+                        let excedente = jugadorActual.mano.length - jugadorActual.vidas - modificacion;
                         client.send("alerta_personal", `Tenés demasiadas cartas. Descartá ${excedente} para pasar el turno.`);
                         return; 
                     }

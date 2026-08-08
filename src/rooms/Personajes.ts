@@ -29,7 +29,7 @@ export interface IPersonaje {
 
     modificarCartasEnManoAlPasarTurno?(): number
 
-    onMuereOtroPersonaje?(sala: any, jugador: any): void
+    onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugadorConPasiva: any): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
