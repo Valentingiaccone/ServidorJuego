@@ -231,11 +231,7 @@ export class Mikotoba implements IPersonaje {
     vidasBase = 4;
 
     onRecibirCuracion(jugador: any): void {
-        if (jugador.vidas >= 3){
-            this.nombre = "Mikotoba gordo"
-        } else {
-            this.nombre = "Mikotoba flaco"
-        }
+        this.actualizarNombre(jugador)
     }
 
     modificarRepartirCarta(): number {
@@ -255,6 +251,7 @@ export class Mikotoba implements IPersonaje {
     }
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+        this.actualizarNombre(victima)
         if (this.nombre == "Mikotoba gordo"){
             return
         } else {
@@ -262,6 +259,14 @@ export class Mikotoba implements IPersonaje {
                 sala.repartirCartas(victima, 1);
                 sala.broadcast("notificacion_turno", `Mikotoba robó 1 carta tras recibir daño por ${causa}.`);
             }
+        }
+    }
+
+    private actualizarNombre(jugador: any): void {
+        if (jugador.vidas >= 3){
+            this.nombre = "Mikotoba gordo"
+        } else {
+            this.nombre = "Mikotoba flaco"
         }
     }
 }
