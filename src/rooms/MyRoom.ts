@@ -402,7 +402,7 @@ export class MyRoom extends Room {
 
                 if (jugadorActual) {
                     if (jugadorActual.mano.length > jugadorActual.vidas + modificacion) {
-                        let excedente = jugadorActual.mano.length - jugadorActual.vidas;
+                        let excedente = jugadorActual.mano.length - jugadorActual.vidas + modificacion;
                         client.send("alerta_personal", `Tenés demasiadas cartas. Descartá ${excedente} para pasar el turno.`);
                         return; 
                     }
