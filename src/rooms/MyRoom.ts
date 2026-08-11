@@ -253,6 +253,7 @@ export class MyRoom extends Room {
                     tira.id = `tiratachuela_${i}`;
                     tira.nombre = "Tiratachuela";
                     tira.descripcion = "Dispara a todos los demás jugadores uno por uno.";
+                    tira.descripcionEnCatalan = "Dispara a tots els altres jugadors un per un."
                     tira.tipoDeUso = "instantanea";
                     tira.efecto = "tiratachuela";   
                     this.state.mazo.push(tira);
