@@ -509,7 +509,7 @@ export class MyRoom extends Room {
 
             if (accion === "robar") {
                 atacante.mano.push(cartaAfectada);
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion});
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion, esConjurada: cartaSabotaje.esConjurada});
                 this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
             }
 
@@ -526,7 +526,7 @@ export class MyRoom extends Room {
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 this.agregarAlDescarte(cartaUsada)
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion});
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada});
 
                 this.state.jugadorDebeDescartar = datos.idObjetivo;
                 this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
@@ -783,7 +783,7 @@ export class MyRoom extends Room {
                     this.state.atacanteActual = client.sessionId;
                     
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le disparó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion});
+                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada});
                 }
             }
         });
@@ -797,7 +797,7 @@ export class MyRoom extends Room {
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 this.agregarAlDescarte(cartaUsada)
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion});
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada});
 
                 // Seteamos quién empieza defendiéndose y quién es el oponente
                 this.state.jugadorEnDuelo = datos.idObjetivo;
@@ -838,7 +838,7 @@ export class MyRoom extends Room {
                 victima.estaEnPrision = true;
                 victima.cartaPrision = cartaUsada;
                 
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion});
+                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada});
                 this.broadcast("notificacion_turno", `⛓️ ¡${atacante.nombre} mandó a la cárcel a ${victima.nombre}!`);
             }
         });
@@ -897,7 +897,7 @@ export class MyRoom extends Room {
                         this.agregarAlDescarte(carta)
                         
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
-                        this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion});
+                        this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada});
                     }
                 } 
                 else {
