@@ -16,6 +16,8 @@ export class MyRoom extends Room {
     gestorPersonajes = new GestorPersonajes();
 
     avanzarColaDePeligro() {
+        this.state.usosBarril = 0;
+
         if (this.colaDePeligro.length > 0) {
             this.state.jugadorEnPeligro = this.colaDePeligro.shift(); 
             let victima = this.state.jugadores.get(this.state.jugadorEnPeligro);
@@ -25,7 +27,6 @@ export class MyRoom extends Room {
         } else {
             this.state.jugadorEnPeligro = "";
             this.state.atacanteActual = "";
-            this.state.usosBarril = 0;
             this.broadcast("notificacion_turno", `💨 El ataque de Tiratachuela ha terminado.`);
         }
     }
@@ -247,15 +248,15 @@ export class MyRoom extends Room {
                     this.state.mazo.push(poco);
                 }
 
-                // for (let i = 0; i < 1; i++) { 
-                //     const tira = new Carta();
-                //     tira.id = `tiratachuela_${i}`;
-                //     tira.nombre = "Tiratachuela";
-                //     tira.descripcion = "Dispara a todos los demás jugadores uno por uno.";
-                //     tira.tipoDeUso = "instantanea";
-                //     tira.efecto = "tiratachuela";   
-                //     this.state.mazo.push(tira);
-                // }
+                for (let i = 0; i < 2; i++) { // originalmente 1
+                    const tira = new Carta();
+                    tira.id = `tiratachuela_${i}`;
+                    tira.nombre = "Tiratachuela";
+                    tira.descripcion = "Dispara a todos los demás jugadores uno por uno.";
+                    tira.tipoDeUso = "instantanea";
+                    tira.efecto = "tiratachuela";   
+                    this.state.mazo.push(tira);
+                }
 
                 for (let i = 0; i < 3; i++) {  // originalmente 2
                     const indios = new Carta();

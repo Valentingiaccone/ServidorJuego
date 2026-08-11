@@ -346,8 +346,8 @@ export class Domino implements IPersonaje {
 
 export class Tilink implements IPersonaje {
     nombre = "Tilink";
-    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, se clona una carta no clonada de tu mano de forma aleatoria.";
-    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, es clona una carta no clonada de la teva mà de manera aleatòria."
+    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, se clona una carta no clonada de tu mano de forma aleatoria, pero para pasar el turno debe tener su salud -1 cartas en mano.";
+    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, es clona una carta no clonada de la teva mà de manera aleatòria. Però, per poder passar el torn, has de tenir Salut - 1 cartes a la mà."
     vidasBase = 4;
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
@@ -389,6 +389,10 @@ export class Tilink implements IPersonaje {
             }
         }
     }
+
+    modificarCartasEnManoAlPasarTurno(): number {
+        return -1
+    }
 }
 
 // 3. EL GESTOR DE PERSONAJES
@@ -396,20 +400,20 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy());
-        // this.registrar(new Berry());
-        // this.registrar(new Maton());
-        // this.registrar(new Mandy());
-        // this.registrar(new Tralalero());
-        // this.registrar(new Darryl());
-        // this.registrar(new JetpackCat());
-        // this.registrar(new KayFaraday());
-        // this.registrar(new Chester());
-        // this.registrar(new Frank());
-        // this.registrar(new Pam());
-        // this.registrar(new Trucy());
-        // this.registrar(new HongoUp());
-        // this.registrar(new Hongo());
+        this.registrar(new ColeCasiddy());
+        this.registrar(new Berry());
+        this.registrar(new Maton());
+        this.registrar(new Mandy());
+        this.registrar(new Tralalero());
+        this.registrar(new Darryl());
+        this.registrar(new JetpackCat());
+        this.registrar(new KayFaraday());
+        this.registrar(new Chester());
+        this.registrar(new Frank());
+        this.registrar(new Pam());
+        this.registrar(new Trucy());
+        this.registrar(new HongoUp());
+        this.registrar(new Hongo());
         this.registrar(new Lesly());
         this.registrar(new Mikotoba());
         this.registrar(new Domino());
