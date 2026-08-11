@@ -59,22 +59,22 @@ export class MyRoom extends Room {
             victima.vidas = 0;
             console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
 
-            victima.mano.forEach((carta: any) => this.state.descarte.push(carta));
+            victima.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
             victima.mano.clear();
-            if (victima.cartaArma) this.state.descarte.push(victima.cartaArma);
-            if (victima.cartaMustang) this.state.descarte.push(victima.cartaMustang);
+            if (victima.cartaArma) this.agregarAlDescarte(victima.cartaArma);
+            if (victima.cartaMustang) this.agregarAlDescarte(victima.cartaMustang);
             victima.tieneMustang = false;
             victima.cartaMustang = null;
-            if (victima.cartaMira) this.state.descarte.push(victima.cartaMira);
+            if (victima.cartaMira) this.agregarAlDescarte(victima.cartaMira);
             victima.tieneMira = false;
             victima.cartaMira = null;
-            if (victima.cartaBarril) this.state.descarte.push(victima.cartaBarril);
+            if (victima.cartaBarril) this.agregarAlDescarte(victima.cartaBarril);
             victima.tieneBarril = false;
             victima.cartaBarril = null;
-            if (victima.cartaPrision) this.state.descarte.push(victima.cartaPrision);
+            if (victima.cartaPrision) this.agregarAlDescarte(victima.cartaPrision);
             victima.estaEnPrision = false;
             victima.cartaPrision = null;
-            if (victima.cartaDinamita) this.state.descarte.push(victima.cartaDinamita);
+            if (victima.cartaDinamita) this.agregarAlDescarte(victima.cartaDinamita)
             victima.tieneDinamita = false;
             victima.cartaDinamita = null;
 
@@ -165,6 +165,7 @@ export class MyRoom extends Room {
                     nuevaCarta.id = `bang_${c}`;
                     nuevaCarta.nombre = "BANG!";
                     nuevaCarta.descripcion = "Quita 1 vida a un jugador a tu alcance.";
+                    nuevaCarta.descripcionEnCatalan = "Treu 1 vida a un jugador al teu abast."
                     nuevaCarta.tipoDeUso = "objetivo";
                     nuevaCarta.efecto = "dano_1";
                     this.state.mazo.push(nuevaCarta);
@@ -175,6 +176,7 @@ export class MyRoom extends Room {
                     nuevaCarta.id = `botiquin_${c}`;
                     nuevaCarta.nombre = "Botiquín";
                     nuevaCarta.descripcion = "Recupera 1 vida (No funciona cuando quedan 2 vivos).";
+                    nuevaCarta.descripcionEnCatalan = "Recupera 1 punt de vida (No funciona quan només queden 2 jugadors vius)."
                     nuevaCarta.tipoDeUso = "instantanea";
                     nuevaCarta.efecto = "curar_1";
                     this.state.mazo.push(nuevaCarta);
@@ -185,6 +187,7 @@ export class MyRoom extends Room {
                     nuevaCarta.id = `fallo_${c}`;
                     nuevaCarta.nombre = "¡Fallo!";
                     nuevaCarta.descripcion = "Esquiva un BANG! que te hayan disparado.";
+                    nuevaCarta.descripcionEnCatalan = "Esquiva un BANG! que t'hagin disparat."
                     nuevaCarta.tipoDeUso = "oculto"; 
                     nuevaCarta.efecto = "esquivar"; 
                     this.state.mazo.push(nuevaCarta);
@@ -195,6 +198,7 @@ export class MyRoom extends Room {
                     diligencia.id = `cofre_${i}`;
                     diligencia.nombre = "Cofre";
                     diligencia.descripcion = "Roba 2 cartas del mazo.";
+                    diligencia.descripcionEnCatalan = "Roba 2 cartes de la baralla."
                     diligencia.tipoDeUso = "instantanea";
                     diligencia.efecto = "robar_2";
                     this.state.mazo.push(diligencia);
@@ -205,6 +209,7 @@ export class MyRoom extends Room {
                     diligencia.id = `cofreSuperMagico_${i}`;
                     diligencia.nombre = "Cofre super magico";
                     diligencia.descripcion = "Roba 3 cartas del mazo.";
+                    diligencia.descripcionEnCatalan = "Roba 3 cartes de la baralla."
                     diligencia.tipoDeUso = "instantanea";
                     diligencia.efecto = "robar_3";
                     this.state.mazo.push(diligencia);
@@ -215,6 +220,7 @@ export class MyRoom extends Room {
                     cat.id = `cocoroch_${i}`;
                     cat.nombre = "Cocoroch";
                     cat.descripcion = "Haz que un jugador descarte una carta de la mano o de la mesa.";
+                    cat.descripcionEnCatalan = "Fes que un jugador descarti una carta de la mà o de la taula."
                     cat.tipoDeUso = "objetivoGlobal";
                     cat.efecto = "forzar_enemigo"; 
                     this.state.mazo.push(cat);
@@ -223,6 +229,7 @@ export class MyRoom extends Room {
                     panico.id = `panico_${i}`;
                     panico.nombre = "¡Pánico!";
                     panico.descripcion = "Robale una carta de su mano o mesa a un jugador a distancia 1.";
+                    panico.descripcionEnCatalan = "Roba-li una carta de la mà o de la taula a un jugador a distància 1."
                     panico.tipoDeUso = "objetivo1";
                     panico.efecto = "robar_enemigo"; 
                     this.state.mazo.push(panico);
@@ -233,6 +240,7 @@ export class MyRoom extends Room {
                     poco.id = `musicoterapia_${i}`;
                     poco.nombre = "Musicoterapia";
                     poco.descripcion = "Recupera 1 vida a todos los jugadores vivos en la mesa (No funciona cuando quedan 2 vivos).";
+                    poco.descripcionEnCatalan = "Recupera 1 punt de vida a tots els jugadors vius de la taula (No funciona quan només queden 2 jugadors vius)."
                     poco.tipoDeUso = "instantanea";
                     poco.efecto = "curarATodos";
                     this.state.mazo.push(poco);
@@ -253,6 +261,7 @@ export class MyRoom extends Room {
                     indios.id = `indios_${i}`;
                     indios.nombre = "¡Indios!";
                     indios.descripcion = "Todos los demás jugadores descartan un BANG! o pierden 1 vida.";
+                    indios.descripcionEnCatalan = "Tots els altres jugadors descarten un BANG! o perden 1 punt de vida."
                     indios.tipoDeUso = "instantanea"; 
                     indios.efecto = "indios";   
                     this.state.mazo.push(indios);
@@ -263,6 +272,7 @@ export class MyRoom extends Room {
                     tienda.id = `tienda_griff_${i}`;
                     tienda.nombre = "La tienda de Griff";
                     tienda.descripcion = "Revela cartas, empezando por vos, cada jugador elige una.";
+                    tienda.descripcionEnCatalan = "Revela cartes, començant per tu; cada jugador en tria una."
                     tienda.tipoDeUso = "instantanea";
                     tienda.efecto = "tienda";   
                     this.state.mazo.push(tienda);
@@ -273,6 +283,7 @@ export class MyRoom extends Room {
                     duelo.id = `duelo_${i}`;
                     duelo.nombre = "Duelo";
                     duelo.descripcion = "Desafía a cualquier jugador. Deben turnarse para descartar un BANG!. El primero que no lo haga, pierde 1 vida.";
+                    duelo.descripcionEnCatalan = "Desafia qualsevol jugador. Us heu d'alternar per descartar un BANG!. El primer que no ho faci, perd 1 punt de vida."
                     duelo.tipoDeUso = "objetivoGlobal"; // Alcance infinito
                     duelo.efecto = "duelo"; 
                     this.state.mazo.push(duelo);
@@ -283,6 +294,7 @@ export class MyRoom extends Room {
                     mustang.id = `caballo_${i}`;
                     mustang.nombre = "Caballo";
                     mustang.descripcion = "Los demás te ven a distancia +1.";
+                    mustang.descripcionEnCatalan = "Els altres et veuen a distància +1."
                     mustang.tipoDeUso = "equipamiento";
                     mustang.efecto = "equiparMustang";
                     this.state.mazo.push(mustang);
@@ -293,6 +305,7 @@ export class MyRoom extends Room {
                     mira.id = `monoAldea_${i}`;
                     mira.nombre = "Monoaldea";
                     mira.descripcion = "Ves a los demás a distancia -1.";
+                    mira.descripcionEnCatalan = "Veus els altres a distància -1."
                     mira.tipoDeUso = "equipamiento";
                     mira.efecto = "equiparMira";
                     this.state.mazo.push(mira);
@@ -303,6 +316,7 @@ export class MyRoom extends Room {
                     barril.id = `barril_${i}`;
                     barril.nombre = "Barril";
                     barril.descripcion = "Si te disparan, podes usar el barril, tenes 25% de esquivar el tiro.";
+                    barril.descripcionEnCatalan = "Si et disparen, pots utilitzar el barril; tens un 25 % de probabilitats d'esquivar el tret."
                     barril.tipoDeUso = "equipamiento";
                     barril.efecto = "equiparBarril";
                     this.state.mazo.push(barril);
@@ -313,6 +327,7 @@ export class MyRoom extends Room {
                     prision.id = `prision_${i}`;
                     prision.nombre = "Prisión";
                     prision.descripcion = "Equipala a otro jugador (menos al Sheriff). Tiene 25% de salir de la carcel o perder el turno.";
+                    prision.descripcionEnCatalan = "Equipa-la a un altre jugador (excepte el Sheriff). Té un 25 % de probabilitats de sortir de la presó o de perdre el torn."
                     prision.tipoDeUso = "objetivoGlobal"; 
                     prision.efecto = "prision";
                     this.state.mazo.push(prision);
@@ -323,19 +338,48 @@ export class MyRoom extends Room {
                     dinamita.id = `dinamita_${i}`;
                     dinamita.nombre = "Dinamita";
                     dinamita.descripcion = "Tenes 12,5% de que te explote la dinamita y perder 3 vidas, en caso contrario pasa al siguiente.";
+                    dinamita.descripcionEnCatalan = "Tens un 12,5 % de probabilitats que t'exploti la dinamita i perdis 3 vides; en cas contrari, passa al següent."
                     dinamita.tipoDeUso = "equipamiento";
                     dinamita.efecto = "equiparDinamita";
                     this.state.mazo.push(dinamita);
                 }
 
                 const armas = [
-                    { id: "arma_1", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
-                    { id: "arma_2", nombre: "Pistola de Shion", descripcion: "Equipa esta arma para obtener alcance: 2", alcance: 2 },
-                    { id: "arma_6", nombre: "Revolver de Casiddy", descripcion: "Equipa esta arma para obtener alcance: 3", alcance: 3 },
-                    { id: "arma_7", nombre: "Rifle de Ashe", descripcion: "Equipa esta arma para obtener alcance: 4", alcance: 4 },
-                    { id: "arma_8", nombre: "Francotirador", descripcion: "Equipa esta arma para obtener alcance: 5", alcance: 5 },
-                    { id: "arma_9", nombre: "Pistola de Tracer", descripcion: "Equipa esta arma para no tener limites de uso de BANG!", alcance: 1 },
-                    { id: "arma_10", nombre: "Pistola de Tracer", descripcion: "Equipa esta arma para no tener limites de uso de BANG!", alcance: 1 },
+                    { id: "arma_1", 
+                        nombre: "Pistola de Shion", 
+                        descripcion: "Equipa esta arma para obtener alcance: 2", 
+                        descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 2.",
+                        alcance: 2 },
+                    { id: "arma_2", 
+                        nombre: "Pistola de Shion", 
+                        descripcion: "Equipa esta arma para obtener alcance: 2", 
+                        descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 2.",
+                        alcance: 2 },
+                    { id: "arma_3", 
+                        nombre: "Revolver de Casiddy", 
+                        descripcion: "Equipa esta arma para obtener alcance: 3", 
+                        descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 3.",
+                        alcance: 3 },
+                    { id: "arma_4", 
+                        nombre: "Rifle de Ashe", 
+                        descripcion: "Equipa esta arma para obtener alcance: 4", 
+                        descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 4.",
+                        alcance: 4 },
+                    { id: "arma_5", 
+                        nombre: "Francotirador", 
+                        descripcion: "Equipa esta arma para obtener alcance: 5", 
+                        descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 5.",
+                        alcance: 5 },
+                    { id: "arma_6", 
+                        nombre: "Pistola de Tracer", 
+                        descripcion: "Equipa esta arma para no tener limites de uso de BANG!", 
+                        descripcionEnCatalan: "Equipa aquesta arma per no tenir límits d'ús de BANG!.",
+                        alcance: 1 },
+                    { id: "arma_7", 
+                        nombre: "Pistola de Tracer", 
+                        descripcion: "Equipa esta arma para no tener limites de uso de BANG!",
+                        descripcionEnCatalan: "Equipa aquesta arma per no tenir límits d'ús de BANG!.",
+                        alcance: 1 },
                 ];
 
                 armas.forEach(arma => {
@@ -343,6 +387,7 @@ export class MyRoom extends Room {
                     nuevaCarta.id = arma.id;
                     nuevaCarta.nombre = arma.nombre;
                     nuevaCarta.descripcion = arma.descripcion;
+                    nuevaCarta.descripcionEnCatalan = arma.descripcionEnCatalan
                     nuevaCarta.tipoDeUso = "equipamiento";
                     nuevaCarta.efecto = `equipar_arma_${arma.alcance}`;
                     this.state.mazo.push(nuevaCarta);
@@ -363,7 +408,7 @@ export class MyRoom extends Room {
                 });
                 
                 let sheriff = this.state.jugadores.get(this.state.turnoActual);
-                if (sheriff) this.repartirCartas(sheriff, 2);
+                if (sheriff) this.repartirCartas(sheriff, 2, "turno");
 
                 this.state.estadoJuego = "Jugando";
                 this.lock(); 
@@ -469,7 +514,7 @@ export class MyRoom extends Room {
             }
 
             atacante.mano.splice(indiceCartaJugada, 1);
-            this.state.descarte.push(cartaSabotaje);
+            this.agregarAlDescarte(cartaSabotaje)
         });
 
         this.onMessage("lanzar_cocoroch", (client, datos) => {
@@ -480,7 +525,7 @@ export class MyRoom extends Room {
             
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
-                this.state.descarte.push(cartaUsada);
+                this.agregarAlDescarte(cartaUsada)
                 this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion});
 
                 this.state.jugadorDebeDescartar = datos.idObjetivo;
@@ -524,7 +569,7 @@ export class MyRoom extends Room {
             }
 
             if (cartaAfectada) {
-                this.state.descarte.push(cartaAfectada);
+                this.agregarAlDescarte(cartaAfectada)
                 this.broadcast("notificacion_turno", `🗑️ ${victima.nombre} decidió descartar su ${cartaAfectada.nombre}.`);
                 
                 let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
@@ -587,7 +632,7 @@ export class MyRoom extends Room {
                         let clon = new Carta();
                         clon.id = cartaVieja.id; clon.nombre = cartaVieja.nombre; clon.descripcion = cartaVieja.descripcion;
                         clon.tipoDeUso = cartaVieja.tipoDeUso; clon.efecto = cartaVieja.efecto;
-                        this.state.descarte.push(clon);
+                        this.agregarAlDescarte(clon)
                     };
 
                     // 3. EJECUTAMOS LAS CONSECUENCIAS
@@ -633,7 +678,7 @@ export class MyRoom extends Room {
                     else if (motivoActual === "Prision") {
                         if (fueExito) {
                             this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.nombre} escapó de la cárcel.`);
-                            this.repartirCartas(victima, 2);
+                            this.repartirCartas(victima, 2, "turno");
                             this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
                         } else {
                             this.broadcast("notificacion_turno", `⛓️ ¡Salió Rojo! ${victima?.nombre} se queda encerrado.`);
@@ -659,7 +704,7 @@ export class MyRoom extends Room {
                 let indiceBang = victima.mano.findIndex((c: any) => c.id === datos.idCarta);
                 if (indiceBang !== -1) {
                     let cartaDescartada = victima.mano.splice(indiceBang, 1)[0];
-                    this.state.descarte.push(cartaDescartada);
+                    this.agregarAlDescarte(cartaDescartada)
                     this.broadcast("notificacion_turno", `🛡️ ${victima.nombre} descartó un BANG! y ahuyentó a los Indios.`);
                 }
             } else if (datos.accion === "dano") {
@@ -732,7 +777,7 @@ export class MyRoom extends Room {
                     
                     atacante.yaDisparo = true;
                     atacante.mano.splice(indiceCarta, 1);
-                    this.state.descarte.push(carta);
+                    this.agregarAlDescarte(carta)
                     
                     this.state.jugadorEnPeligro = datosDelDisparo.objetivoId;
                     this.state.atacanteActual = client.sessionId;
@@ -751,7 +796,7 @@ export class MyRoom extends Room {
             
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
-                this.state.descarte.push(cartaUsada);
+                this.agregarAlDescarte(cartaUsada)
                 this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion});
 
                 // Seteamos quién empieza defendiéndose y quién es el oponente
@@ -807,7 +852,7 @@ export class MyRoom extends Room {
                 let indiceBang = jugadorActual.mano.findIndex((c: any) => c.id === datos.idCarta);
                 if (indiceBang !== -1) {
                     let cartaDescartada = jugadorActual.mano.splice(indiceBang, 1)[0];
-                    this.state.descarte.push(cartaDescartada);
+                    this.agregarAlDescarte(cartaDescartada)
                     
                     this.broadcast("notificacion_turno", `🛡️ ${jugadorActual.nombre} descartó un BANG! ¡El duelo vuelve!`);
                     
@@ -849,7 +894,7 @@ export class MyRoom extends Room {
                     if (indice !== -1 && victima.mano[indice].efecto === "esquivar") {
                         let carta = victima.mano[indice];
                         victima.mano.splice(indice, 1);
-                        this.state.descarte.push(carta);
+                        this.agregarAlDescarte(carta)
                         
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
                         this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion});
@@ -887,7 +932,7 @@ export class MyRoom extends Room {
                 if (indiceCarta !== -1) {
                     let cartaDescartada = jugador.mano[indiceCarta];
                     jugador.mano.splice(indiceCarta, 1);
-                    this.state.descarte.push(cartaDescartada);
+                    this.agregarAlDescarte(cartaDescartada)
 
                     this.broadcast("notificacion_turno", `🗑️ ${jugador.nombre} descartó una carta.`);
                     
@@ -941,10 +986,10 @@ export class MyRoom extends Room {
         }
     }
 
-    repartirCartas(jugador: any, cantidad: number) {
+    repartirCartas(jugador: any, cantidad: number, causa: string) {
         let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
         if (pasivaJugadorActual && pasivaJugadorActual.modificarRepartirCarta) {
-            cantidad += pasivaJugadorActual.modificarRepartirCarta()
+            cantidad += pasivaJugadorActual.modificarRepartirCarta(causa)
         }
 
         for (let i = 0; i < cantidad; i++) {
@@ -990,7 +1035,7 @@ export class MyRoom extends Room {
             this.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} está en Prisión! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Prision");
         } else {
-            this.repartirCartas(jugador, 2);
+            this.repartirCartas(jugador, 2, "turno");
             console.log(`🃏 ${jugador.nombre} robó 2 cartas.`);
             this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.nombre}!`);
         }
@@ -1054,5 +1099,11 @@ export class MyRoom extends Room {
                 this.state.jugadorEligiendoTienda !== "" ||
                 this.state.jugadorEnDuelo !== "" ||
                 this.state.jugadorDesenfundando !== "");
+    }
+
+    agregarAlDescarte(cartaDescartada: Carta): void {
+        if (!cartaDescartada.esConjurada){
+            this.state.descarte.push(cartaDescartada);
+        }
     }
 }

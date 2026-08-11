@@ -4,8 +4,10 @@ export class Carta extends Schema {
     @type("string") id: string = "";
     @type("string") nombre: string = "";
     @type("string") descripcion: string = "";
+    @type("string") descripcionEnCatalan: string = "";
     @type("string") tipoDeUso: string = ""; // Ej: "instantanea", "objetivo", "reaccion"
     @type("string") efecto: string = "";    // Ej: "curar_1", "dano_1"
+    @type("boolean") esConjurada: boolean = false;
     // ---------------------------------------------
 }
 

@@ -41,7 +41,7 @@ export class EfectoCurar implements IEfectoCarta {
 
             console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
             
             // Consumimos la carta
             jugador.mano.splice(indiceCarta, 1);
@@ -69,18 +69,18 @@ export class EfectoEquipar implements IEfectoCarta {
         
         console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
         sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
     }
 }
 
 export class EfectoRobar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
         let cantidad = parseInt(parametros[1]); 
-        sala.repartirCartas(jugador, cantidad);
+        sala.repartirCartas(jugador, cantidad, "carta");
         
         console.log(`🃏 ${jugador.nombre} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
         sala.broadcast("notificacion_turno", `🃏 ${jugador.nombre} jugó ${cartaJugada.nombre}.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
         
         jugador.mano.splice(indiceCarta, 1);
         sala.state.descarte.push(cartaJugada);
@@ -124,7 +124,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
 
         console.log(`✨ ${jugadorQueJuega.nombre} curó a todos.`);
         sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre} y curó a todos!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
         
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.state.descarte.push(cartaJugada);
@@ -147,7 +147,7 @@ export class EfectoTiratachuela implements IEfectoCarta {
             sala.state.atacanteActual = client.sessionId;
             
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
             sala.avanzarColaDePeligro(); 
         } else {
             client.send("alerta_personal", "No hay nadie vivo para atacar.");
@@ -168,7 +168,7 @@ export class EfectoIndios implements IEfectoCarta {
             sala.state.descarte.push(cartaJugada);
             
             sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} lanzó un ataque de ¡Indios!`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
             sala.avanzarColaIndios(); 
         } else {
             client.send("alerta_personal", "No hay nadie vivo para atacar.");
@@ -207,7 +207,7 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         // 3. Consumir la carta e iniciar la tienda
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.state.descarte.push(cartaJugada);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
         
         sala.avanzarColaTienda();
     }
@@ -223,7 +223,7 @@ export class EfectoEquiparMustang implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
     }
 }
 
@@ -237,7 +237,7 @@ export class EfectoEquiparMira implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Mira Telescópica.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
     }
 }
 
@@ -251,7 +251,7 @@ export class EfectoEquiparBarril implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
     }
 }
 
@@ -265,7 +265,7 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🧨 ¡${jugador.nombre} encendió una Dinamita!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, palo: cartaJugada.palo, valor: cartaJugada.valor });
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion});
     }
 }
 
