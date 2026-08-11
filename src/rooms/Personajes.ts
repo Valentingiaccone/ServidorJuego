@@ -344,6 +344,53 @@ export class Domino implements IPersonaje {
     }
 }
 
+export class Tilink implements IPersonaje {
+    nombre = "Tilink";
+    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, se clona una carta no clonada de tu mano de forma aleatoria.";
+    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, es clona una carta no clonada de la teva mà de manera aleatòria."
+    vidasBase = 4;
+
+    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
+        // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
+        if (motivo !== "VOLUNTARIO") return;
+        
+        // 1. Verificamos que la carta descartada sea original
+        if (!_cartaDescartada.esConjurada) {
+            
+            // 2. Filtramos la mano para quedarnos solo con las cartas que NO son clones
+            let cartasOriginalesEnMano = jugador.mano.filter((c: any) => !c.esConjurada);
+            
+            // 3. Si tiene al menos una carta original para clonar...
+            if (cartasOriginalesEnMano.length > 0) {
+                
+                // Elegimos una al azar
+                let indiceAleatorio = Math.floor(Math.random() * cartasOriginalesEnMano.length);
+                let cartaAClonar = cartasOriginalesEnMano[indiceAleatorio];
+                
+                // 4. Creamos el clon como un objeto completamente nuevo
+                let clon = new Carta();
+                
+                // Generamos un ID único usando la fecha y un random para evitar choques en Colyseus
+                clon.id = `clon_${cartaAClonar.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                
+                clon.nombre = cartaAClonar.nombre;
+                clon.descripcion = cartaAClonar.descripcion;
+                clon.descripcionEnCatalan = cartaAClonar.descripcionEnCatalan;
+                clon.tipoDeUso = cartaAClonar.tipoDeUso;
+                clon.efecto = cartaAClonar.efecto;
+                
+                // ¡Lo marcamos como clonado! Así no puede desencadenar otro clon ni ir al descarte real
+                clon.esConjurada = true; 
+                
+                // 5. Se la metemos en la mano y avisamos a la mesa
+                jugador.mano.push(clon);
+                
+                sala.broadcast("notificacion_turno", `🪞 ¡Tilink descartó una carta original y su pasiva clonó una carta de su mano!`);
+            }
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -362,10 +409,11 @@ export class GestorPersonajes {
         // this.registrar(new Pam());
         // this.registrar(new Trucy());
         // this.registrar(new HongoUp());
-        this.registrar(new Hongo());
+        // this.registrar(new Hongo());
         this.registrar(new Lesly());
         this.registrar(new Mikotoba());
-        this.registrar(new Domino())
+        this.registrar(new Domino());
+        this.registrar(new Tilink());
     }
 
     private registrar(p: IPersonaje) {
