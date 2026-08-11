@@ -1106,14 +1106,4 @@ export class MyRoom extends Room {
             this.state.descarte.push(cartaDescartada);
         }
     }
-
-    dominoEstaEnLaPartida(): boolean {
-        this.state.jugadores.forEach((j) => {
-            if (j.nombre == "Domino"){
-                return true
-            }
-        });
-
-        return false
-    }
 }
