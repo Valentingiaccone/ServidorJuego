@@ -11,7 +11,16 @@ export class Carta extends Schema {
     // ---------------------------------------------
 }
 
+export class OpcionPersonaje extends Schema {
+    @type("string") nombre: string = "";
+    @type("string") habilidad: string = "";
+    @type("string") habilidadEnCatalan: string = "";
+    @type("number") vidasBase: number = 4;
+}
+
 export class Jugador extends Schema {
+    @type([OpcionPersonaje]) opcionesPersonaje = new ArraySchema<OpcionPersonaje>();
+    @type("boolean") yaEligioPersonaje: boolean = false;
     @type("string") nombre: string = "";
     @type("number") avatar: number = 1;
     @type("boolean") esAnfitrion: boolean = false;
@@ -60,3 +69,4 @@ export class MyRoomState extends Schema {
     @type("number") usosBarril: number = 0;
     @type(["boolean"]) layoutRuleta = new ArraySchema<boolean>();
 }
+

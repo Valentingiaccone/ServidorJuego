@@ -1,5 +1,5 @@
 import { Room, Client } from "colyseus";
-import { Carta, Jugador, MyRoomState } from "./schema/MyRoomState.js";
+import { Carta, Jugador, MyRoomState, OpcionPersonaje } from "./schema/MyRoomState.js";
 import { DespachadorDeCartas } from "./EfectosCartas.js";
 import { GestorPersonajes } from "./Personajes.js";
 
@@ -135,27 +135,27 @@ export class MyRoom extends Room {
 
                 mazoRoles.sort(() => Math.random() - 0.5);
 
-                // --- REPARTO DE PERSONAJES USANDO EL GESTOR ---
+                // --- REPARTO DE ROLES Y OPCIONES DE PERSONAJES ---
                 let listaPersonajes = this.gestorPersonajes.obtenerTodosParaRepartir();
                 let indicePersonaje = 0;
                 
                 let i = 0;
                 this.state.jugadores.forEach((j, sessionId) => {
-                    let proximoPersonaje = listaPersonajes[indicePersonaje % listaPersonajes.length];
-                    j.personaje = proximoPersonaje.nombre;
-                    j.habilidad = proximoPersonaje.habilidad;
-                    j.habilidadEnCatalan = proximoPersonaje.habilidadEnCatalan
-                    j.vidas = proximoPersonaje.vidasBase;
-                    indicePersonaje++;
+                    // Le damos su rol
+                    j.rol = mazoRoles[i];
+                    if (j.rol === "Sheriff") this.state.turnoActual = sessionId;
 
-                    const rolAsignado = mazoRoles[i];
-                    j.rol = rolAsignado;
-
-                    if (rolAsignado === "Sheriff") {
-                        j.vidas++;
-                        this.state.turnoActual = sessionId;
+                    // Le damos 2 opciones únicas de personaje
+                    for (let k = 0; k < 2; k++) {
+                        let p = listaPersonajes[indicePersonaje % listaPersonajes.length];
+                        let opcion = new OpcionPersonaje();
+                        opcion.nombre = p.nombre;
+                        opcion.habilidad = p.habilidad;
+                        opcion.habilidadEnCatalan = p.habilidadEnCatalan;
+                        opcion.vidasBase = p.vidasBase;
+                        j.opcionesPersonaje.push(opcion);
+                        indicePersonaje++;
                     }
-                    j.vidasMaximas = j.vidas;
                     i++;
                 });
 
@@ -396,17 +396,57 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 });
 
+                // --- MEZCLAR EL MAZO ---
                 let arrayTemporal = Array.from(this.state.mazo);
+                
+                // Ordena el array de forma aleatoria
                 arrayTemporal.sort(() => Math.random() - 0.5);
+                
+                // Vaciamos el mazo original y lo volvemos a llenar ya mezclado
                 this.state.mazo.clear();
                 arrayTemporal.forEach(carta => this.state.mazo.push(carta));
 
+                this.state.estadoJuego = "SeleccionPersonaje";
+                this.lock();
+            }
+        });
+
+        this.onMessage("elegir_personaje", (client, nombreElegido) => {
+            if (this.state.estadoJuego !== "SeleccionPersonaje") return;
+            
+            let jugador = this.state.jugadores.get(client.sessionId);
+            if (!jugador || jugador.yaEligioPersonaje) return;
+
+            // Buscamos la opción que tocó
+            let elegida = jugador.opcionesPersonaje.find((o: any) => o.nombre === nombreElegido);
+            if (elegida) {
+                jugador.personaje = elegida.nombre;
+                jugador.habilidad = elegida.habilidad;
+                jugador.habilidadEnCatalan = elegida.habilidadEnCatalan;
+                
+                // Aplicamos las vidas, considerando si es Sheriff
+                jugador.vidas = elegida.vidasBase;
+                if (jugador.rol === "Sheriff") jugador.vidas++;
+                jugador.vidasMaximas = jugador.vidas;
+                
+                jugador.yaEligioPersonaje = true;
+                console.log(`✅ ${jugador.nombre} eligió a ${jugador.personaje}.`);
+            }
+
+            // ¿Ya eligieron todos?
+            let todosEligieron = true;
+            this.state.jugadores.forEach(j => {
+                if (!j.yaEligioPersonaje) todosEligieron = false;
+            });
+
+            if (todosEligieron) {
+                console.log("🔥 Todos eligieron. ¡Repartiendo cartas iniciales!");
+                
+                // Ahora sí, le damos a cada quien su mano inicial según su vida máxima
                 this.state.jugadores.forEach((j, sessionId) => {
                     j.mano.clear();
                     for (let balas = 0; balas < j.vidas; balas++) {
-                        if (this.state.mazo.length > 0) {
-                            j.mano.push(this.state.mazo.pop());
-                        }
+                        if (this.state.mazo.length > 0) j.mano.push(this.state.mazo.pop());
                     }
                 });
                 
@@ -414,7 +454,6 @@ export class MyRoom extends Room {
                 if (sheriff) this.repartirCartas(sheriff, 2, "turno");
 
                 this.state.estadoJuego = "Jugando";
-                this.lock(); 
             }
         });
 
