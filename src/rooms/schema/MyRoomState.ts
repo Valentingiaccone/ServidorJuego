@@ -25,6 +25,7 @@ export class Jugador extends Schema {
     @type(Carta) cartaArma: Carta;
     @type("string") personaje: string = "";
     @type("string") habilidad: string = "";
+    @type("string") habilidadEnCatalan: string = "";
     @type([Carta]) mano = new ArraySchema<Carta>();
     @type(Carta) cartaMustang: Carta;
     @type(Carta) cartaMira: Carta;
