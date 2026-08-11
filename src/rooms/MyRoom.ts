@@ -160,7 +160,7 @@ export class MyRoom extends Room {
                 this.state.mazo.clear();
                 
                 // Creación del mazo...
-                for (let c = 0; c < 25; c++) {
+                for (let c = 0; c < 26; c++) { // originalmente 25
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `bang_${c}`;
                     nuevaCarta.nombre = "BANG!";
@@ -180,7 +180,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 }
 
-                for (let c = 0; c < 12; c++) {
+                for (let c = 0; c < 11; c++) { // originalmente 12
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `fallo_${c}`;
                     nuevaCarta.nombre = "¡Fallo!";
@@ -190,7 +190,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 }
 
-                for (let i = 0; i < 2; i++) {
+                for (let i = 0; i < 3; i++) { // originalmente 2
                     const diligencia = new Carta();
                     diligencia.id = `cofre_${i}`;
                     diligencia.nombre = "Cofre";
@@ -248,7 +248,7 @@ export class MyRoom extends Room {
                 //     this.state.mazo.push(tira);
                 // }
 
-                for (let i = 0; i < 2; i++) { 
+                for (let i = 0; i < 3; i++) {  // originalmente 2
                     const indios = new Carta();
                     indios.id = `indios_${i}`;
                     indios.nombre = "¡Indios!";
@@ -288,7 +288,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(mustang);
                 }
                 
-                for (let i = 0; i < 1; i++) {
+                for (let i = 0; i < 2; i++) { // originalmemte 1
                     const mira = new Carta();
                     mira.id = `monoAldea_${i}`;
                     mira.nombre = "Monoaldea";
