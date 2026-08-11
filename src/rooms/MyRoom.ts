@@ -143,6 +143,7 @@ export class MyRoom extends Room {
                     let proximoPersonaje = listaPersonajes[indicePersonaje % listaPersonajes.length];
                     j.personaje = proximoPersonaje.nombre;
                     j.habilidad = proximoPersonaje.habilidad;
+                    j.habilidadEnCatalan = proximoPersonaje.habilidadEnCatalan
                     j.vidas = proximoPersonaje.vidasBase;
                     indicePersonaje++;
 
