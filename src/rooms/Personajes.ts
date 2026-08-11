@@ -254,7 +254,7 @@ export class Mikotoba implements IPersonaje {
 
     modificarRepartirCarta(causa: string): number {
         if (causa !== "turno"){
-            return
+            return 0
         }
 
         if (this.nombre == "Mikotoba gordo"){
