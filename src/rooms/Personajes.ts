@@ -336,7 +336,7 @@ export class Domino implements IPersonaje {
             dominoArma.descripcion = "?????";
             dominoArma.descripcionEnCatalan = "?????"
             dominoArma.tipoDeUso = "equipamiento";
-            dominoArma.efecto = `equipar_arma_${2}`;
+            dominoArma.efecto = `equipar_arma_${3}`;
             dominoArma.esConjurada = true
             victima.mano.push(dominoArma)
         }

@@ -631,8 +631,13 @@ export class MyRoom extends Room {
                     let descartarEquipamientoSeguro = (cartaVieja: any) => {
                         if (!cartaVieja) return;
                         let clon = new Carta();
-                        clon.id = cartaVieja.id; clon.nombre = cartaVieja.nombre; clon.descripcion = cartaVieja.descripcion;
-                        clon.tipoDeUso = cartaVieja.tipoDeUso; clon.efecto = cartaVieja.efecto;
+                        clon.id = cartaVieja.id; 
+                        clon.nombre = cartaVieja.nombre; 
+                        clon.descripcion = cartaVieja.descripcion;
+                        clon.descripcionEnCatalan = cartaVieja.descripcionEnCatalan
+                        clon.tipoDeUso = cartaVieja.tipoDeUso; 
+                        clon.efecto = cartaVieja.efecto;
+                        clon.esConjurada = cartaVieja.esConjurada
                         this.agregarAlDescarte(clon)
                     };
 
