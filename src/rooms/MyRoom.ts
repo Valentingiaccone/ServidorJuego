@@ -946,11 +946,14 @@ export class MyRoom extends Room {
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
                         this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada, descripcionCatalan: carta.descripcionEnCatalan});
                     }
-                } 
+                }
                 else {
                     victima.vidas--;
                     this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
-                    
+                    const numero: number = Math.floor(Math.random() * 3);
+                    const sfx: string = "bang" + numero
+                    this.broadcast("sfx", sfx)
+
                     // --- HOOK RECIBIR DAÑO ---
                     let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
                     if (pasivaVictima && pasivaVictima.onRecibirDano) {

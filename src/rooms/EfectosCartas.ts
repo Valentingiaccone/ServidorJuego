@@ -252,6 +252,9 @@ export class EfectoEquiparBarril implements IEfectoCarta {
         
         sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        const numero: number = Math.floor(Math.random() * 3);
+        const sfx: string = "barril" + numero
+        sala.broadcast("sfx", sfx)
     }
 }
 
