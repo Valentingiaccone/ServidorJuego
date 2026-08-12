@@ -97,8 +97,22 @@ export class MyRoom extends Room {
                 }
             });
 
+            let totalJugadores: number = this.state.jugadores.size;
+            let todosVivos: boolean = totalJugadores == totalVivos
+
+            if (!todosVivos){
+                if (totalVivos == 4){
+                    this.broadcast("musica", "juegoQuedan4")
+                } else if (totalVivos == 3){
+                    this.broadcast("musica", "juegoQuedan3")
+                } else if (totalVivos == 2){
+                    this.broadcast("musica", "juegoQuedan2")
+                }
+            }
+
             if (vivos.Sheriff === 0) {
                 this.state.estadoJuego = "Terminado";
+                this.broadcast("musica", "fin")
                 if (totalVivos === 1 && vivos.Renegado === 1) {
                     this.broadcast("victoria", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
                 } else {
@@ -121,6 +135,8 @@ export class MyRoom extends Room {
             if (jugador && jugador.esAnfitrion && this.state.estadoJuego === "Lobby") {
                 const totalJugadores = this.state.jugadores.size;
                 console.log(`🔥 ¡El Anfitrión dio la orden! Inicia la partida con ${totalJugadores} jugadores.`);
+
+                this.broadcast("musica", "seleccionDePersonaje")
                 
                 let mazoRoles: string[] = [];
                 if (totalJugadores <= 2) mazoRoles = ["Sheriff", "Renegado"];
@@ -132,6 +148,9 @@ export class MyRoom extends Room {
                 else if (totalJugadores === 8) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"];
                 else if (totalJugadores === 9) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil"];
                 else if (totalJugadores === 10) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil"];
+
+                this.state.cantidadForajidos = mazoRoles.filter(rol => rol === "Forajido").length;
+                this.state.cantidadAlguaciles = mazoRoles.filter(rol => rol === "Alguacil").length;
 
                 mazoRoles.sort(() => Math.random() - 0.5);
 
@@ -454,6 +473,8 @@ export class MyRoom extends Room {
                 if (sheriff) this.repartirCartas(sheriff, 2, "turno");
 
                 this.state.estadoJuego = "Jugando";
+
+                this.broadcast("musica", "juego")
             }
         });
 
