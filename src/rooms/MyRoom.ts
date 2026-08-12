@@ -127,7 +127,7 @@ export class MyRoom extends Room {
     }
 
     onCreate (options: any) {
-        console.log("¡La sala se creó correctamente!");
+        console.log("La sala se creó correctamente");
         this.setState(new MyRoomState());
 
         this.onMessage("iniciar_partida", (client, message) => {
