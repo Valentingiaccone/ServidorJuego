@@ -42,7 +42,8 @@ export class EfectoCurar implements IEfectoCarta {
             console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
-            
+            sala.broadcast("sfx", "curacion")
+
             // Consumimos la carta
             jugador.mano.splice(indiceCarta, 1);
             sala.agregarAlDescarte(cartaJugada);
@@ -70,6 +71,9 @@ export class EfectoEquipar implements IEfectoCarta {
         console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
         sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        const numero: number = Math.floor(Math.random() * 3);
+        const sfx: string = "equiparArma" + numero
+        sala.broadcast("sfx", sfx)
     }
 }
 
@@ -125,7 +129,8 @@ export class EfectoCurarATodos implements IEfectoCarta {
         console.log(`✨ ${jugadorQueJuega.nombre} curó a todos.`);
         sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre} y curó a todos!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
-        
+        sala.broadcast("sfx", "poco")
+
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
     }
@@ -269,6 +274,7 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
         
         sala.broadcast("notificacion_turno", `🧨 ¡${jugador.nombre} encendió una Dinamita!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.broadcast("sfx", "dinamita")
     }
 }
 

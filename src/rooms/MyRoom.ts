@@ -695,6 +695,9 @@ export class MyRoom extends Room {
                     else if (motivoActual === "Dinamita") {
                         if (!fueExito) { // Explotó
                             this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió Rojo. La dinamita explotó en la cara de ${victima?.nombre}.`);
+                            const numero: number = Math.floor(Math.random() * 3);
+                            const sfx: string = "explosion" + numero
+                            this.broadcast("sfx", sfx)
                             if (victima) victima.vidas -= 3;
                             
                             if (victima && victima.cartaDinamita) descartarEquipamientoSeguro(victima.cartaDinamita);
