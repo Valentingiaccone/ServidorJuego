@@ -1027,10 +1027,51 @@ export class MyRoom extends Room {
 
     onLeave (client: Client, code: number) {
         const jugadorQueSeVa = this.state.jugadores.get(client.sessionId);
-        const eraAnfitrion = jugadorQueSeVa ? jugadorQueSeVa.esAnfitrion : false;
+        if (!jugadorQueSeVa) return;
 
-        this.state.jugadores.delete(client.sessionId);
-        
+        const eraAnfitrion = jugadorQueSeVa.esAnfitrion;
+
+        // Si el juego no empezó (Lobby o Selección), simplemente lo borramos de la sala
+        if (this.state.estadoJuego === "Lobby" || this.state.estadoJuego === "SeleccionPersonaje") {
+            this.state.jugadores.delete(client.sessionId);
+        } else {
+            // SI EL JUEGO YA EMPEZÓ, LO MATAMOS (No lo borramos del mapa para no romper distancias ni el orden)
+            this.broadcast("notificacion_turno", `🏃 ${jugadorQueSeVa.nombre} ha abandonado la partida y su personaje muere.`);
+
+            // 1. Le ponemos la vida en 0 y llamamos a tu función de muerte para que suelte sus cartas
+            jugadorQueSeVa.vidas = 0;
+            this.evaluarMuerte(jugadorQueSeVa);
+
+            // 2. Si era su turno, lo pasamos al siguiente
+            if (this.state.turnoActual === client.sessionId) {
+                this.avanzarAlSiguienteTurno(client.sessionId);
+            }
+
+            // 3. Destrabamos el juego si estábamos esperando que respondiera a algo
+            if (this.state.jugadorEnPeligro === client.sessionId) {
+                this.avanzarColaDePeligro();
+            }
+            if (this.state.jugadorDebeDescartar === client.sessionId) {
+                this.state.jugadorDebeDescartar = "";
+            }
+            if (this.state.jugadorBajoAtaqueIndio === client.sessionId) {
+                this.avanzarColaIndios();
+            }
+            if (this.state.jugadorEligiendoTienda === client.sessionId) {
+                this.avanzarColaTienda();
+            }
+            if (this.state.jugadorEnDuelo === client.sessionId) {
+                // Si estaba en duelo y huye, el duelo se cancela (o se lo da por perdido)
+                this.state.jugadorEnDuelo = "";
+                this.state.oponenteDuelo = "";
+            }
+            if (this.state.jugadorDesenfundando === client.sessionId) {
+                this.state.jugadorDesenfundando = "";
+                this.state.motivoDesenfundar = "";
+            }
+        }
+
+        // 4. Reasignamos al anfitrión si el que se fue era el líder
         if (eraAnfitrion && this.state.jugadores.size > 0) {
             for (let [id, jugador] of this.state.jugadores.entries()) {
                 jugador.esAnfitrion = true;
