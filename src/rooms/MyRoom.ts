@@ -100,16 +100,6 @@ export class MyRoom extends Room {
             let totalJugadores: number = this.state.jugadores.size;
             let todosVivos: boolean = totalJugadores == totalVivos
 
-            if (!todosVivos){
-                if (totalVivos == 4){
-                    this.broadcast("musica", "juegoQuedan4")
-                } else if (totalVivos == 3){
-                    this.broadcast("musica", "juegoQuedan3")
-                } else if (totalVivos == 2){
-                    this.broadcast("musica", "juegoQuedan2")
-                }
-            }
-
             if (vivos.Sheriff === 0) {
                 this.state.estadoJuego = "Terminado";
                 this.broadcast("musica", "fin")
@@ -122,6 +112,14 @@ export class MyRoom extends Room {
                 this.state.estadoJuego = "Terminado";
                 this.broadcast("victoria", "🏆 ¡EL SHERIFF GANA LA PARTIDA!");
                 this.broadcast("musica", "fin")
+            } else if (!todosVivos){
+                if (totalVivos == 4){
+                    this.broadcast("musica", "juegoQuedan4")
+                } else if (totalVivos == 3){
+                    this.broadcast("musica", "juegoQuedan3")
+                } else if (totalVivos == 2){
+                    this.broadcast("musica", "juegoQuedan2")
+                }
             }
         }
     }
