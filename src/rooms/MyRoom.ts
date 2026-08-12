@@ -121,6 +121,7 @@ export class MyRoom extends Room {
             } else if (vivos.Forajido === 0 && vivos.Renegado === 0) {
                 this.state.estadoJuego = "Terminado";
                 this.broadcast("victoria", "🏆 ¡EL SHERIFF GANA LA PARTIDA!");
+                this.broadcast("musica", "fin")
             }
         }
     }
