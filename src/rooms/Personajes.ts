@@ -303,8 +303,8 @@ export class Lesly implements IPersonaje {
 
 export class Domino implements IPersonaje {
     nombre = "Domino";
-    habilidad = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas el resto vé las descripciones (menos esta) en catalan.";
-    habilidadEnCatalan: string = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas el resto vé las descripciones (menos esta) en catalan."
+    habilidad = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan.";
+    habilidadEnCatalan: string = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan."
     vidasBase = 4;
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string): void {
