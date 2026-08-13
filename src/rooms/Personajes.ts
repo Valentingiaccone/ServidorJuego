@@ -399,8 +399,8 @@ export class Tilink implements IPersonaje {
 
 export class Flowery implements IPersonaje {
     nombre = "Flowery";
-    habilidad = "Tu padre es mi mejor amigo:\nPor cada carta jugada crece 0.25 metros, por cada carta descartada, decrece 0.25 metros, al llegar a 3.50, inflige 1 de daño a todos los demas de forma inesquivable, les roba una carta aleatoria y los mete a la carcel (menos al Sheriff), despues aumenta su vida maxima en 1, se cura 1, y roba 3 cartas del mazo.";
-    habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix 0,25 metres, per cada carta descartada decreix 0,25 metres. En arribar a 3,50, infligeix 1 de dany a tots els altres de forma inesquivable, els hi roba una carta aleatòria i els posa a la presó (excepte al Sheriff). Després augmenta la seva salut màxima en 1, es cura 1 punt de vida i roba 3 cartes de la baralla.";
+    habilidad = "Tu padre es mi mejor amigo:\nPor cada carta jugada crece 0.25 metros, por cada carta descartada, decrece 0.25 metros, al llegar a 3.50, inflige 1 de daño a todos los demas de forma inesquivable, les roba una carta aleatoria y los mete a la carcel (menos al Sheriff), despues aumenta su vida maxima en 1, se cura 1, y roba 1 carta del mazo.";
+    habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix 0,25 metres, per cada carta descartada decreix 0,25 metres. En arribar a 3,50, infligeix 1 de dany a tots els altres de forma inesquivable, els hi roba una carta aleatòria i els posa a la presó (excepte al Sheriff). Després augmenta la seva salut màxima en 1, es cura 1 punt de vida i roba 1 carte de la baralla.";
     vidasBase = 4;
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
@@ -451,9 +451,9 @@ export class Flowery implements IPersonaje {
 
             jugador.vidasMaximas++;
             jugador.vidas++;
-            sala.repartirCartas(jugador, 2, "pasiva");
+            sala.repartirCartas(jugador, 1, "pasiva");
             //sala.broadcast("notificacion_turno", `🌻 Flowery aumenta su salud máxima, se cura y roba 3 cartas.`);
-            sala.broadcast("notificacion_turno", `🌻 Flowery aumentó su salud máxima a ${jugador.vidasMaximas}, se curó 1, metió a todos en la carcel, les robo a cada uno una carta y robó otras 2 del mazo.`)
+            sala.broadcast("notificacion_turno", `🌻 Flowery aumentó su salud máxima a ${jugador.vidasMaximas}, se curó 1, metió a todos en la carcel, les robo a cada uno una carta y robó una del mazo.`)
 
             const numero: number = Math.floor(Math.random() * 2);
             const sfx: string = "floweryHabilidad" + numero
