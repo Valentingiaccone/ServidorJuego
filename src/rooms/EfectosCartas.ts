@@ -44,6 +44,11 @@ export class EfectoCurar implements IEfectoCarta {
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
             sala.broadcast("sfx", "curacion")
 
+            let pasivaJugadorActualJugarCarta = jugador.personaje;
+            if (pasivaJugadorActualJugarCarta && pasivaJugadorActualJugarCarta.onJugarCarta) {
+                pasivaJugadorActualJugarCarta.onJugarCarta(this, jugador, cartaJugada);
+            }
+
             // Consumimos la carta
             jugador.mano.splice(indiceCarta, 1);
             sala.agregarAlDescarte(cartaJugada);
@@ -74,6 +79,11 @@ export class EfectoEquipar implements IEfectoCarta {
         const numero: number = Math.floor(Math.random() * 3);
         const sfx: string = "equiparArma" + numero
         sala.broadcast("sfx", sfx)
+
+        let pasivaJugadorActual = jugador.personaje;
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
+        }
     }
 }
 
@@ -131,6 +141,11 @@ export class EfectoCurarATodos implements IEfectoCarta {
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         sala.broadcast("sfx", "poco")
 
+        let pasivaJugadorActual = jugadorQueJuega.personaje;
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugadorQueJuega, cartaJugada);
+        }
+
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
     }
@@ -139,6 +154,11 @@ export class EfectoCurarATodos implements IEfectoCarta {
 export class EfectoTiratachuela implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
         sala.colaDePeligro = [];
+
+        let pasivaJugadorActual = jugadorQueJuega.personaje;
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugadorQueJuega, cartaJugada);
+        }
         
         sala.state.jugadores.forEach((j: any, sessionId: string) => {
             if (j.estaVivo && sessionId !== client.sessionId) {
@@ -153,6 +173,7 @@ export class EfectoTiratachuela implements IEfectoCarta {
             
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+            
             sala.avanzarColaDePeligro(); 
         } else {
             client.send("alerta_personal", "No hay nadie vivo para atacar.");
@@ -163,6 +184,11 @@ export class EfectoTiratachuela implements IEfectoCarta {
 export class EfectoIndios implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
         sala.colaIndios = [];
+
+        let pasivaJugadorActual = jugadorQueJuega.personaje;
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugadorQueJuega, cartaJugada);
+        }
         
         sala.state.jugadores.forEach((j: any, sessionId: string) => {
             if (j.estaVivo && sessionId !== client.sessionId) sala.colaIndios.push(sessionId);
@@ -187,6 +213,11 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         let vivosIds: string[] = [];
         let idsJugadores = Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
+
+        let pasivaJugadorActual = jugadorQueJuega.personaje;
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugadorQueJuega, cartaJugada);
+        }
         
         for(let i = 0; i < idsJugadores.length; i++) {
             let idx = (indiceInicial + i) % idsJugadores.length;
@@ -229,6 +260,11 @@ export class EfectoEquiparMustang implements IEfectoCarta {
         
         sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        
+        let pasivaJugadorActual = jugador.personaje;
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
+        }
     }
 }
 
@@ -243,6 +279,11 @@ export class EfectoEquiparMira implements IEfectoCarta {
         
         sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Mira Telescópica.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+    
+        let pasivaJugadorActual = jugador.personaje;
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
+        }
     }
 }
 
@@ -260,6 +301,11 @@ export class EfectoEquiparBarril implements IEfectoCarta {
         const numero: number = Math.floor(Math.random() * 3);
         const sfx: string = "barril" + numero
         sala.broadcast("sfx", sfx)
+
+        let pasivaJugadorActual = jugador.personaje;
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
+        }
     }
 }
 
@@ -275,6 +321,11 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
         sala.broadcast("notificacion_turno", `🧨 ¡${jugador.nombre} encendió una Dinamita!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         sala.broadcast("sfx", "dinamita")
+
+        let pasivaJugadorActual = jugador.personaje
+        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
+        }
     }
 }
 

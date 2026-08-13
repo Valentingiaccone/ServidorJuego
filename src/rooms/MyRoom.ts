@@ -526,11 +526,6 @@ export class MyRoom extends Room {
                         
                         // --- EL DESPACHADOR ACTÚA ---
                         this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, client, jugador, cartaJugada, indiceCarta, partesEfecto, this.gestorPersonajes);
-                    
-                        let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
-                        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-                            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
-                        }
                     }
                 }
             }
