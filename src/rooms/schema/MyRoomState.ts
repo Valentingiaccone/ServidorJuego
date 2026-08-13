@@ -50,6 +50,8 @@ export class Jugador extends Schema {
     // roles especificos
     // ----------------------------------------
     @type("number") alturaFlowery: number = 0;
+    @type("boolean") estaMuertoFalso: boolean = false;
+    @type("number") rondasMuerto: number = 0;
 }
 
 export class MyRoomState extends Schema {
@@ -73,5 +75,6 @@ export class MyRoomState extends Schema {
     @type(["boolean"]) layoutRuleta = new ArraySchema<boolean>();
     @type("number") cantidadAlguaciles: number = 0;
     @type("number") cantidadForajidos: number = 0;
+    @type("number") danoPendiente: number = 1;
 }
 

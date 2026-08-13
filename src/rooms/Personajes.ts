@@ -471,6 +471,32 @@ export class Leon implements IPersonaje {
     vidasBase = 4;
 }
 
+export class Kazuma implements IPersonaje {
+    nombre = "Kazuma";
+    habilidad = "Renacer del Héroe:\nSi no es Sheriff, al morir revive en 3 rondas con 1 vida. Si es Sheriff, al recibir daño tiene 50% de crear la espada Karuma (2 de daño a distancia 1).";
+    habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu en 3 rondes amb 1 de vida. Si és Sheriff, en rebre dany té un 50% de crear l'espasa Karuma (2 de dany, abast 1).";
+    vidasBase = 4;
+
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+        if (victima.rol === "Sheriff" && victima.vidas > 0) {
+            // 50% de probabilidad
+            if (Math.random() < 0.5) {
+                const kamura = new Carta();
+                kamura.id = `karuma_${Date.now()}_${Math.floor(Math.random() * 100)}`;
+                kamura.nombre = "Karuma";
+                kamura.descripcion = "Funciona como un BANG! pero inflige 2 de daño a distancia 1.";
+                kamura.descripcionEnCatalan = "Funciona com un BANG! però infligeix 2 de dany a distància 1.";
+                kamura.tipoDeUso = "objetivo1";
+                kamura.efecto = "dano_2";
+                kamura.esConjurada = true;
+                
+                victima.mano.push(kamura);
+                sala.broadcast("notificacion_turno", `🗡️ ¡Kazuma ha conjurado su espada Kamura!`);
+            }
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -491,11 +517,12 @@ export class GestorPersonajes {
         // this.registrar(new HongoUp());
         // this.registrar(new Hongo());
         // this.registrar(new Lesly());
-        this.registrar(new Mikotoba());
+        // this.registrar(new Mikotoba());
         this.registrar(new Domino());
         // this.registrar(new Tilink());
         this.registrar(new Flowery())
         this.registrar(new Leon());
+        this.registrar(new Kazuma());
     }
 
     private registrar(p: IPersonaje) {

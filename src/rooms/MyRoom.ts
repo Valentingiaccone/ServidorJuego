@@ -58,7 +58,15 @@ export class MyRoom extends Room {
         if (victima.vidas <= 0) {
             victima.estaVivo = false;
             victima.vidas = 0;
-            console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
+
+            if (victima.personaje === "Kazuma" && victima.rol !== "Sheriff" && !victima.estaMuertoFalso) {
+                victima.estaMuertoFalso = true;
+                victima.rondasMuerto = 3; 
+                this.broadcast("notificacion_turno", `☠️ ${victima.nombre} ha sido ELIMINADO?.`);
+            } else {
+                victima.estaMuertoFalso = false;
+                console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
+            }
 
             victima.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
             victima.mano.clear();
@@ -850,29 +858,40 @@ export class MyRoom extends Room {
 
                 let alcanceMaximo = atacante.alcanceArma;
                 
+                // --- NUEVO: PREPARAMOS LA CARTA PARA EVALUAR SU ALCANCE ESPECIAL (KAMURA) ---
+                let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
+                let cartaUsada = (indiceCarta !== -1) ? atacante.mano[indiceCarta] : null;
+
+                // KAMURA: Su alcance siempre es 1, ignorando el arma equipada.
+                if (cartaUsada && cartaUsada.tipoDeUso === "objetivo1") {
+                    alcanceMaximo = 1;
+                }
+                
                 if (distancia > alcanceMaximo) {
                     client.send("alerta_personal", `${victima.nombre} está fuera de tu alcance.`);
                     return; 
                 }
-
-                let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
                 
-                if (indiceCarta !== -1 && atacante.mano[indiceCarta].efecto === "dano_1") {
-                    let carta = atacante.mano[indiceCarta];
+                // --- NUEVO: ACEPTAMOS TANTO dano_1 COMO dano_2 ---
+                if (cartaUsada && (cartaUsada.efecto === "dano_1" || cartaUsada.efecto === "dano_2")) {
                     
                     atacante.yaDisparo = true;
                     atacante.mano.splice(indiceCarta, 1);
-                    this.agregarAlDescarte(carta)
+                    this.agregarAlDescarte(cartaUsada)
                     
                     this.state.jugadorEnPeligro = datosDelDisparo.objetivoId;
                     this.state.atacanteActual = client.sessionId;
                     
-                    this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le disparó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada, descripcionCatalan: carta.descripcionEnCatalan});
+                    // --- NUEVO: MEMORIZAMOS EL DAÑO Y RESETEAMOS EL BARRIL ---
+                    this.state.danoPendiente = (cartaUsada.efecto === "dano_2") ? 2 : 1;
+                    this.state.usosBarril = 0; 
+                    
+                    this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
+                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada, descripcionCatalan: cartaUsada.descripcionEnCatalan});
                 
                     let pasivaJugadorActual = this.gestorPersonajes.obtener(atacante.personaje);
                     if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-                        pasivaJugadorActual.onJugarCarta(this, atacante, carta);
+                        pasivaJugadorActual.onJugarCarta(this, atacante, cartaUsada);
                     }
                 }
             }
@@ -1001,7 +1020,7 @@ export class MyRoom extends Room {
                     }
                 }
                 else {
-                    victima.vidas--;
+                    victima.vidas -= this.state.danoPendiente;
                     this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
                     const numero: number = Math.floor(Math.random() * 3);
                     const sfx: string = "bang" + numero
@@ -1091,6 +1110,7 @@ export class MyRoom extends Room {
 
             // 1. Le ponemos la vida en 0 y llamamos a tu función de muerte para que suelte sus cartas
             jugadorQueSeVa.vidas = 0;
+            jugadorQueSeVa.estaMuertoFalso = false;
             this.evaluarMuerte(jugadorQueSeVa);
 
             // 2. Si era su turno, lo pasamos al siguiente
@@ -1151,15 +1171,47 @@ export class MyRoom extends Room {
     }
 
     avanzarAlSiguienteTurno(idJugadorActual: string) {
-        let siguiente = this.obtenerSiguienteJugadorVivo(idJugadorActual);
-        
-        if (siguiente.jugador) {
-            this.state.turnoActual = siguiente.id;
-            siguiente.jugador.yaDisparo = false;
-            this.evaluarFaseDinamita(siguiente.id);
+        const idsJugadores = Array.from(this.state.jugadores.keys());
+        if (idsJugadores.length === 0) return;
+
+        let idxActual = idsJugadores.indexOf(idJugadorActual);
+        let siguienteIdx = (idxActual + 1) % idsJugadores.length;
+        let iteradorId = idsJugadores[siguienteIdx];
+        let jugadorSiguiente = this.state.jugadores.get(iteradorId);
+
+        let vueltas = 0;
+
+        while (vueltas < idsJugadores.length) {
+            // LÓGICA: ¿Pasamos por un fantasma?
+            if (jugadorSiguiente && !jugadorSiguiente.estaVivo && jugadorSiguiente.estaMuertoFalso) {
+                jugadorSiguiente.rondasMuerto--;
+                if (jugadorSiguiente.rondasMuerto <= 0) {
+                    jugadorSiguiente.estaMuertoFalso = false;
+                    jugadorSiguiente.estaVivo = true;
+                    jugadorSiguiente.vidas = 1;
+                    this.broadcast("notificacion_turno", `⚡ ¡KAZUMA HA RESUCITADO DE ENTRE LOS MUERTOS!`);
+                    break; // FRENAMOS EL BUCLE: ¡Es su turno!
+                }
+            }
+
+            // LÓGICA NORMAL: ¿Está vivo?
+            if (jugadorSiguiente && jugadorSiguiente.estaVivo) {
+                break; 
+            }
+
+            // Avanzamos al siguiente
+            siguienteIdx = (siguienteIdx + 1) % idsJugadores.length;
+            iteradorId = idsJugadores[siguienteIdx];
+            jugadorSiguiente = this.state.jugadores.get(iteradorId);
+            vueltas++;
+        }
+
+        if (vueltas >= idsJugadores.length && !jugadorSiguiente?.estaVivo) {
+            this.state.turnoActual = "";
         } else {
-            // Nadie vivo. Limpiamos el turno para evitar errores
-            this.state.turnoActual = ""; 
+            this.state.turnoActual = iteradorId;
+            if (jugadorSiguiente) jugadorSiguiente.yaDisparo = false;
+            this.evaluarFaseDinamita(iteradorId); // Esto se encarga de darle sus 2 cartas también
         }
     }
 
