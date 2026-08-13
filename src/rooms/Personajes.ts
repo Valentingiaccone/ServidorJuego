@@ -34,6 +34,8 @@ export interface IPersonaje {
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugadorConPasiva: any): void
 
     onRecibirCuracion?(jugador: any): void
+
+    onJugarCarta?(sala: any, jugador: any, cartaJugada: any): void;
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -395,29 +397,92 @@ export class Tilink implements IPersonaje {
     }
 }
 
+export class Flowery implements IPersonaje {
+    nombre = "Flowery";
+    habilidad = "Tu padre es mi mejor amigo:\nPor cada carta jugada crece 0.25 metros, por cada carta descartada, decrece 0.25 metros, al llegar a 3.50, inflige 1 de daño a todos los demas de forma inesquivable, les roba una carta aleatoria y los mete a la carcel (menos al Sheriff), despues aumenta su vida maxima en 1, se cura 1, y roba 3 cartas del mazo.";
+    habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix 0,25 metres, per cada carta descartada decreix 0,25 metres. En arribar a 3,50, infligeix 1 de dany a tots els altres de forma inesquivable, els hi roba una carta aleatòria i els posa a la presó (excepte al Sheriff). Després augmenta la seva salut màxima en 1, es cura 1 punt de vida i roba 3 cartes de la baralla.";
+    vidasBase = 4;
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
+        jugador.alturaFlowery += 0.25;
+        this.evaluarCrecimiento(sala, jugador);
+    }
+
+    onDescartarCarta(sala: any, jugador: any, cartaDescartada: any, motivo: string) {
+        jugador.alturaFlowery -= 0.25;
+        if (jugador.alturaFlowery < 0) jugador.alturaFlowery = 0;
+    }
+
+    private evaluarCrecimiento(sala: any, jugador: any) {
+        if (jugador.alturaFlowery >= 3.50) {
+            sala.broadcast("notificacion_turno", `🌻 ¡FLOWERY HACE SU ATAQUE ESPECIAL`);
+            //sala.broadcast("musica", "musicaJefeFlowery");
+
+            sala.state.jugadores.forEach((v: any, sessionId: string) => {
+                if (v.estaVivo && v !== jugador) {
+                    
+                    v.vidas--;
+                    //sala.broadcast("notificacion_turno", `💥 ${v.nombre} recibe 1 de daño inesquivable por las raíces de Flowery.`);
+                    sala.evaluarMuerte(v);
+
+                    if (v.estaVivo && v.mano.length > 0) {
+                        let indiceAleatorio = Math.floor(Math.random() * v.mano.length);
+                        let cartaRobada = v.mano.splice(indiceAleatorio, 1)[0];
+                        jugador.mano.push(cartaRobada);
+                        //sala.broadcast("notificacion_turno", `🎭 ¡Flowery le robó una carta a ${v.nombre}!`);
+                    }
+
+                    if (v.estaVivo && v.rol !== "Sheriff" && !v.estaEnPrision) {
+                        const prision = new Carta();
+                        prision.id = `prision_flowery_${Date.now()}_${Math.floor(Math.random() * 100)}`;
+                        prision.nombre = "Prisión";
+                        prision.descripcion = "Equipala a otro jugador (menos al Sheriff). Tiene 25% de salir de la carcel o perder el turno.";
+                        prision.descripcionEnCatalan = "Equipa-la a un altre jugador (excepte el Sheriff). Té un 25 % de probabilitats de sortir de la presó o de perdre el torn.";
+                        prision.tipoDeUso = "objetivoGlobal"; 
+                        prision.efecto = "prision";
+                        prision.esConjurada = true;
+
+                        v.estaEnPrision = true;
+                        v.cartaPrision = prision;
+                        //sala.broadcast("notificacion_turno", `⛓️ ¡Flowery enredó a ${v.nombre} en una Prisión de raíces!`);
+                    }
+                }
+            });
+
+            jugador.vidasMaximas++;
+            jugador.vidas++;
+            sala.repartirCartas(jugador, 3, "pasiva");
+            //sala.broadcast("notificacion_turno", `🌻 Flowery aumenta su salud máxima, se cura y roba 3 cartas.`);
+
+            jugador.alturaFlowery = 0;
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
-        this.registrar(new Berry());
-        this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
-        this.registrar(new Chester());
-        this.registrar(new Frank());
-        this.registrar(new Pam());
-        this.registrar(new Trucy());
-        this.registrar(new HongoUp());
-        this.registrar(new Hongo());
-        this.registrar(new Lesly());
+        // this.registrar(new ColeCasiddy());
+        // this.registrar(new Berry());
+        // this.registrar(new Maton());
+        // this.registrar(new Mandy());
+        // this.registrar(new Tralalero());
+        // this.registrar(new Darryl());
+        // this.registrar(new JetpackCat());
+        // this.registrar(new KayFaraday());
+        // this.registrar(new Chester());
+        // this.registrar(new Frank());
+        // this.registrar(new Pam());
+        // this.registrar(new Trucy());
+        // this.registrar(new HongoUp());
+        // this.registrar(new Hongo());
+        // this.registrar(new Lesly());
         this.registrar(new Mikotoba());
         this.registrar(new Domino());
         this.registrar(new Tilink());
+        this.registrar(new Flowery())
     }
 
     private registrar(p: IPersonaje) {

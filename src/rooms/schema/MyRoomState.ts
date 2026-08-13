@@ -47,6 +47,9 @@ export class Jugador extends Schema {
     @type("boolean") tieneDinamita: boolean = false;
     @type(Carta) cartaDinamita: Carta;
     // ----------------------------------------
+    // roles especificos
+    // ----------------------------------------
+    @type("number") alturaFlowery: number = 0;
 }
 
 export class MyRoomState extends Schema {
