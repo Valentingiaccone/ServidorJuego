@@ -605,6 +605,9 @@ export class MyRoom extends Room {
 
                 this.state.jugadorDebeDescartar = datos.idObjetivo;
                 this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
+                const numero: number = Math.floor(Math.random() * 2);
+                const sfx: string = "cocoroch" + numero
+                this.broadcast("sfx", sfx)
 
                 let pasivaJugadorActual = this.gestorPersonajes.obtener(atacante.personaje);
                 if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
