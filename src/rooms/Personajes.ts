@@ -455,7 +455,7 @@ export class Flowery implements IPersonaje {
             //sala.broadcast("notificacion_turno", `🌻 Flowery aumenta su salud máxima, se cura y roba 3 cartas.`);
             sala.broadcast("notificacion_turno", `🌻 Flowery aumentó su salud máxima a ${jugador.vidasMaximas}, se curó 1, metió a todos en la carcel, les robo a cada uno una carta y robó otras 2 del mazo.`)
 
-            const numero: number = Math.floor(Math.random() * 4);
+            const numero: number = Math.floor(Math.random() * 2);
             const sfx: string = "floweryHabilidad" + numero
             sala.broadcast("sfx", sfx)
 
