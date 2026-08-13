@@ -4,13 +4,13 @@ import { GestorPersonajes } from "./Personajes.js";
 
 // 1. EL CONTRATO: Todas las cartas que agregues en el futuro DEBEN tener este método "ejecutar"
 export interface IEfectoCarta {
-    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): void;
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean;
 }
 
 // 2. LAS ESTRATEGIAS: Cada efecto es una clase separada y limpia
 
 export class EfectoCurar implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes) {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
         let totalVivos = 0;
 
         sala.state.jugadores.forEach((j: any) => {
@@ -21,7 +21,7 @@ export class EfectoCurar implements IEfectoCarta {
 
         if (totalVivos == 2){
             client.send("alerta_personal", "No se puede usar curacion cuando quedan 2 jugadores.");
-            return
+            return false
         }
         
         if (jugador.vidas < jugador.vidasMaximas) {
@@ -44,22 +44,19 @@ export class EfectoCurar implements IEfectoCarta {
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
             sala.broadcast("sfx", "curacion")
 
-            let pasivaJugadorActualJugarCarta = jugador.personaje;
-            if (pasivaJugadorActualJugarCarta && pasivaJugadorActualJugarCarta.onJugarCarta) {
-                pasivaJugadorActualJugarCarta.onJugarCarta(this, jugador, cartaJugada);
-            }
-
             // Consumimos la carta
             jugador.mano.splice(indiceCarta, 1);
             sala.agregarAlDescarte(cartaJugada);
+            return true
         } else {
             client.send("alerta_personal", "Tu vida ya está al máximo.");
+            return false
         }
     }
 }
 
 export class EfectoEquipar implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         let nuevoAlcance = parseInt(parametros[2]); 
         
         if (jugador.cartaArma) {
@@ -79,16 +76,12 @@ export class EfectoEquipar implements IEfectoCarta {
         const numero: number = Math.floor(Math.random() * 3);
         const sfx: string = "equiparArma" + numero
         sala.broadcast("sfx", sfx)
-
-        let pasivaJugadorActual = jugador.personaje;
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
-        }
+        return true
     }
 }
 
 export class EfectoRobar implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         let cantidad = parseInt(parametros[1]); 
         sala.repartirCartas(jugador, cantidad, "carta");
         
@@ -98,11 +91,12 @@ export class EfectoRobar implements IEfectoCarta {
         
         jugador.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
+        return true
     }
 }
 
 export class EfectoCurarATodos implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes) {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
         let totalVivos = 0;
 
         sala.state.jugadores.forEach((j: any) => {
@@ -113,7 +107,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
 
         if (totalVivos == 2){
             client.send("alerta_personal", "No se puede usar curacion cuando quedan 2 jugadores.");
-            return
+            return false
         }
         
         let alguienNecesitaCura = false;
@@ -123,7 +117,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
 
         if (!alguienNecesitaCura) {
             client.send("alerta_personal", "Todos los jugadores vivos ya tienen la salud al máximo.");
-            return;
+            return false
         }
 
         sala.state.jugadores.forEach((j: any) => {
@@ -141,24 +135,16 @@ export class EfectoCurarATodos implements IEfectoCarta {
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         sala.broadcast("sfx", "poco")
 
-        let pasivaJugadorActual = jugadorQueJuega.personaje;
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugadorQueJuega, cartaJugada);
-        }
-
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
+
+        return true
     }
 }
 
 export class EfectoTiratachuela implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         sala.colaDePeligro = [];
-
-        let pasivaJugadorActual = jugadorQueJuega.personaje;
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugadorQueJuega, cartaJugada);
-        }
         
         sala.state.jugadores.forEach((j: any, sessionId: string) => {
             if (j.estaVivo && sessionId !== client.sessionId) {
@@ -174,21 +160,18 @@ export class EfectoTiratachuela implements IEfectoCarta {
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
             
-            sala.avanzarColaDePeligro(); 
+            sala.avanzarColaDePeligro();
+            return true
         } else {
-            client.send("alerta_personal", "No hay nadie vivo para atacar.");
+            client.send("alerta_personal", "No hay nadie vivo para atacar.")
+            return false
         }
     }
 }
 
 export class EfectoIndios implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         sala.colaIndios = [];
-
-        let pasivaJugadorActual = jugadorQueJuega.personaje;
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugadorQueJuega, cartaJugada);
-        }
         
         sala.state.jugadores.forEach((j: any, sessionId: string) => {
             if (j.estaVivo && sessionId !== client.sessionId) sala.colaIndios.push(sessionId);
@@ -200,24 +183,21 @@ export class EfectoIndios implements IEfectoCarta {
             
             sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} lanzó un ataque de ¡Indios!`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
-            sala.avanzarColaIndios(); 
+            sala.avanzarColaIndios();
+            return true
         } else {
             client.send("alerta_personal", "No hay nadie vivo para atacar.");
+            return false
         }
     }
 }
 
 export class EfectoTiendaGriff implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         // 1. Encontrar a todos los vivos en orden (empezando por el que la jugó)
         let vivosIds: string[] = [];
         let idsJugadores = Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
-
-        let pasivaJugadorActual = jugadorQueJuega.personaje;
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugadorQueJuega, cartaJugada);
-        }
         
         for(let i = 0; i < idsJugadores.length; i++) {
             let idx = (indiceInicial + i) % idsJugadores.length;
@@ -246,13 +226,14 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         
         sala.avanzarColaTienda();
+        return true
     }
 }
 
 export class EfectoEquiparMustang implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         if (jugador.tieneMustang && jugador.cartaMustang) {
-            sala.agregarAlDescarte(jugador.cartaMustang); // Si ya tenía uno, lo tira (no se acumulan)
+            sala.agregarAlDescarte(jugador.cartaMustang);
         }
         jugador.tieneMustang = true;
         jugador.cartaMustang = cartaJugada;
@@ -260,16 +241,12 @@ export class EfectoEquiparMustang implements IEfectoCarta {
         
         sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
-        
-        let pasivaJugadorActual = jugador.personaje;
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
-        }
+        return true
     }
 }
 
 export class EfectoEquiparMira implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         if (jugador.tieneMira && jugador.cartaMira) {
             sala.agregarAlDescarte(jugador.cartaMira); 
         }
@@ -279,16 +256,12 @@ export class EfectoEquiparMira implements IEfectoCarta {
         
         sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Mira Telescópica.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
-    
-        let pasivaJugadorActual = jugador.personaje;
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
-        }
+        return true
     }
 }
 
 export class EfectoEquiparBarril implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         if (jugador.tieneBarril && jugador.cartaBarril) {
             sala.agregarAlDescarte(jugador.cartaBarril); 
         }
@@ -301,16 +274,12 @@ export class EfectoEquiparBarril implements IEfectoCarta {
         const numero: number = Math.floor(Math.random() * 3);
         const sfx: string = "barril" + numero
         sala.broadcast("sfx", sfx)
-
-        let pasivaJugadorActual = jugador.personaje;
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
-        }
+        return true
     }
 }
 
 export class EfectoEquiparDinamita implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]) {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         if (jugador.tieneDinamita && jugador.cartaDinamita) {
             sala.agregarAlDescarte(jugador.cartaDinamita); 
         }
@@ -321,11 +290,7 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
         sala.broadcast("notificacion_turno", `🧨 ¡${jugador.nombre} encendió una Dinamita!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         sala.broadcast("sfx", "dinamita")
-
-        let pasivaJugadorActual = jugador.personaje
-        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-            pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
-        }
+        return true
     }
 }
 
@@ -345,12 +310,13 @@ export class DespachadorDeCartas {
         "equiparDinamita": new EfectoEquiparDinamita()
     };
 
-    public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes) {
+    public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
         let efecto = this.efectos[accion];
         if (efecto) {
-            efecto.ejecutar(sala, client, jugador, carta, indice, parametros, gestorPersonajes);
+            return efecto.ejecutar(sala, client, jugador, carta, indice, parametros, gestorPersonajes);
         } else {
             console.log(`⚠️ Efecto no programado o manejado en otra fase: ${accion}`);
+            return false
         }
     }
 }
