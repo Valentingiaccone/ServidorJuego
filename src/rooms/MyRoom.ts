@@ -1081,11 +1081,12 @@ export class MyRoom extends Room {
 
         const eraAnfitrion = jugadorQueSeVa.esAnfitrion;
 
-        // Si el juego no empezó (Lobby o Selección), simplemente lo borramos de la sala
-        if (this.state.estadoJuego === "Lobby" || this.state.estadoJuego === "SeleccionPersonaje") {
+        // LA MAGIA ACÁ: Solo lo matamos si el estado es ESTRICTAMENTE "Jugando".
+        // Si el juego no empezó (Lobby o Selección) o ya Termino, simplemente lo borramos de la sala.
+        if (this.state.estadoJuego !== "Jugando") {
             this.state.jugadores.delete(client.sessionId);
         } else {
-            // SI EL JUEGO YA EMPEZÓ, LO MATAMOS (No lo borramos del mapa para no romper distancias ni el orden)
+            // SI EL JUEGO ESTÁ EN CURSO, LO MATAMOS (No lo borramos del mapa para no romper distancias ni el orden)
             this.broadcast("notificacion_turno", `🏃 ${jugadorQueSeVa.nombre} ha abandonado la partida y su personaje muere.`);
 
             // 1. Le ponemos la vida en 0 y llamamos a tu función de muerte para que suelte sus cartas
@@ -1111,7 +1112,7 @@ export class MyRoom extends Room {
                 this.avanzarColaTienda();
             }
             if (this.state.jugadorEnDuelo === client.sessionId) {
-                // Si estaba en duelo y huye, el duelo se cancela (o se lo da por perdido)
+                // Si estaba en duelo y huye, el duelo se cancela
                 this.state.jugadorEnDuelo = "";
                 this.state.oponenteDuelo = "";
             }
@@ -1151,11 +1152,14 @@ export class MyRoom extends Room {
 
     avanzarAlSiguienteTurno(idJugadorActual: string) {
         let siguiente = this.obtenerSiguienteJugadorVivo(idJugadorActual);
-        this.state.turnoActual = siguiente.id;
         
         if (siguiente.jugador) {
+            this.state.turnoActual = siguiente.id;
             siguiente.jugador.yaDisparo = false;
             this.evaluarFaseDinamita(siguiente.id);
+        } else {
+            // Nadie vivo. Limpiamos el turno para evitar errores
+            this.state.turnoActual = ""; 
         }
     }
 
@@ -1222,17 +1226,29 @@ export class MyRoom extends Room {
 
     obtenerSiguienteJugadorVivo(idActual: string): { id: string, jugador: any } {
         const idsJugadores = Array.from(this.state.jugadores.keys());
+        if (idsJugadores.length === 0) return { id: "", jugador: null };
+
         const indiceActual = idsJugadores.indexOf(idActual);
         
         let siguienteIndice = (indiceActual + 1) % idsJugadores.length;
         let siguienteId = idsJugadores[siguienteIndice];
         let jugadorSiguiente = this.state.jugadores.get(siguienteId);
 
-        while (jugadorSiguiente && !jugadorSiguiente.estaVivo) {
+        // FRENO DE SEGURIDAD: Límite de vueltas
+        let vueltas = 0;
+
+        while (jugadorSiguiente && !jugadorSiguiente.estaVivo && vueltas < idsJugadores.length) {
             siguienteIndice = (siguienteIndice + 1) % idsJugadores.length;
             siguienteId = idsJugadores[siguienteIndice];
             jugadorSiguiente = this.state.jugadores.get(siguienteId);
+            vueltas++;
         }
+
+        // Si dimos toda la vuelta y nadie está vivo, devolvemos null
+        if (vueltas >= idsJugadores.length) {
+            return { id: "", jugador: null };
+        }
+
         return { id: siguienteId, jugador: jugadorSiguiente };
     }
 
