@@ -578,6 +578,11 @@ export class MyRoom extends Room {
                 atacante.mano.push(cartaAfectada);
                 this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion, esConjurada: cartaSabotaje.esConjurada, descripcionCatalan: cartaSabotaje.descripcionEnCatalan});
                 this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
+            
+                let pasivaJugadorActual = this.gestorPersonajes.obtener(atacante.personaje);
+                if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+                    pasivaJugadorActual.onJugarCarta(this, atacante, cartaSabotaje);
+                }
             }
 
             atacante.mano.splice(indiceCartaJugada, 1);
@@ -597,6 +602,11 @@ export class MyRoom extends Room {
 
                 this.state.jugadorDebeDescartar = datos.idObjetivo;
                 this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
+
+                let pasivaJugadorActual = this.gestorPersonajes.obtener(atacante.personaje);
+                if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+                    pasivaJugadorActual.onJugarCarta(this, atacante, cartaUsada);
+                }
             }
         });
 
@@ -859,6 +869,11 @@ export class MyRoom extends Room {
                     
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le disparó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
                     this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada, descripcionCatalan: carta.descripcionEnCatalan});
+                
+                    let pasivaJugadorActual = this.gestorPersonajes.obtener(atacante.personaje);
+                    if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+                        pasivaJugadorActual.onJugarCarta(this, atacante, carta);
+                    }
                 }
             }
         });
@@ -880,6 +895,11 @@ export class MyRoom extends Room {
                 
                 let victima = this.state.jugadores.get(datos.idObjetivo);
                 this.broadcast("notificacion_turno", `⚔️ ¡${atacante.nombre} retó a duelo a ${victima?.nombre}!`);
+            
+                let pasivaJugadorActual = this.gestorPersonajes.obtener(atacante.personaje);
+                if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+                    pasivaJugadorActual.onJugarCarta(this, atacante, cartaUsada);
+                }
             }
         });
 
@@ -973,6 +993,11 @@ export class MyRoom extends Room {
                         
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
                         this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada, descripcionCatalan: carta.descripcionEnCatalan});
+                    
+                        let pasivaJugadorActual = this.gestorPersonajes.obtener(victima.personaje);
+                        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+                            pasivaJugadorActual.onJugarCarta(this, victima, carta);
+                        }
                     }
                 }
                 else {
