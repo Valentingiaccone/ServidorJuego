@@ -464,6 +464,13 @@ export class Flowery implements IPersonaje {
     }
 }
 
+export class Leon implements IPersonaje {
+    nombre = "Leon";
+    habilidad = "Noooo leooooon:\nOculta su salud, cantidad de cartas y equipamiento a los demas.";
+    habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l’equipament als altres."
+    vidasBase = 4;
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -486,8 +493,9 @@ export class GestorPersonajes {
         // this.registrar(new Lesly());
         this.registrar(new Mikotoba());
         this.registrar(new Domino());
-        this.registrar(new Tilink());
+        // this.registrar(new Tilink());
         this.registrar(new Flowery())
+        this.registrar(new Leon());
     }
 
     private registrar(p: IPersonaje) {
