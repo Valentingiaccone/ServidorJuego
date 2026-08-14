@@ -415,12 +415,13 @@ export class Tilink implements IPersonaje {
 
 export class Flowery implements IPersonaje {
     nombre = "Flowery";
-    habilidad = "Tu padre es mi mejor amigo:\nPor cada carta jugada crece 0.25 metros, por cada carta descartada, decrece 0.25 metros, al llegar a 3.50, inflige 1 de daño a todos los demas de forma inesquivable, les roba una carta aleatoria y los mete a la carcel (menos al Sheriff), despues aumenta su vida maxima en 1, se cura 1, y roba 1 carta del mazo.";
-    habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix 0,25 metres, per cada carta descartada decreix 0,25 metres. En arribar a 3,50, infligeix 1 de dany a tots els altres de forma inesquivable, els hi roba una carta aleatòria i els posa a la presó (excepte al Sheriff). Després augmenta la seva salut màxima en 1, es cura 1 punt de vida i roba 1 carte de la baralla.";
+    habilidad = "Tu padre es mi mejor amigo:\nPor cada carta jugada crece 0.25 metros, por cada carta descartada, decrece 0.25 metros, al llegar a 3.00, inflige 1 de daño a todos los demas de forma inesquivable, les roba una carta aleatoria y los mete a la carcel (menos al Sheriff), despues aumenta su vida maxima en 1, se cura 1, y roba 1 carta del mazo.";
+    habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix 0,25 metres, per cada carta descartada decreix 0,25 metres. En arribar a 3,00, infligeix 1 de dany a tots els altres de forma inesquivable, els hi roba una carta aleatòria i els posa a la presó (excepte al Sheriff). Després augmenta la seva salut màxima en 1, es cura 1 punt de vida i roba 1 carte de la baralla.";
     vidasBase = 4;
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
-        jugador.alturaFlowery += 0.25;
+        //jugador.alturaFlowery += 0.25;
+        jugador.alturaFlowery += 1;
         this.evaluarCrecimiento(sala, jugador);
     }
 
@@ -435,7 +436,7 @@ export class Flowery implements IPersonaje {
     }
 
     private evaluarCrecimiento(sala: any, jugador: any) {
-        if (jugador.alturaFlowery >= 3.50) {
+        if (jugador.alturaFlowery >= 3) {
             sala.broadcast("notificacion_turno", `🌻 ¡FLOWERY HACE SU ATAQUE ESPECIAL`);
             //sala.broadcast("musica", "musicaJefeFlowery");
 
@@ -526,24 +527,24 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
-        this.registrar(new Berry());
-        this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
-        this.registrar(new Chester());
-        this.registrar(new Frank());
-        this.registrar(new Pam());
-        this.registrar(new Trucy());
-        this.registrar(new HongoUp());
-        this.registrar(new Hongo());
-        this.registrar(new Lesly());
-        this.registrar(new Mikotoba());
+        // this.registrar(new ColeCasiddy());
+        // this.registrar(new Berry());
+        // this.registrar(new Maton());
+        // this.registrar(new Mandy());
+        // this.registrar(new Tralalero());
+        // this.registrar(new Darryl());
+        // this.registrar(new JetpackCat());
+        // this.registrar(new KayFaraday());
+        // this.registrar(new Chester());
+        // this.registrar(new Frank());
+        // this.registrar(new Pam());
+        // this.registrar(new Trucy());
+        // this.registrar(new HongoUp());
+        // this.registrar(new Hongo());
+        // this.registrar(new Lesly());
+        // this.registrar(new Mikotoba());
         this.registrar(new Domino());
-        this.registrar(new Tilink());
+        //this.registrar(new Tilink());
         this.registrar(new Flowery())
         this.registrar(new Leon());
         this.registrar(new Kazuma());
