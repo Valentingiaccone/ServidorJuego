@@ -624,7 +624,7 @@ export class Robin implements IPersonaje {
             { nombre: "Revolver de Casiddy", alcance: 3 },
             { nombre: "Rifle de Ashe", alcance: 4 },
             { nombre: "Francotirador", alcance: 5 },
-            { nombre: "Rifle de Plasma", alcance: 6 } 
+            //{ nombre: "Rifle de Plasma", alcance: 6 } 
         ];
 
         let index = secuencia.findIndex(a => a.nombre === armaActual);
