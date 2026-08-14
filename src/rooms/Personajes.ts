@@ -409,8 +409,13 @@ export class Flowery implements IPersonaje {
     }
 
     onDescartarCarta(sala: any, jugador: any, cartaDescartada: any, motivo: string) {
+        if (jugador.alturaFlowery > 0){
+            sala.broadcast("sfx", "floweryDecrece")
+        }
         jugador.alturaFlowery -= 0.25;
-        if (jugador.alturaFlowery < 0) jugador.alturaFlowery = 0;
+        if (jugador.alturaFlowery < 0) {
+            jugador.alturaFlowery = 0
+        }
     }
 
     private evaluarCrecimiento(sala: any, jugador: any) {
@@ -460,6 +465,9 @@ export class Flowery implements IPersonaje {
             sala.broadcast("sfx", sfx)
 
             jugador.alturaFlowery = 0;
+        } else {
+            // jugó una carta pero aun no llegó al final
+            sala.broadcast("sfx", "floweryCrece")
         }
     }
 }
@@ -502,24 +510,24 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy());
-        // this.registrar(new Berry());
-        // this.registrar(new Maton());
-        // this.registrar(new Mandy());
-        // this.registrar(new Tralalero());
-        // this.registrar(new Darryl());
-        // this.registrar(new JetpackCat());
-        // this.registrar(new KayFaraday());
-        // this.registrar(new Chester());
-        // this.registrar(new Frank());
-        // this.registrar(new Pam());
-        // this.registrar(new Trucy());
-        // this.registrar(new HongoUp());
-        // this.registrar(new Hongo());
-        // this.registrar(new Lesly());
-        // this.registrar(new Mikotoba());
+        this.registrar(new ColeCasiddy());
+        this.registrar(new Berry());
+        this.registrar(new Maton());
+        this.registrar(new Mandy());
+        this.registrar(new Tralalero());
+        this.registrar(new Darryl());
+        this.registrar(new JetpackCat());
+        this.registrar(new KayFaraday());
+        this.registrar(new Chester());
+        this.registrar(new Frank());
+        this.registrar(new Pam());
+        this.registrar(new Trucy());
+        this.registrar(new HongoUp());
+        this.registrar(new Hongo());
+        this.registrar(new Lesly());
+        this.registrar(new Mikotoba());
         this.registrar(new Domino());
-        // this.registrar(new Tilink());
+        this.registrar(new Tilink());
         this.registrar(new Flowery())
         this.registrar(new Leon());
         this.registrar(new Kazuma());
