@@ -212,13 +212,12 @@ export class Pam implements IPersonaje {
 
 export class HongoUp implements IPersonaje {
     nombre = "Hongo 1Up";
-    habilidad = "Descomposicion:\nCuando otro personaje muere, aumenta su salud maxima en 1 y se cura 2 de vida.";
-    habilidadEnCatalan: string = "Descomposició:\nQuan un altre personatge mor, augmenta la seva salut màxima en 1 i es cura 2 punts de vida."
+    habilidad = "Descomposicion:\nCuando otro personaje muere, se cura 2 de vida.";
+    habilidadEnCatalan: string = "Descomposició:\nQuan un altre personatge mor, es cura 2 punts de vida."
     vidasBase = 4;
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         let curacion: number = 0
-        jugador.vidasMaximas++
         if (jugador.vidas < jugador.vidasMaximas){
             jugador.vidas++
             curacion++
@@ -227,7 +226,9 @@ export class HongoUp implements IPersonaje {
             jugador.vidas++
             curacion++
         }
-        sala.broadcast("notificacion_turno", `🍄 Hongo 1Up se curó ${curacion} y aumentó su salud maxima a ${jugador.vidasMaximas}.`);
+        if (curacion > 0){
+            sala.broadcast("notificacion_turno", `🍄 Hongo 1Up se curó ${curacion}.`);
+        }
     }
 }
 
@@ -496,8 +497,8 @@ export class Leon implements IPersonaje {
 
 export class Kazuma implements IPersonaje {
     nombre = "Kazuma";
-    habilidad = "Renacer del Héroe:\nSi no es Sheriff, al morir revive en 3 rondas con 1 vida. Si es Sheriff, al recibir daño tiene 50% de crear la espada Karuma (2 de daño a distancia 1).";
-    habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu en 3 rondes amb 1 de vida. Si és Sheriff, en rebre dany té un 50% de crear l'espasa Karuma (2 de dany, abast 1).";
+    habilidad = "Renacer del Héroe:\nSi no es Sheriff, al morir revive en 2 rondas con 1 vida. Si es Sheriff, al recibir daño tiene 50% de crear la espada Karuma (2 de daño a distancia 1).";
+    habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu en 2 rondes amb 1 de vida. Si és Sheriff, en rebre dany té un 50% de crear l'espasa Karuma (2 de dany, abast 1).";
     vidasBase = 4;
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {

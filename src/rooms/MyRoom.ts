@@ -71,7 +71,7 @@ export class MyRoom extends Room {
 
             if (victima.personaje === "Kazuma" && victima.rol !== "Sheriff" && !victima.estaMuertoFalso) {
                 victima.estaMuertoFalso = true;
-                victima.rondasMuerto = 3; 
+                victima.rondasMuerto = 2; 
                 this.broadcast("notificacion_turno", `☠️ ${victima.nombre} ha sido ELIMINADO?.`);
             } else {
                 victima.estaMuertoFalso = false;
@@ -1235,6 +1235,7 @@ export class MyRoom extends Room {
                     jugadorSiguiente.estaMuertoFalso = false;
                     jugadorSiguiente.estaVivo = true;
                     jugadorSiguiente.vidas = 1;
+                    this.repartirCartas(jugadorSiguiente, 1, "pasiva")
                     this.broadcast("notificacion_turno", `⚡ ¡KAZUMA HA RESUCITADO DE ENTRE LOS MUERTOS!`);
                     break; // FRENAMOS EL BUCLE: ¡Es su turno!
                 }
