@@ -415,48 +415,50 @@ export class Tilink implements IPersonaje {
 
 export class Flowery implements IPersonaje {
     nombre = "Flowery";
-    habilidad = "Tu padre es mi mejor amigo:\nPor cada carta jugada crece 0.25 metros, por cada carta descartada, decrece 0.25 metros, al llegar a 3.00, inflige 1 de daño a todos los demas de forma inesquivable, les roba una carta aleatoria y los mete a la carcel (menos al Sheriff), despues aumenta su vida maxima en 1, se cura 1, y roba 1 carta del mazo.";
-    habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix 0,25 metres, per cada carta descartada decreix 0,25 metres. En arribar a 3,00, infligeix 1 de dany a tots els altres de forma inesquivable, els hi roba una carta aleatòria i els posa a la presó (excepte al Sheriff). Després augmenta la seva salut màxima en 1, es cura 1 punt de vida i roba 1 carte de la baralla.";
+    habilidad = "Tu padre es mi mejor amigo:\nPor cada carta jugada crece aleatoriamente entre 0.25 y 0.30 metros. Al descartar decrece entre 0.20 y 0.25 metros. Al llegar a 3.00, inflige 1 de daño a todos de forma inesquivable, los mete a la cárcel (menos al Sheriff), y luego roba 3 cartas del mazo.";
+    habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix aleatòriament entre 0,25 i 0,30 metres. En descartar decreix entre 0,20 i 0,25 metres. En arribar a 3,00, infligeix 1 de dany a tots de forma inesquivable, els posa a la presó (excepte al Sheriff), i després roba 3 cartes de la baralla.";
     vidasBase = 4;
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
-        //jugador.alturaFlowery += 0.25;
-        jugador.alturaFlowery += 1;
+        // Genera un número aleatorio entre 25 y 30, luego lo divide por 100
+        let crecimiento = (Math.floor(Math.random() * 6) + 25) / 100;
+        jugador.alturaFlowery += crecimiento;
+        
         this.evaluarCrecimiento(sala, jugador);
     }
 
     onDescartarCarta(sala: any, jugador: any, cartaDescartada: any, motivo: string) {
         if (jugador.alturaFlowery > 0){
-            sala.broadcast("sfx", "floweryDecrece")
+            sala.broadcast("sfx", "floweryDecrece");
         }
-        jugador.alturaFlowery -= 0.25;
+        
+        // Genera un número aleatorio entre 20 y 25, luego lo divide por 100
+        let decrecimiento = (Math.floor(Math.random() * 6) + 20) / 100;
+        jugador.alturaFlowery -= decrecimiento;
+        
         if (jugador.alturaFlowery < 0) {
-            jugador.alturaFlowery = 0
+            jugador.alturaFlowery = 0;
         }
     }
 
     private evaluarCrecimiento(sala: any, jugador: any) {
         if (jugador.alturaFlowery >= 3) {
-            sala.broadcast("notificacion_turno", `🌻 ¡FLOWERY HACE SU ATAQUE ESPECIAL`);
-            //sala.broadcast("musica", "musicaJefeFlowery");
+            sala.broadcast("notificacion_turno", `🌻 ¡FLOWERY HACE SU ATAQUE ESPECIAL!`);
 
             sala.state.jugadores.forEach((v: any, sessionId: string) => {
                 if (v.estaVivo && v !== jugador) {
                     
                     v.vidas--;
-                    //sala.broadcast("notificacion_turno", `💥 ${v.nombre} recibe 1 de daño inesquivable por las raíces de Flowery.`);
                     sala.evaluarMuerte(v);
 
-                    if (v.estaVivo && v.mano.length > 0) {
-                        let indiceAleatorio = Math.floor(Math.random() * v.mano.length);
-                        let cartaRobada = v.mano.splice(indiceAleatorio, 1)[0];
-                        jugador.mano.push(cartaRobada);
-                        //sala.broadcast("notificacion_turno", `🎭 ¡Flowery le robó una carta a ${v.nombre}!`);
-                    }
+                    // YA NO ROBA CARTAS DEL RIVAL (Eliminado)
 
                     if (v.estaVivo && v.rol !== "Sheriff" && !v.estaEnPrision) {
                         const prision = new Carta();
-                        prision.id = `prision_flowery_${Date.now()}_${Math.floor(Math.random() * 100)}`;
+                        
+                        // EL PARCHE ANTICRASHEO: Agregamos el sessionId al final para garantizar unicidad absoluta
+                        prision.id = `prision_flowery_${Date.now()}_${Math.floor(Math.random() * 100000)}_${sessionId}`;
+                        
                         prision.nombre = "Prisión";
                         prision.descripcion = "Equipala a otro jugador (menos al Sheriff). Tiene 25% de salir de la carcel o perder el turno.";
                         prision.descripcionEnCatalan = "Equipa-la a un altre jugador (excepte el Sheriff). Té un 25 % de probabilitats de sortir de la presó o de perdre el torn.";
@@ -466,25 +468,25 @@ export class Flowery implements IPersonaje {
 
                         v.estaEnPrision = true;
                         v.cartaPrision = prision;
-                        //sala.broadcast("notificacion_turno", `⛓️ ¡Flowery enredó a ${v.nombre} en una Prisión de raíces!`);
                     }
                 }
             });
 
-            jugador.vidasMaximas++;
-            jugador.vidas++;
-            sala.repartirCartas(jugador, 1, "pasiva");
-            //sala.broadcast("notificacion_turno", `🌻 Flowery aumenta su salud máxima, se cura y roba 3 cartas.`);
-            sala.broadcast("notificacion_turno", `🌻 Flowery aumentó su salud máxima a ${jugador.vidasMaximas}, se curó 1, metió a todos en la carcel, les robo a cada uno una carta y robó una del mazo.`)
+            // YA NO SE CURA NI AUMENTA SALUD MÁXIMA (Eliminado)
+
+            // AHORA ROBA 3 CARTAS DEL MAZO
+            sala.repartirCartas(jugador, 3, "pasiva");
+            
+            sala.broadcast("notificacion_turno", `🌻 Flowery infligió daño a todos, enredó a los rivales en Prisión y robó 3 cartas del mazo.`);
 
             const numero: number = Math.floor(Math.random() * 2);
-            const sfx: string = "floweryHabilidad" + numero
-            sala.broadcast("sfx", sfx)
+            const sfx: string = "floweryHabilidad" + numero;
+            sala.broadcast("sfx", sfx);
 
             jugador.alturaFlowery = 0;
         } else {
             // jugó una carta pero aun no llegó al final
-            sala.broadcast("sfx", "floweryCrece")
+            sala.broadcast("sfx", "floweryCrece");
         }
     }
 }

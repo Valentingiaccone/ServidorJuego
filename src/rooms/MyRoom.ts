@@ -841,20 +841,27 @@ export class MyRoom extends Room {
                     this.agregarAlDescarte(cartaDescartada)
                     this.broadcast("notificacion_turno", `🛡️ ${victima.nombre} descartó un BANG! y ahuyentó a los Indios.`);
                 }
+                
+                // Como esquivó y está vivo, avanzamos la cola manualmente
+                this.avanzarColaIndios(); 
+                
             } else if (datos.accion === "dano") {
                 victima.vidas--;
                 this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por los Indios!`);
                 
-                // --- HOOK RECIBIR DAÑO ---
                 let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirDano) {
                     pasivaVictima.onRecibirDano(this, victima, null, "INDIOS");
                 }
                 
                 this.evaluarMuerte(victima); 
+                
+                // ¡LA CLAVE!: Solo avanzamos la cola manualmente si el jugador sobrevivió.
+                // Si murió, evaluarMuerte ya la avanzó por nosotros a través de los destrabadores.
+                if (victima.vidas > 0) {
+                    this.avanzarColaIndios();
+                }
             }
-
-            this.avanzarColaIndios(); 
         });
 
         this.onMessage("disparar_jugador", (client, datosDelDisparo) => {
@@ -1046,6 +1053,9 @@ export class MyRoom extends Room {
 
             let victima = this.state.jugadores.get(client.sessionId);
             let atacante = this.state.jugadores.get(this.state.atacanteActual);
+            
+            // Bandera para saber si el jugador murió en este disparo
+            let sobrevivioAlAtaque = true; 
 
             if (victima) {
                 if (idCartaFallo) {
@@ -1059,9 +1069,9 @@ export class MyRoom extends Room {
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
                         this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada, descripcionCatalan: carta.descripcionEnCatalan});
                     
-                        let pasiva = this.gestorPersonajes.obtener(victima.personaje)
-                        if (pasiva && pasiva.onJugarCarta){
-                            pasiva.onJugarCarta(this, victima, carta)
+                        let pasivaJugadorActual = this.gestorPersonajes.obtener(victima.personaje);
+                        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+                            pasivaJugadorActual.onJugarCarta(this, victima, carta);
                         }
                     }
                 }
@@ -1072,22 +1082,30 @@ export class MyRoom extends Room {
                     const sfx: string = "bang" + numero
                     this.broadcast("sfx", sfx)
 
-                    // --- HOOK RECIBIR DAÑO ---
                     let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
                     if (pasivaVictima && pasivaVictima.onRecibirDano) {
                         pasivaVictima.onRecibirDano(this, victima, atacante, "BANG");
                     }
 
                     this.evaluarMuerte(victima);
+                    
+                    // Verificamos si logico/físicamente murió
+                    if (victima.vidas <= 0) {
+                        sobrevivioAlAtaque = false;
+                    }
                 }
             }
 
-            if (this.colaDePeligro && this.colaDePeligro.length > 0) {
-                this.avanzarColaDePeligro();
-            } else {
-                this.state.jugadorEnPeligro = "";
-                this.state.atacanteActual = "";
-                this.state.usosBarril = 0;
+            // ¡LA CLAVE!: Solo limpiamos variables o avanzamos la cola de Tiratachuela 
+            // si el jugador NO murió. Si murió, evaluarMuerte ya lo destrabó.
+            if (sobrevivioAlAtaque) {
+                if (this.colaDePeligro && this.colaDePeligro.length > 0) {
+                    this.avanzarColaDePeligro();
+                } else {
+                    this.state.jugadorEnPeligro = "";
+                    this.state.atacanteActual = "";
+                    this.state.usosBarril = 0;
+                }
             }
         });
 
