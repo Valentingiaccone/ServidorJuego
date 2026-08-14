@@ -30,8 +30,8 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `barril_pro_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
         clon.nombre = "Barril Pro";
-        clon.descripcion = "Si te disparan, tenés 50% de esquivar el tiro.";
-        clon.descripcionEnCatalan = "Si et disparen, tens un 50 % de probabilitats d'esquivar el tret.";
+        clon.descripcion = "Si te disparan, tenés 25% de esquivar el tiro dos veces.";
+        clon.descripcionEnCatalan = "Si et disparen, tens un 25% de probabilitats d esquivar el tret dues vegades.";
         clon.tipoDeUso = "equipamiento";
         clon.efecto = "equiparBarrilPro";
         clon.esConjurada = true;

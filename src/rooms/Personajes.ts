@@ -572,7 +572,9 @@ export class Robin implements IPersonaje {
         let siguienteArma = this.obtenerSiguienteArma(jugador.nombreArma);
         if (siguienteArma) opcionesDeMejora.push("Arma");
 
-        if (opcionesDeMejora.length === 0) return;
+        if (opcionesDeMejora.length === 0) {
+            return;
+        }
 
         let eleccion = opcionesDeMejora[Math.floor(Math.random() * opcionesDeMejora.length)];
         let textoMejora = "";
