@@ -348,28 +348,38 @@ export class Domino implements IPersonaje {
 
 export class Tilink implements IPersonaje {
     nombre = "Tilink";
-    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, se clona una carta no clonada de tu mano de forma aleatoria, pero para pasar el turno debe tener su salud -1 cartas en mano.";
-    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, es clona una carta no clonada de la teva mà de manera aleatòria. Però, per poder passar el torn, has de tenir Salut - 1 cartes a la mà."
+    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, se clona una carta no clonada de tu mano de forma aleatoria (Máximo 3 veces por turno). Para pasar el turno debe tener su salud -1 cartas en mano.";
+    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, es clona una carta no clonada de la teva mà de manera aleatòria (Màxim 3 vegades per torn). Per poder passar el torn, has de tenir Salut - 1 cartes a la mà.";
     vidasBase = 4;
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
         // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
         if (motivo !== "VOLUNTARIO") return;
         
-        // 1. Verificamos que la carta descartada sea original
+        // 1. Inicializamos el contador del turno si no existe
+        if (!jugador.clonesCreadosEsteTurno) {
+            jugador.clonesCreadosEsteTurno = 0;
+        }
+
+        // 2. Freno de seguridad: Límite de 3 por turno
+        if (jugador.clonesCreadosEsteTurno >= 3) {
+            return;
+        }
+        
+        // 3. Verificamos que la carta descartada sea original
         if (!_cartaDescartada.esConjurada) {
             
-            // 2. Filtramos la mano para quedarnos solo con las cartas que NO son clones
+            // 4. Filtramos la mano para quedarnos solo con las cartas que NO son clones
             let cartasOriginalesEnMano = jugador.mano.filter((c: any) => !c.esConjurada);
             
-            // 3. Si tiene al menos una carta original para clonar...
+            // 5. Si tiene al menos una carta original para clonar...
             if (cartasOriginalesEnMano.length > 0) {
                 
                 // Elegimos una al azar
                 let indiceAleatorio = Math.floor(Math.random() * cartasOriginalesEnMano.length);
                 let cartaAClonar = cartasOriginalesEnMano[indiceAleatorio];
                 
-                // 4. Creamos el clon como un objeto completamente nuevo
+                // Creamos el clon como un objeto completamente nuevo
                 let clon = new Carta();
                 
                 // Generamos un ID único usando la fecha y un random para evitar choques en Colyseus
@@ -384,16 +394,21 @@ export class Tilink implements IPersonaje {
                 // ¡Lo marcamos como clonado! Así no puede desencadenar otro clon ni ir al descarte real
                 clon.esConjurada = true; 
                 
-                // 5. Se la metemos en la mano y avisamos a la mesa
+                // Se la metemos en la mano, sumamos al contador y avisamos a la mesa
                 jugador.mano.push(clon);
+                jugador.clonesCreadosEsteTurno++;
                 
-                sala.broadcast("notificacion_turno", `🪞 ¡Tilink descartó una carta original y su pasiva clonó una carta de su mano!`);
+                sala.broadcast("notificacion_turno", `🪞 ¡Tilink descartó una carta original y su pasiva clonó una carta! (${jugador.clonesCreadosEsteTurno}/3)`);
             }
         }
     }
 
+    onPasarTurno(sala: any, jugador: any) {
+        jugador.clonesCreadosEsteTurno = 0;
+    }
+
     modificarCartasEnManoAlPasarTurno(): number {
-        return -1
+        return -1;
     }
 }
 
