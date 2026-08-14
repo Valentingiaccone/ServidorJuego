@@ -1,5 +1,6 @@
 // Personajes.ts
 
+import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { Carta } from "./schema/MyRoomState.js";
 
 // 1. EL CONTRATO ENRIQUECIDO: Ahora pasamos TODO el contexto de la mesa
@@ -524,6 +525,114 @@ export class Kazuma implements IPersonaje {
     }
 }
 
+export class Leah implements IPersonaje {
+    nombre = "Leah";
+    habilidad = "Artesana:\nCada 2 cartas que descarta en su turno, roba 1.";
+    habilidadEnCatalan = "Artesana:\nCada 2 cartes que descarta en el seu torn, en roba 1.";
+    vidasBase = 4;
+
+    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
+        if (motivo !== "VOLUNTARIO") return;
+
+        if (!jugador.contadorDescartes) jugador.contadorDescartes = 0;
+        
+        jugador.contadorDescartes++;
+        
+        if (jugador.contadorDescartes >= 2) {
+            jugador.contadorDescartes = 0;
+            
+            sala.repartirCartas(jugador, 1, "pasiva");
+            sala.broadcast("notificacion_turno", `🛠️ Leah descartó 2 cartas y su pasiva de Artesana le otorgó 1 carta nueva.`);
+        }
+    }
+
+    onPasarTurno(_sala: any, jugador: any) {
+        jugador.contadorDescartes = 0; 
+    }
+}
+
+// Acordate de importar el catálogo arriba de todo en Personajes.ts
+// import { CatalogoCartasEspeciales } from "./TuRuta/CatalogoCartas.js";
+
+export class Robin implements IPersonaje {
+    nombre = "Robin";
+    habilidad = "Carpintera:\nAl descartar una carta en su turno, mejora un equipamiento aleatorio. Las armas evolucionan y el resto se vuelve versión 'Pro'.";
+    habilidadEnCatalan = "Fustera:\nEn descartar una carta en el seu torn, millora un equipament aleatori. Les armes evolucionen i la resta es torna versió 'Pro'.";
+    vidasBase = 4;
+
+    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string): void {
+        if (motivo !== "VOLUNTARIO") return;
+
+        let opcionesDeMejora: string[] = [];
+
+        if (jugador.tieneMustang && !jugador.tieneMustangPro) opcionesDeMejora.push("Caballo");
+        if (jugador.tieneMira && !jugador.tieneMiraPro) opcionesDeMejora.push("Mira");
+        if (jugador.tieneBarril && !jugador.tieneBarrilPro) opcionesDeMejora.push("Barril");
+        
+        let siguienteArma = this.obtenerSiguienteArma(jugador.nombreArma);
+        if (siguienteArma) opcionesDeMejora.push("Arma");
+
+        if (opcionesDeMejora.length === 0) return;
+
+        let eleccion = opcionesDeMejora[Math.floor(Math.random() * opcionesDeMejora.length)];
+        let textoMejora = "";
+
+        if (eleccion === "Caballo") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearCaballoPro();
+            if (jugador.cartaMustang) sala.agregarAlDescarte(jugador.cartaMustang);
+            
+            jugador.tieneMustangPro = true;
+            jugador.cartaMustang = cartaMejorada;
+            textoMejora = "su Caballo";
+        } 
+        else if (eleccion === "Mira") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearMonoaldeaPro();
+            if (jugador.cartaMira) sala.agregarAlDescarte(jugador.cartaMira);
+            
+            jugador.tieneMiraPro = true;
+            jugador.cartaMira = cartaMejorada;
+            textoMejora = "su Monoaldea";
+        } 
+        else if (eleccion === "Barril") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearBarrilPro();
+            if (jugador.cartaBarril) sala.agregarAlDescarte(jugador.cartaBarril);
+            
+            jugador.tieneBarrilPro = true;
+            jugador.cartaBarril = cartaMejorada;
+            textoMejora = "su Barril";
+        } 
+        else if (eleccion === "Arma") {
+            let cartaArmaNueva = CatalogoCartasEspeciales.crearArma(siguienteArma.nombre, siguienteArma.alcance);
+            if (jugador.cartaArma) sala.agregarAlDescarte(jugador.cartaArma); 
+
+            jugador.cartaArma = cartaArmaNueva;
+            jugador.nombreArma = siguienteArma.nombre;
+            jugador.alcanceArma = siguienteArma.alcance;
+            textoMejora = `su arma a ${siguienteArma.nombre}`;
+        }
+
+        sala.broadcast("notificacion_turno", `🔨 ¡Robin descartó una carta y mejoró ${textoMejora}!`);
+        sala.broadcast("sfx", "robinMejora"); 
+    }
+
+    private obtenerSiguienteArma(armaActual: string): any {
+        const secuencia = [
+            { nombre: "Colt .45", alcance: 1 },
+            { nombre: "Pistola de Shion", alcance: 2 },
+            { nombre: "Revolver de Casiddy", alcance: 3 },
+            { nombre: "Rifle de Ashe", alcance: 4 },
+            { nombre: "Francotirador", alcance: 5 },
+            { nombre: "Rifle de Plasma", alcance: 6 } 
+        ];
+
+        let index = secuencia.findIndex(a => a.nombre === armaActual);
+        if (index !== -1 && index < secuencia.length - 1) {
+            return secuencia[index + 1];
+        }
+        return null; 
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -545,11 +654,13 @@ export class GestorPersonajes {
         // this.registrar(new Hongo());
         // this.registrar(new Lesly());
         // this.registrar(new Mikotoba());
-        this.registrar(new Domino());
+        // this.registrar(new Domino());
         //this.registrar(new Tilink());
-        this.registrar(new Flowery())
-        this.registrar(new Leon());
-        this.registrar(new Kazuma());
+        // this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
     }
 
     private registrar(p: IPersonaje) {

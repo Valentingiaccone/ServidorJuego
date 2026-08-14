@@ -83,12 +83,15 @@ export class MyRoom extends Room {
             if (victima.cartaArma) this.agregarAlDescarte(victima.cartaArma);
             if (victima.cartaMustang) this.agregarAlDescarte(victima.cartaMustang);
             victima.tieneMustang = false;
+            victima.tieneMustangPro = false
             victima.cartaMustang = null;
             if (victima.cartaMira) this.agregarAlDescarte(victima.cartaMira);
             victima.tieneMira = false;
+            victima.tieneMiraPro = false
             victima.cartaMira = null;
             if (victima.cartaBarril) this.agregarAlDescarte(victima.cartaBarril);
             victima.tieneBarril = false;
+            victima.tieneBarrilPro = false
             victima.cartaBarril = null;
             if (victima.cartaPrision) this.agregarAlDescarte(victima.cartaPrision);
             victima.estaEnPrision = false;
@@ -600,14 +603,17 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaMustang;
                 victima.cartaMustang = null;
                 victima.tieneMustang = false;
+                victima.tieneMustangPro = false
             } else if (datos.zonaObjetivo === "mira" && victima.cartaMira) {
                 cartaAfectada = victima.cartaMira;
                 victima.cartaMira = null;
                 victima.tieneMira = false;
+                victima.tieneMiraPro = false
             } else if (datos.zonaObjetivo === "barril" && victima.cartaBarril) {
                 cartaAfectada = victima.cartaBarril;
                 victima.cartaBarril = null;
                 victima.tieneBarril = false;
+                victima.tieneBarrilPro = false
             } else if (datos.zonaObjetivo === "prision" && victima.cartaPrision) {
                 cartaAfectada = victima.cartaPrision;
                 victima.cartaPrision = null;
@@ -676,14 +682,17 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaMustang;
                 victima.cartaMustang = null;
                 victima.tieneMustang = false;
+                victima.tieneMustangPro = false
             } else if (datos.zona === "mira" && victima.cartaMira) {
                 cartaAfectada = victima.cartaMira;
                 victima.cartaMira = null;
                 victima.tieneMira = false;
+                victima.tieneMiraPro = false
             } else if (datos.zona === "barril" && victima.cartaBarril) {
                 cartaAfectada = victima.cartaBarril;
                 victima.cartaBarril = null;
                 victima.tieneBarril = false;
+                victima.tieneBarrilPro = false
             } else if (datos.zona === "prision" && victima.cartaPrision) {
                 cartaAfectada = victima.cartaPrision;
                 victima.cartaPrision = null;
@@ -713,6 +722,7 @@ export class MyRoom extends Room {
             let victima = this.state.jugadores.get(client.sessionId);
             let maxUsos = 0;
             if (victima.tieneBarril) maxUsos++;
+            if (victima.tieneBarrilPro) maxUsos++;
             if (victima.personaje === "Darryl") maxUsos++;
 
             if (maxUsos === 0 || this.state.usosBarril >= maxUsos) return;
@@ -890,8 +900,11 @@ export class MyRoom extends Room {
                 let diferencia = Math.abs(idxAtacante - idxVictima);
                 let distancia = Math.min(diferencia, n - diferencia);
 
-                if (atacante.tieneMira) distancia -= 1;
-                if (victima.tieneMustang) distancia += 1;
+                if (atacante.tieneMiraPro) distancia -= 2;
+                else if (atacante.tieneMira) distancia -= 1;
+
+                if (victima.tieneMustangPro) distancia += 2;
+                else if (victima.tieneMustang) distancia += 1;
 
                 // --- HOOK MODIFICAR DISTANCIA (ATACANTE) ---
                 if (pasivaAtacante && pasivaAtacante.modificarDistancia) {

@@ -38,6 +38,9 @@ export class Jugador extends Schema {
     @type([Carta]) mano = new ArraySchema<Carta>();
     @type(Carta) cartaMustang: Carta;
     @type(Carta) cartaMira: Carta;
+    @type("boolean") tieneMustangPro: boolean = false;
+    @type("boolean") tieneMiraPro: boolean = false;
+    @type("boolean") tieneBarrilPro: boolean = false;
     @type("boolean") tieneMustang: boolean = false;
     @type("boolean") tieneMira: boolean = false;
     @type("boolean") tieneBarril: boolean = false;

@@ -236,6 +236,7 @@ export class EfectoEquiparMustang implements IEfectoCarta {
             sala.agregarAlDescarte(jugador.cartaMustang);
         }
         jugador.tieneMustang = true;
+        jugador.tieneMustangPro = false
         jugador.cartaMustang = cartaJugada;
         jugador.mano.splice(indiceCarta, 1);
         
@@ -251,6 +252,7 @@ export class EfectoEquiparMira implements IEfectoCarta {
             sala.agregarAlDescarte(jugador.cartaMira); 
         }
         jugador.tieneMira = true;
+        jugador.tieneMiraPro = false
         jugador.cartaMira = cartaJugada;
         jugador.mano.splice(indiceCarta, 1);
         
@@ -266,6 +268,7 @@ export class EfectoEquiparBarril implements IEfectoCarta {
             sala.agregarAlDescarte(jugador.cartaBarril); 
         }
         jugador.tieneBarril = true;
+        jugador.tieneBarrilPro = false
         jugador.cartaBarril = cartaJugada;
         jugador.mano.splice(indiceCarta, 1);
         
@@ -275,6 +278,56 @@ export class EfectoEquiparBarril implements IEfectoCarta {
         const sfx: string = "barril" + numero
         sala.broadcast("sfx", sfx)
         return true
+    }
+}
+
+export class EfectoEquiparMustangPro implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        if (jugador.tieneMustang && jugador.cartaMustang) {
+            sala.agregarAlDescarte(jugador.cartaMustang); 
+        }
+        jugador.tieneMustang = true;
+        jugador.tieneMustangPro = true; // ACTIVAMOS LA VARIABLE PRO
+        jugador.cartaMustang = cartaJugada;
+        jugador.mano.splice(indiceCarta, 1);
+        
+        sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo Pro.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        return true;
+    }
+}
+
+export class EfectoEquiparMiraPro implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        if (jugador.tieneMira && jugador.cartaMira) {
+            sala.agregarAlDescarte(jugador.cartaMira); 
+        }
+        jugador.tieneMira = true;
+        jugador.tieneMiraPro = true; // ACTIVAMOS LA VARIABLE PRO
+        jugador.cartaMira = cartaJugada;
+        jugador.mano.splice(indiceCarta, 1);
+        
+        sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Monoaldea Pro.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        return true;
+    }
+}
+
+export class EfectoEquiparBarrilPro implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        if (jugador.tieneBarril && jugador.cartaBarril) {
+            sala.agregarAlDescarte(jugador.cartaBarril); 
+        }
+        jugador.tieneBarril = true;
+        jugador.tieneBarrilPro = true; // ACTIVAMOS LA VARIABLE PRO
+        jugador.cartaBarril = cartaJugada;
+        jugador.mano.splice(indiceCarta, 1);
+        
+        sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril Pro.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        const numero: number = Math.floor(Math.random() * 3);
+        sala.broadcast("sfx", "barril" + numero);
+        return true;
     }
 }
 
@@ -307,7 +360,10 @@ export class DespachadorDeCartas {
         "equiparMustang": new EfectoEquiparMustang(),
         "equiparMira": new EfectoEquiparMira(),
         "equiparBarril": new EfectoEquiparBarril(),
-        "equiparDinamita": new EfectoEquiparDinamita()
+        "equiparDinamita": new EfectoEquiparDinamita(),
+        "equiparMustangPro": new EfectoEquiparMustangPro(),
+        "equiparMiraPro": new EfectoEquiparMiraPro(),
+        "equiparBarrilPro": new EfectoEquiparBarrilPro()
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
