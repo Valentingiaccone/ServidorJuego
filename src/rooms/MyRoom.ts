@@ -106,6 +106,7 @@ export class MyRoom extends Room {
                 victima.rondasMuerto = 2; 
                 this.broadcast("notificacion_turno", `☠️ ${victima.nombre} ha sido ELIMINADO?.`);
                 this.broadcast("sfx", "kazumaMuere")
+                victima.spriteAvatarOpcional = "Kazuma muerto"
             } else {
                 victima.estaMuertoFalso = false;
                 console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
@@ -1296,6 +1297,7 @@ export class MyRoom extends Room {
                     this.repartirCartas(jugadorSiguiente, 1, "pasiva")
                     this.broadcast("notificacion_turno", `⚡ ¡KAZUMA HA RESUCITADO DE ENTRE LOS MUERTOS!`);
                     this.broadcast("sfx", "kazumaRevive")
+                    jugadorSiguiente.spriteAvatarOpcional = "Kazuma blanco"
                     this.actualizarMusicaAutomatica()
                     break; // FRENAMOS EL BUCLE: ¡Es su turno!
                 }
