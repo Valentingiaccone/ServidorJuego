@@ -461,7 +461,7 @@ export class Flowery implements IPersonaje {
     }
 
     private evaluarCrecimiento(sala: any, jugador: any) {
-        if (jugador.alturaFlowery >= 0.5) { // 3
+        if (jugador.alturaFlowery >= 3) { // 3
             sala.broadcast("notificacion_turno", `🌻 ¡FLOWERY HACE SU ATAQUE ESPECIAL!`);
 
             sala.state.jugadores.forEach((v: any, sessionId: string) => {
@@ -660,7 +660,7 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
+        // this.registrar(new ColeCasiddy());
         // this.registrar(new Berry());
         // this.registrar(new Maton());
         // this.registrar(new Mandy());
@@ -681,7 +681,7 @@ export class GestorPersonajes {
         this.registrar(new Flowery())
         this.registrar(new Leon())
         this.registrar(new Kazuma())
-        // this.registrar(new Leah())
+        this.registrar(new Leah())
         // this.registrar(new Robin())
     }
 
