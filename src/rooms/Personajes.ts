@@ -468,7 +468,7 @@ export class Flowery implements IPersonaje {
                 if (v.estaVivo && v !== jugador) {
                     
                     v.vidas--;
-                    let pasivaVictima = sala.state.gestorPersonajes.obtener(v.personaje);
+                    let pasivaVictima = sala.gestorPersonajes.obtener(v.personaje);
                     if (pasivaVictima && pasivaVictima.onRecibirDano) {
                         pasivaVictima.onRecibirDano(this, v, jugador, "flowery");
                     }
