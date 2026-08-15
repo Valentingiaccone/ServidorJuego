@@ -659,7 +659,7 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy());
+        this.registrar(new ColeCasiddy());
         // this.registrar(new Berry());
         // this.registrar(new Maton());
         // this.registrar(new Mandy());
