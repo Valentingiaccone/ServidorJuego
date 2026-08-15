@@ -219,6 +219,11 @@ export class HongoUp implements IPersonaje {
     vidasBase = 4;
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
+        if (!victimaMuerta.beneficiarseDeSuMuerte){
+            sala.broadcast("notificacion_turno", `🍄 No puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
+            return
+        }
+
         let curacion: number = 0
         if (jugador.vidas < jugador.vidasMaximas){
             jugador.vidas++
@@ -241,6 +246,11 @@ export class Hongo implements IPersonaje {
     vidasBase = 4;
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
+        if (!victimaMuerta.beneficiarseDeSuMuerte){
+            sala.broadcast("notificacion_turno", `🍄 No puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
+            return
+        }
+
         const cartas: number = 3
         sala.repartirCartas(jugador, cartas, "pasiva");
         sala.broadcast("notificacion_turno", `🍄 Hongo robó ${cartas} cartas por su pasiva.`);
@@ -502,8 +512,8 @@ export class Leon implements IPersonaje {
 
 export class Kazuma implements IPersonaje {
     nombre = "Kazuma";
-    habilidad = "Renacer del Héroe:\nSi no es Sheriff, al morir revive en 2 rondas con 1 vida. Si es Sheriff, al recibir daño tiene 50% de crear la espada Karuma (2 de daño a distancia 1).";
-    habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu en 2 rondes amb 1 de vida. Si és Sheriff, en rebre dany té un 50% de crear l'espasa Karuma (2 de dany, abast 1).";
+    habilidad = "Renacer del Héroe:\nSi no es Sheriff, al morir revive en 2 rondas con 1 vida y 3 cartas. Si es Sheriff, al recibir daño tiene 50% de crear la espada Karuma (2 de daño a distancia 1).";
+    habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu al cap de 2 rondes amb 1 vida i 3 cartes. Si és Sheriff, en rebre dany té un 50% de crear l espasa Karuma (2 de dany a distància 1).";
     vidasBase = 4;
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
@@ -642,7 +652,7 @@ export class GestorPersonajes {
         // this.registrar(new Berry());
         // this.registrar(new Maton());
         // this.registrar(new Mandy());
-        // this.registrar(new Tralalero());
+        this.registrar(new Tralalero());
         // this.registrar(new Darryl());
         // this.registrar(new JetpackCat());
         // this.registrar(new KayFaraday());
@@ -651,13 +661,13 @@ export class GestorPersonajes {
         // this.registrar(new Pam());
         // this.registrar(new Trucy());
         // this.registrar(new HongoUp());
-        // this.registrar(new Hongo());
+        this.registrar(new Hongo());
         // this.registrar(new Lesly());
         // this.registrar(new Mikotoba());
         // this.registrar(new Domino());
         // this.registrar(new Tilink());
         // this.registrar(new Flowery())
-        this.registrar(new Leon())
+        // this.registrar(new Leon())
         this.registrar(new Kazuma())
         this.registrar(new Leah())
         this.registrar(new Robin())

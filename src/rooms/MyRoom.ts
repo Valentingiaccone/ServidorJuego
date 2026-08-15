@@ -1298,6 +1298,7 @@ export class MyRoom extends Room {
                     this.broadcast("notificacion_turno", `⚡ ¡KAZUMA HA RESUCITADO DE ENTRE LOS MUERTOS!`);
                     this.broadcast("sfx", "kazumaRevive")
                     jugadorSiguiente.spriteAvatarOpcional = "Kazuma blanco"
+                    jugadorSiguiente.beneficiarseDeSuMuerte = false
                     this.actualizarMusicaAutomatica()
                     break; // FRENAMOS EL BUCLE: ¡Es su turno!
                 }

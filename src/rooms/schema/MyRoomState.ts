@@ -49,12 +49,14 @@ export class Jugador extends Schema {
     @type(Carta) cartaPrision: Carta;
     @type("boolean") tieneDinamita: boolean = false;
     @type(Carta) cartaDinamita: Carta;
+    @type("string") spriteAvatarOpcional: string = ""
     // ----------------------------------------
     // roles especificos
     // ----------------------------------------
     @type("number") alturaFlowery: number = 0;
     @type("boolean") estaMuertoFalso: boolean = false;
     @type("number") rondasMuerto: number = 0;
+    @type("boolean") beneficiarseDeSuMuerte: boolean = true
 }
 
 export class MyRoomState extends Schema {
