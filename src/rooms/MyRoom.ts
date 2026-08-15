@@ -103,9 +103,9 @@ export class MyRoom extends Room {
 
             if (victima.personaje === "Kazuma" && victima.rol !== "Sheriff" && !victima.estaMuertoFalso) {
                 victima.estaMuertoFalso = true;
-                victima.rondasMuerto = 2; 
+                victima.rondasMuerto = Math.floor(Math.random() * 2) + 2
                 this.broadcast("notificacion_turno", `☠️ ${victima.nombre} ha sido ELIMINADO?.`);
-                this.broadcast("sfx", "kazumaMuere")
+                this.broadcast("sfx", {sfx: "kazumaMuere", silencio: true})
                 victima.spriteAvatarOpcional = "Kazuma muerto"
             } else {
                 victima.estaMuertoFalso = false;
@@ -1296,7 +1296,7 @@ export class MyRoom extends Room {
                     jugadorSiguiente.vidas = 1;
                     this.repartirCartas(jugadorSiguiente, 1, "pasiva")
                     this.broadcast("notificacion_turno", `⚡ ¡KAZUMA HA RESUCITADO DE ENTRE LOS MUERTOS!`);
-                    this.broadcast("sfx", "kazumaRevive")
+                    this.broadcast("sfx", {sfx: "kazumaRevive", silencio: true})
                     jugadorSiguiente.spriteAvatarOpcional = "Kazuma blanco"
                     jugadorSiguiente.beneficiarseDeSuMuerte = false
                     this.actualizarMusicaAutomatica()

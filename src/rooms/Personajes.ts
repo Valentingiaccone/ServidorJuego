@@ -512,8 +512,8 @@ export class Leon implements IPersonaje {
 
 export class Kazuma implements IPersonaje {
     nombre = "Kazuma";
-    habilidad = "Renacer del Héroe:\nSi no es Sheriff, al morir revive en 2 rondas con 1 vida y 3 cartas. Si es Sheriff, al recibir daño tiene 50% de crear la espada Karuma (2 de daño a distancia 1).";
-    habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu al cap de 2 rondes amb 1 vida i 3 cartes. Si és Sheriff, en rebre dany té un 50% de crear l espasa Karuma (2 de dany a distància 1).";
+    habilidad = "Renacer del Héroe:\nSi no es Sheriff, al morir revive en 2 o 3 rondas con 1 vida y 3 cartas. Si es Sheriff, al recibir daño tiene 50% de crear la espada Karuma (2 de daño a distancia 1).";
+    habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu al cap de 2 o 3 rondes amb 1 vida i 3 cartes. Si és Sheriff, en rebre dany té un 50% de crear l espasa Karuma (2 de dany a distància 1).";
     vidasBase = 4;
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
