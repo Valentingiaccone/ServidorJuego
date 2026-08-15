@@ -106,7 +106,6 @@ export class MyRoom extends Room {
                 victima.rondasMuerto = Math.floor(Math.random() * 2) + 2
                 this.broadcast("notificacion_turno", `☠️ ${victima.nombre} ha sido ELIMINADO?.`);
                 this.broadcast("sfx", {sfx: "kazumaMuere", silencio: true})
-                victima.spriteAvatarOpcional = "Kazuma muerto"
             } else {
                 victima.estaMuertoFalso = false;
                 console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
