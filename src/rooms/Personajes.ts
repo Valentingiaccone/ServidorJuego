@@ -116,10 +116,17 @@ export class Tralalero implements IPersonaje {
     vidasBase = 4;
 
     onPasarTurno(sala: any, jugador: any) {
-        if (jugador.mano.length === 0 && jugador.vidas < jugador.vidasMaximas) {
-            jugador.vidas++;
+        if (jugador.mano.length === 0) {
+
+            let curacion: number = 0
+            if (jugador.vidas < jugador.vidasMaximas){
+                jugador.vidas++;
+                curacion++
+            }
+
             sala.repartirCartas(jugador, 2, "pasiva")
-            sala.broadcast("notificacion_turno", `🎵 Tralalero recuperó 1 vida y robó 2 cartas gracias a su pasiva.`);
+
+            sala.broadcast("notificacion_turno", `🎵 Tralalero recuperó ${curacion} vida y robó 2 cartas gracias a su pasiva.`);
         }
     }
 }
@@ -454,13 +461,17 @@ export class Flowery implements IPersonaje {
     }
 
     private evaluarCrecimiento(sala: any, jugador: any) {
-        if (jugador.alturaFlowery >= 3) {
+        if (jugador.alturaFlowery >= 0.5) { // 3
             sala.broadcast("notificacion_turno", `🌻 ¡FLOWERY HACE SU ATAQUE ESPECIAL!`);
 
             sala.state.jugadores.forEach((v: any, sessionId: string) => {
                 if (v.estaVivo && v !== jugador) {
                     
                     v.vidas--;
+                    let pasivaVictima = sala.state.gestorPersonajes.obtener(v.personaje);
+                    if (pasivaVictima && pasivaVictima.onRecibirDano) {
+                        pasivaVictima.onRecibirDano(this, v, jugador, "flowery");
+                    }
                     sala.evaluarMuerte(v);
 
                     // YA NO ROBA CARTAS DEL RIVAL (Eliminado)
@@ -661,16 +672,16 @@ export class GestorPersonajes {
         // this.registrar(new Pam());
         // this.registrar(new Trucy());
         // this.registrar(new HongoUp());
-        this.registrar(new Hongo());
+        // this.registrar(new Hongo());
         // this.registrar(new Lesly());
         // this.registrar(new Mikotoba());
         // this.registrar(new Domino());
         // this.registrar(new Tilink());
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
         this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
     }
 
     private registrar(p: IPersonaje) {
