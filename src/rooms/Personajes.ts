@@ -100,25 +100,26 @@ export class Maton implements IPersonaje {
 
 export class Mandy implements IPersonaje {
     nombre = "Mandy";
-    habilidad = "Concentración:\nConsidera a todos los demás jugadores a distancia -1.";
-    habilidadEnCatalan: string = "Concentració:\nConsidera tots els altres jugadors a distància -1."
+    habilidad = "Concentración:\nConsidera a todos los demás jugadores a distancia -2.";
+    habilidadEnCatalan: string = "Concentració:\nConsidera tots els altres jugadors a distància -2."
     vidasBase = 4;
 
     modificarDistancia(_sala: any, _observador: any, _objetivo: any, distanciaBase: number): number {
-        return Math.max(0, distanciaBase - 1);
+        return Math.max(0, distanciaBase - 2);
     }
 }
 
 export class Tralalero implements IPersonaje {
     nombre = "Tralalero";
-    habilidad = "Los tralaleritos dicen tralalá:\nAl pasar el turno, si no tiene cartas en la mano, recupera 1 vida.";
-    habilidadEnCatalan: string = "Els tralaleritos diuen tralalà:\nEn passar el torn, si no té cartes a la mà, recupera 1 punt de vida."
+    habilidad = "Los tralaleritos dicen tralalá:\nAl pasar el turno, si no tiene cartas en la mano, recupera 1 vida y roba 2 cartas.";
+    habilidadEnCatalan: string = "Els tralaleritos diuen tralalà:\nEn passar el torn, si no té cartes a la mà, recupera 1 punt de vida i roba 2 cartes.."
     vidasBase = 4;
 
     onPasarTurno(sala: any, jugador: any) {
         if (jugador.mano.length === 0 && jugador.vidas < jugador.vidasMaximas) {
             jugador.vidas++;
-            sala.broadcast("notificacion_turno", `🎵 Tralalero recuperó 1 vida gracias a su pasiva.`);
+            sala.repartirCartas(jugador, 2, "pasiva")
+            sala.broadcast("notificacion_turno", `🎵 Tralalero recuperó 1 vida y robó 2 cartas gracias a su pasiva.`);
         }
     }
 }
@@ -519,7 +520,7 @@ export class Kazuma implements IPersonaje {
                 kamura.esConjurada = true;
                 
                 victima.mano.push(kamura);
-                sala.broadcast("notificacion_turno", `🗡️ ¡Kazuma ha conjurado su espada Kamura!`);
+                sala.broadcast("notificacion_turno", `🗡️ ¡Kazuma ha conjurado su espada Karuma!`);
             }
         }
     }
@@ -550,9 +551,6 @@ export class Leah implements IPersonaje {
         jugador.contadorDescartes = 0; 
     }
 }
-
-// Acordate de importar el catálogo arriba de todo en Personajes.ts
-// import { CatalogoCartasEspeciales } from "./TuRuta/CatalogoCartas.js";
 
 export class Robin implements IPersonaje {
     nombre = "Robin";
@@ -640,25 +638,25 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
-        this.registrar(new Berry());
-        this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
-        this.registrar(new Chester());
-        this.registrar(new Frank());
-        this.registrar(new Pam());
-        this.registrar(new Trucy());
-        this.registrar(new HongoUp());
-        this.registrar(new Hongo());
-        this.registrar(new Lesly());
-        this.registrar(new Mikotoba());
-        this.registrar(new Domino());
-        this.registrar(new Tilink());
-        this.registrar(new Flowery())
+        // this.registrar(new ColeCasiddy());
+        // this.registrar(new Berry());
+        // this.registrar(new Maton());
+        // this.registrar(new Mandy());
+        // this.registrar(new Tralalero());
+        // this.registrar(new Darryl());
+        // this.registrar(new JetpackCat());
+        // this.registrar(new KayFaraday());
+        // this.registrar(new Chester());
+        // this.registrar(new Frank());
+        // this.registrar(new Pam());
+        // this.registrar(new Trucy());
+        // this.registrar(new HongoUp());
+        // this.registrar(new Hongo());
+        // this.registrar(new Lesly());
+        // this.registrar(new Mikotoba());
+        // this.registrar(new Domino());
+        // this.registrar(new Tilink());
+        // this.registrar(new Flowery())
         this.registrar(new Leon())
         this.registrar(new Kazuma())
         this.registrar(new Leah())

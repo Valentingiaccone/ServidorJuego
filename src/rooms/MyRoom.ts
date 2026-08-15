@@ -57,10 +57,42 @@ export class MyRoom extends Room {
             } else {
                 this.avanzarColaTienda()
             }
+            this.broadcast("musica", "tiendaDeGriff")
         } else {
             this.state.jugadorEligiendoTienda = "";
             this.state.cartasTienda.clear(); // Limpieza por si sobraron (ej. alguien murió)
             this.broadcast("notificacion_turno", `🏪 La tienda de Griff ha cerrado.`);
+            this.actualizarMusicaAutomatica()
+        }
+    }
+
+    actualizarMusicaAutomatica(){
+        let totalVivos = 0;
+        let todosVivos: boolean = true
+
+        this.state.jugadores.forEach((j) => {
+            if (j.estaVivo) {
+                totalVivos++;
+            } else {
+                todosVivos = false
+            }
+        });
+
+        if (todosVivos){
+            this.broadcast("musica", "juego")
+            return
+        }
+
+        if (totalVivos > 4){
+            this.broadcast("musica", "juego")
+        } else if (totalVivos == 5){
+            this.broadcast("musica", "juegoQuedan5")
+        } else if (totalVivos == 4){
+            this.broadcast("musica", "juegoQuedan4")
+        } else if (totalVivos == 3){
+            this.broadcast("musica", "juegoQuedan3")
+        } else if (totalVivos == 2){
+            this.broadcast("musica", "juegoQuedan2")
         }
     }
 
@@ -73,6 +105,7 @@ export class MyRoom extends Room {
                 victima.estaMuertoFalso = true;
                 victima.rondasMuerto = 2; 
                 this.broadcast("notificacion_turno", `☠️ ${victima.nombre} ha sido ELIMINADO?.`);
+                this.broadcast("sfx", "kazumaMuere")
             } else {
                 victima.estaMuertoFalso = false;
                 console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
@@ -161,13 +194,7 @@ export class MyRoom extends Room {
                 this.broadcast("victoria", "🏆 ¡EL SHERIFF GANA LA PARTIDA!");
                 this.broadcast("musica", "fin")
             } else if (!todosVivos){
-                if (totalVivos == 4){
-                    this.broadcast("musica", "juegoQuedan4")
-                } else if (totalVivos == 3){
-                    this.broadcast("musica", "juegoQuedan3")
-                } else if (totalVivos == 2){
-                    this.broadcast("musica", "juegoQuedan2")
-                }
+                this.actualizarMusicaAutomatica()
             }
         }
     }
@@ -1268,6 +1295,8 @@ export class MyRoom extends Room {
                     jugadorSiguiente.vidas = 1;
                     this.repartirCartas(jugadorSiguiente, 1, "pasiva")
                     this.broadcast("notificacion_turno", `⚡ ¡KAZUMA HA RESUCITADO DE ENTRE LOS MUERTOS!`);
+                    this.broadcast("sfx", "kazumaRevive")
+                    this.actualizarMusicaAutomatica()
                     break; // FRENAMOS EL BUCLE: ¡Es su turno!
                 }
             }
