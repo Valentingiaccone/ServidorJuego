@@ -498,7 +498,9 @@ export class DespachadorDeCartas {
         "equiparDinamita": new EfectoEquiparDinamita(),
         "equiparMustangPro": new EfectoEquiparMustangPro(),
         "equiparMiraPro": new EfectoEquiparMiraPro(),
-        "equiparBarrilPro": new EfectoEquiparBarrilPro()
+        "equiparBarrilPro": new EfectoEquiparBarrilPro(),
+        "curarDuo": new EfectoCurarDuo(),
+        "desequipar": new EfectoDesequipar(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
