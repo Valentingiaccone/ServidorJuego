@@ -53,4 +53,32 @@ export class CatalogoCartasEspeciales {
         clon.esConjurada = true;
         return clon;
     }
+
+    public static crearAnderlandis(): Carta {
+        let clon = new Carta();
+        clon.id = `anderlandis_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        clon.nombre = "Anderlandis"; 
+        clon.descripcion = "Elegí un jugador. Ambos recuperan 1 de vida. Falla si alguno tiene la salud al máximo (No funciona cuando quedan 2 vivos).";
+        clon.descripcionEnCatalan = "Tria un jugador. Ambdós recuperen 1 de vida. Falla si algun té la salut al màxim (No funciona quan només queden 2 jugadors vius).";
+        clon.tipoDeUso = "objetivoGlobal"; 
+        clon.efecto = "curarDuo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    // EL MAPA (Pool de expansiones)
+    public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
+        return [
+            { id: "anderlandis", copias: 2 },
+        ];
+    }
+
+    // EL DISTRIBUIDOR
+    public static crearCartaExtension(id: string): Carta | null {
+        switch (id) {
+            case "anderlandis": return this.crearAnderlandis();
+
+            default: return null;
+        }
+    }
 }

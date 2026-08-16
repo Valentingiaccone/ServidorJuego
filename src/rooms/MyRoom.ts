@@ -2,6 +2,7 @@ import { Room, Client } from "colyseus";
 import { Carta, Jugador, MyRoomState, OpcionPersonaje } from "./schema/MyRoomState.js";
 import { DespachadorDeCartas } from "./EfectosCartas.js";
 import { GestorPersonajes } from "./Personajes.js";
+import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 
 export class MyRoom extends Room {
     maxClients = 10;
@@ -489,6 +490,24 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 });
 
+                let cantidadDeCartasExtension = 1;
+                
+                let poolRaras = CatalogoCartasEspeciales.obtenerPoolExtensiones();
+                
+                poolRaras.sort(() => Math.random() - 0.5); 
+                
+                let extensionesSeleccionadas = poolRaras.slice(0, cantidadDeCartasExtension); 
+                
+                extensionesSeleccionadas.forEach(config => {
+                    for (let i = 0; i < config.copias; i++) {
+                        let cartaRara = CatalogoCartasEspeciales.crearCartaExtension(config.id);
+                        if (cartaRara) {
+                            cartaRara.esConjurada = false;
+                            this.state.mazo.push(cartaRara);
+                        }
+                    }
+                });
+
                 // --- MEZCLAR EL MAZO ---
                 let arrayTemporal = Array.from(this.state.mazo);
                 
@@ -603,6 +622,35 @@ export class MyRoom extends Room {
                 }
             }
         });
+
+        this.onMessage("jugar_carta_1objetivo", (client, datos) => {
+            if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && !this.juegoPausado()) {
+                let jugador = this.state.jugadores.get(client.sessionId);
+                
+                // Exigimos que venga el idObjetivo
+                if (jugador && datos.idObjetivo) {
+                    let indiceCarta = jugador.mano.findIndex((c: any) => c.id === datos.idCarta);
+                    if (indiceCarta !== -1) {
+                        let cartaJugada = jugador.mano[indiceCarta];
+                        let partesEfecto = cartaJugada.efecto.split("_");
+                        
+                        // EL TRUCO: Le empujamos el objetivo al final de los parámetros
+                        // Así el despachador puede leerlo como parametros[parametros.length - 1]
+                        partesEfecto.push(datos.idObjetivo);
+                        
+                        let jugadaExitosa = this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, client, jugador, cartaJugada, indiceCarta, partesEfecto, this.gestorPersonajes);
+
+                        // Si fue válida (nadie tenía la vida llena, etc.), activamos pasivas
+                        if (jugadaExitosa) {
+                            let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
+                            if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
+                                pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
+                            }
+                        }
+                    }
+                }
+            }
+        })
 
         this.onMessage("panico", (client, datos) => {
             if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.juegoPausado()) return;
