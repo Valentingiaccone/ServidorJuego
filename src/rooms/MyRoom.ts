@@ -342,7 +342,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(poco);
                 }
 
-                for (let i = 0; i < 2; i++) { // originalmente 1
+                for (let i = 0; i < 1; i++) { // originalmente 1
                     const tira = new Carta();
                     tira.id = `tiratachuela_${i}`;
                     tira.nombre = "Tiratachuela";
@@ -353,7 +353,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(tira);
                 }
 
-                for (let i = 0; i < 3; i++) {  // originalmente 2
+                for (let i = 0; i < 2; i++) {  // originalmente 2
                     const indios = new Carta();
                     indios.id = `indios_${i}`;
                     indios.nombre = "¡Indios!";
