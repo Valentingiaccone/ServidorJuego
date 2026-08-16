@@ -58,8 +58,8 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `anderlandis_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         clon.nombre = "Anderlandis"; 
-        clon.descripcion = "Elegí un jugador. Ambos recuperan 1 de vida. Falla si alguno tiene la salud al máximo (No funciona cuando quedan 2 vivos).";
-        clon.descripcionEnCatalan = "Tria un jugador. Ambdós recuperen 1 de vida. Falla si algun té la salut al màxim (No funciona quan només queden 2 jugadors vius).";
+        clon.descripcion = "Elegí un jugador y ambos recuperan 1 de vida (No funciona cuando quedan 2 vivos).";
+        clon.descripcionEnCatalan = "Tria un jugador, ambdós recuperen 1 de vida (No funciona quan només queden 2 jugadors vius).";
         clon.tipoDeUso = "objetivoUniversal"; 
         clon.efecto = "curarDuo";
         clon.esConjurada = false;
@@ -70,8 +70,8 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `tornado_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         clon.nombre = "Tornado"; 
-        clon.descripcion = "Elegí un jugador y desequipale todo lo que tenga equipado colocandoselo en su mano.";
-        clon.descripcionEnCatalan = "Tria un jugador i desequipa-li tot el que tingui equipat, posant-ho a la seva mà.";
+        clon.descripcion = "Desequipa todo lo que tenga equipado un jugador.";
+        clon.descripcionEnCatalan = "Desequipa tot el que tingui equipat un jugador.";
         clon.tipoDeUso = "objetivoUniversal"; 
         clon.efecto = "desequipar";
         clon.esConjurada = false;
