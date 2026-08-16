@@ -60,8 +60,20 @@ export class CatalogoCartasEspeciales {
         clon.nombre = "Anderlandis"; 
         clon.descripcion = "Elegí un jugador. Ambos recuperan 1 de vida. Falla si alguno tiene la salud al máximo (No funciona cuando quedan 2 vivos).";
         clon.descripcionEnCatalan = "Tria un jugador. Ambdós recuperen 1 de vida. Falla si algun té la salut al màxim (No funciona quan només queden 2 jugadors vius).";
-        clon.tipoDeUso = "objetivoGlobal"; 
+        clon.tipoDeUso = "objetivoUniversal"; 
         clon.efecto = "curarDuo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearTornado(): Carta {
+        let clon = new Carta();
+        clon.id = `tornado_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        clon.nombre = "Tornado"; 
+        clon.descripcion = "Elegí un jugador y desequipale todo lo que tenga equipado colocandoselo en su mano.";
+        clon.descripcionEnCatalan = "Tria un jugador i desequipa-li tot el que tingui equipat, posant-ho a la seva mà.";
+        clon.tipoDeUso = "objetivoUniversal"; 
+        clon.efecto = "desequipar";
         clon.esConjurada = false;
         return clon;
     }
@@ -70,13 +82,15 @@ export class CatalogoCartasEspeciales {
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
             { id: "anderlandis", copias: 2 },
+            { id: "tornado", copias: 1},
         ];
     }
 
     // EL DISTRIBUIDOR
     public static crearCartaExtension(id: string): Carta | null {
         switch (id) {
-            case "anderlandis": return this.crearAnderlandis();
+            case "anderlandis": return this.crearAnderlandis()
+            case "tornado": return this.crearTornado()
 
             default: return null;
         }

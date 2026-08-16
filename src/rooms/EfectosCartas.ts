@@ -400,6 +400,88 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
     }
 }
 
+export class EfectoDesequipar implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        // Extraemos el objetivo usando el sistema universal
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido.");
+            return false;
+        }
+
+        let desequipoAlgo = false;
+
+        // 1. Revisar y desequipar Arma
+        if (victima.cartaArma) {
+            victima.mano.push(victima.cartaArma);
+            victima.cartaArma = null;
+            victima.nombreArma = "Colt .45"; // Vuelve al arma por defecto
+            victima.alcanceArma = 1;
+            desequipoAlgo = true;
+        }
+
+        // 2. Revisar y desequipar Caballo (Mustang)
+        if (victima.cartaMustang) {
+            victima.mano.push(victima.cartaMustang);
+            victima.cartaMustang = null;
+            victima.tieneMustang = false;
+            victima.tieneMustangPro = false;
+            desequipoAlgo = true;
+        }
+
+        // 3. Revisar y desequipar Monoaldea (Mira)
+        if (victima.cartaMira) {
+            victima.mano.push(victima.cartaMira);
+            victima.cartaMira = null;
+            victima.tieneMira = false;
+            victima.tieneMiraPro = false;
+            desequipoAlgo = true;
+        }
+
+        // 4. Revisar y desequipar Barril
+        if (victima.cartaBarril) {
+            victima.mano.push(victima.cartaBarril);
+            victima.cartaBarril = null;
+            victima.tieneBarril = false;
+            victima.tieneBarrilPro = false;
+            desequipoAlgo = true;
+        }
+
+        if (victima.cartaPrision) {
+            victima.mano.push(victima.cartaPrision);
+            victima.cartaPrision = null;
+            victima.estaEnPrision = false;
+            desequipoAlgo = true;
+        }
+
+        if (victima.cartaDinamita) {
+            victima.mano.push(victima.cartaDinamita);
+            victima.cartaDinamita = null;
+            victima.tieneDinamita = false;
+            desequipoAlgo = true;
+        }
+
+        // Si después de revisar todo no tenía nada, cancelamos la jugada
+        if (!desequipoAlgo) {
+            client.send("alerta_personal", `${victima.nombre} no tiene ningún equipamiento para quitarle.`);
+            return false;
+        }
+
+        // --- SI LLEGÓ HASTA ACÁ, LA JUGADA FUE EXITOSA ---
+
+        sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.nombre} lanzó un Tornado! Todo el equipamiento de ${victima.nombre} voló de regreso a su mano.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada);
+        
+        return true; 
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
