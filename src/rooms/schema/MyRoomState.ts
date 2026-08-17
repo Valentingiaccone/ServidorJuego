@@ -81,5 +81,6 @@ export class MyRoomState extends Schema {
     @type("number") cantidadAlguaciles: number = 0;
     @type("number") cantidadForajidos: number = 0;
     @type("number") danoPendiente: number = 1;
+    @type("string") tipoTiendaActual: string = "Griff";
 }
 

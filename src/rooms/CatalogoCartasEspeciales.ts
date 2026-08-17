@@ -125,22 +125,22 @@ export class CatalogoCartasEspeciales {
             clon.nombre = "Hongo Venenoso";
             clon.descripcion = "Al descartarla pierdes 1 vida.";
             clon.descripcionEnCatalan = "En descartar-la perds 1 vida.";
-            clon.efecto = "descartar_venenoso";
+            clon.efecto = "descartar_venenoso_1";
         } else if (elegida === "reductor") {
-            clon.nombre = "Hongo Reductor";
+            clon.nombre = "Reductor";
             clon.descripcion = "Al descartarla tu vida máxima baja en 1.";
             clon.descripcionEnCatalan = "En descartar-la la teva vida màxima baixa en 1.";
-            clon.efecto = "descartar_reductor";
+            clon.efecto = "descartar_reductor_1";
         } else if (elegida === "comilon") {
             clon.nombre = "Monstruo Comilón";
             clon.descripcion = "Al descartarla elimina un equipamiento aleatorio tuyo.";
             clon.descripcionEnCatalan = "En descartar-la elimina un equipament aleatori teu.";
-            clon.efecto = "descartar_comilon";
+            clon.efecto = "descartar_comilon_1";
         } else if (elegida === "maldita") {
             clon.nombre = "Carta Maldita";
             clon.descripcion = "Al descartarla descarta otra carta aleatoria de tu mano.";
             clon.descripcionEnCatalan = "En descartar-la et descarta una altra carta aleatòria de la teva mà.";
-            clon.efecto = "descartar_maldita";
+            clon.efecto = "descartar_maldita_1";
         }
         
         return clon;
