@@ -999,9 +999,7 @@ export class MyRoom extends Room {
                 }
                 
                 this.evaluarMuerte(victima); 
-                
-                // ¡LA CLAVE!: Solo avanzamos la cola manualmente si el jugador sobrevivió.
-                // Si murió, evaluarMuerte ya la avanzó por nosotros a través de los destrabadores.
+
                 if (victima.vidas > 0) {
                     this.avanzarColaIndios();
                 }
@@ -1243,8 +1241,6 @@ export class MyRoom extends Room {
                 }
             }
 
-            // ¡LA CLAVE!: Solo limpiamos variables o avanzamos la cola de Tiratachuela 
-            // si el jugador NO murió. Si murió, evaluarMuerte ya lo destrabó.
             if (sobrevivioAlAtaque) {
                 if (this.colaDePeligro && this.colaDePeligro.length > 0) {
                     this.avanzarColaDePeligro();

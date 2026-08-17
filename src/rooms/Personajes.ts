@@ -473,7 +473,7 @@ export class Flowery implements IPersonaje {
                         pasivaVictima.onRecibirDano(sala, v, jugador, "FLOWERY"); 
                     }
                     
-                    sala.evaluarMuerte(v);
+                    sala.evaluarMuerte(v, jugador);
 
                     // YA NO ROBA CARTAS DEL RIVAL (Eliminado)
 
