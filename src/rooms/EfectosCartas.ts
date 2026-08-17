@@ -1,5 +1,6 @@
 // EfectosCartas.ts
 
+import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { GestorPersonajes } from "./Personajes.js";
 
 // 1. EL CONTRATO: Todas las cartas que agregues en el futuro DEBEN tener este método "ejecutar"
@@ -263,6 +264,8 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         sala.colaTienda = vivosIds;
         sala.state.cartasTienda.clear();
 
+        sala.state.tipoTiendaActual = "Griff";
+
         // 2. Sacar 1 carta por jugador vivo
         for(let i = 0; i < vivosIds.length; i++) {
             if (sala.state.mazo.length === 0 && sala.state.descarte.length > 0) {
@@ -281,6 +284,49 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         
         sala.avanzarColaTienda();
         return true
+    }
+}
+
+export class EfectoTiendaJuju implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        
+        let vivosIds: string[] = [];
+        let idsJugadores = Array.from(sala.state.jugadores.keys());
+        let indiceInicial = idsJugadores.indexOf(client.sessionId);
+        
+        // 1. Encontrar a todos los vivos (EXCEPTO al que la jugó)
+        for(let i = 0; i < idsJugadores.length; i++) {
+            let idx = (indiceInicial + i) % idsJugadores.length;
+            let sessionId = idsJugadores[idx] as string;
+            let j = sala.state.jugadores.get(sessionId);
+            
+            // LA CLAVE: Exigimos que el ID sea distinto al del cliente actual
+            if(j && j.estaVivo && sessionId !== client.sessionId) {
+                vivosIds.push(sessionId);
+            }
+        }
+
+        sala.colaTienda = vivosIds;
+        sala.state.cartasTienda.clear();
+        
+        // Avisamos al servidor que estamos en modo Juju
+        sala.state.tipoTiendaActual = "Juju";
+
+        // 2. Sacar 1 carta MALDITA por jugador víctima
+        for(let i = 0; i < vivosIds.length; i++) {
+            let cartaMaldita = CatalogoCartasEspeciales.crearCartaMalditaAleatoria();
+            sala.state.cartasTienda.push(cartaMaldita);
+        }
+
+        // 3. Consumir la carta e iniciar la tienda
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        
+        // Llamamos a la función unificada
+        sala.avanzarColaTienda();
+        
+        return true;
     }
 }
 
@@ -483,6 +529,89 @@ export class EfectoDesequipar implements IEfectoCarta {
     }
 }
 
+export class EfectoDescartar implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, carta: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
+        
+        let tipoMaldicion = parametros[1]; // "venenoso", "reductor", "comilon", "maldita"
+        let cantidad = parametros[2] ? parseInt(parametros[2]) : 1;
+
+        if (tipoMaldicion === "venenoso") {
+            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y pierde ${cantidad} vida(s)!`);
+            jugador.vidas -= cantidad;
+            
+            let pasivaVictima = gestorPersonajes.obtener(jugador.personaje);
+            if (pasivaVictima && pasivaVictima.onRecibirDano) {
+                pasivaVictima.onRecibirDano(sala, jugador, null, "MALDICION");
+            }
+            sala.evaluarMuerte(jugador);
+        } 
+        else if (tipoMaldicion === "reductor") {
+            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y su salud máxima bajó en ${cantidad}!`);
+            jugador.vidasMaximas -= cantidad;
+            if (jugador.vidas > jugador.vidasMaximas) {
+                jugador.vidas = jugador.vidasMaximas;
+                sala.evaluarMuerte(jugador); 
+            }
+        } 
+        else if (tipoMaldicion === "comilon") {
+            for (let i = 0; i < cantidad; i++) {
+                let opciones: string[] = [];
+                if (jugador.cartaArma) opciones.push("arma");
+                if (jugador.cartaMustang) opciones.push("mustang");
+                if (jugador.cartaMira) opciones.push("mira");
+                if (jugador.cartaBarril) opciones.push("barril");
+                if (jugador.cartaPrision) opciones.push("prision");
+                if (jugador.cartaDinamita) opciones.push("dinamita");
+
+                if (opciones.length > 0) {
+                    let elegida = opciones[Math.floor(Math.random() * opciones.length)];
+                    let cartaPerdida = null;
+
+                    if (elegida === "arma") { cartaPerdida = jugador.cartaArma; jugador.cartaArma = null; jugador.nombreArma = "Colt .45"; jugador.alcanceArma = 1; } 
+                    else if (elegida === "mustang") { cartaPerdida = jugador.cartaMustang; jugador.cartaMustang = null; jugador.tieneMustang = false; jugador.tieneMustangPro = false; } 
+                    else if (elegida === "mira") { cartaPerdida = jugador.cartaMira; jugador.cartaMira = null; jugador.tieneMira = false; jugador.tieneMiraPro = false; } 
+                    else if (elegida === "barril") { cartaPerdida = jugador.cartaBarril; jugador.cartaBarril = null; jugador.tieneBarril = false; jugador.tieneBarrilPro = false; }
+                    else if (elegida === "prision") { cartaPerdida = jugador.cartaPrision; jugador.cartaPrision = null; jugador.estaEnPrision = false; }
+                    else if (elegida === "dinamita") { cartaPerdida = jugador.cartaDinamita; jugador.cartaDinamita = null; jugador.tieneDinamita = false; }
+
+                    if (cartaPerdida) {
+                        sala.broadcast("notificacion_turno", `👾 ¡Una maldición devoró un equipamiento (${cartaPerdida.nombre}) de ${jugador.nombre}!`);
+                        
+                        // Si el equipamiento que se comió TAMBIÉN es maldito, esto dispara la cadena automáticamente
+                        sala.agregarAlDescarte(cartaPerdida, jugador, client);
+                    }
+                } else {
+                    sala.broadcast("notificacion_turno", `👾 Una maldición intentó actuar, pero ${jugador.nombre} ya no tenía equipamiento.`);
+                    break; 
+                }
+            }
+        } 
+        else if (tipoMaldicion === "maldita") {
+            for (let i = 0; i < cantidad; i++) {
+                if (jugador.mano.length > 0) {
+                    let indiceRandom = Math.floor(Math.random() * jugador.mano.length);
+                    let cartaExtra = jugador.mano.splice(indiceRandom, 1)[0];
+                    
+                    sala.broadcast("notificacion_turno", `👻 ¡Una maldición obligó a ${jugador.nombre} a descartar un/a ${cartaExtra.nombre}!`);
+                    
+                    let pasivaVictima = gestorPersonajes.obtener(jugador.personaje);
+                    if (pasivaVictima && pasivaVictima.onDescartarCarta) {
+                        pasivaVictima.onDescartarCarta(sala, jugador, cartaExtra, "MALDICION");
+                    }
+
+                    // Si la carta extraída de la mano TAMBIÉN es maldita, se genera el efecto dominó automáticamente
+                    sala.agregarAlDescarte(cartaExtra, jugador, client);
+                } else {
+                    sala.broadcast("notificacion_turno", `👻 Una maldición intentó actuar, pero la mano de ${jugador.nombre} ya estaba vacía.`);
+                    break;
+                }
+            }
+        }
+
+        return true;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -502,6 +631,8 @@ export class DespachadorDeCartas {
         "equiparBarrilPro": new EfectoEquiparBarrilPro(),
         "curarDuo": new EfectoCurarDuo(),
         "desequipar": new EfectoDesequipar(),
+        "tiendaJuju": new EfectoTiendaJuju(),
+        "descartar": new EfectoDescartar()
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

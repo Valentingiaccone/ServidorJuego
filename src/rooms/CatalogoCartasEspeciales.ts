@@ -78,11 +78,25 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearTiendaDeJuju(): Carta {
+        const clon = new Carta();
+        clon.id = `tienda_juju_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        clon.nombre = "La tienda de Juju";
+        clon.descripcion = "Los demas jugadores eligen cartas malditas.";
+        clon.descripcionEnCatalan = "Els altres jugadors trien cartes maleïdes."
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "tienda";  
+        clon.esConjurada = false;
+        return clon;
+    }
+
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
             { id: "anderlandis", copias: 2 },
             { id: "tornado", copias: 1},
+            { id: "tiendaDeJuju", copias: 1}
         ];
     }
 
@@ -91,8 +105,44 @@ export class CatalogoCartasEspeciales {
         switch (id) {
             case "anderlandis": return this.crearAnderlandis()
             case "tornado": return this.crearTornado()
+            case "tiendaDeJuju": return this.crearTiendaDeJuju()
 
             default: return null;
         }
+    }
+
+    public static crearCartaMalditaAleatoria(): Carta {
+        let opciones = ["venenoso", "reductor", "comilon", "maldita"];
+        let elegida = opciones[Math.floor(Math.random() * opciones.length)];
+        
+        let clon = new Carta();
+        // Generamos IDs únicos para que no choquen en la interfaz
+        clon.id = `maldicion_${elegida}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.esConjurada = true; 
+        clon.tipoDeUso = "oculto"; 
+        
+        if (elegida === "venenoso") {
+            clon.nombre = "Hongo Venenoso";
+            clon.descripcion = "Al descartarla pierdes 1 vida.";
+            clon.descripcionEnCatalan = "En descartar-la perds 1 vida.";
+            clon.efecto = "descartar_venenoso";
+        } else if (elegida === "reductor") {
+            clon.nombre = "Hongo Reductor";
+            clon.descripcion = "Al descartarla tu vida máxima baja en 1.";
+            clon.descripcionEnCatalan = "En descartar-la la teva vida màxima baixa en 1.";
+            clon.efecto = "descartar_reductor";
+        } else if (elegida === "comilon") {
+            clon.nombre = "Monstruo Comilón";
+            clon.descripcion = "Al descartarla elimina un equipamiento aleatorio tuyo.";
+            clon.descripcionEnCatalan = "En descartar-la elimina un equipament aleatori teu.";
+            clon.efecto = "descartar_comilon";
+        } else if (elegida === "maldita") {
+            clon.nombre = "Carta Maldita";
+            clon.descripcion = "Al descartarla descarta otra carta aleatoria de tu mano.";
+            clon.descripcionEnCatalan = "En descartar-la et descarta una altra carta aleatòria de la teva mà.";
+            clon.efecto = "descartar_maldita";
+        }
+        
+        return clon;
     }
 }

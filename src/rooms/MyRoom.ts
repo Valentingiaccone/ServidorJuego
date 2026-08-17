@@ -54,17 +54,25 @@ export class MyRoom extends Room {
         if (this.colaTienda.length > 0) {
             this.state.jugadorEligiendoTienda = this.colaTienda.shift();
             let jugador = this.state.jugadores.get(this.state.jugadorEligiendoTienda);
+            
             if (jugador && jugador.estaVivo){
-                this.broadcast("notificacion_turno", `🏪 ${jugador?.nombre} está eligiendo en La tienda de Griff.`);
+                let nombreTienda = this.state.tipoTiendaActual === "Juju" ? "Juju" : "Griff";
+                this.broadcast("notificacion_turno", `🏪 ${jugador?.nombre} está eligiendo en La tienda de ${nombreTienda}.`);
+                
+                let musica = this.state.tipoTiendaActual === "Juju" ? "tiendaDeJuju" : "tiendaDeGriff";
+                this.broadcast("musica", musica);
             } else {
-                this.avanzarColaTienda()
+                this.avanzarColaTienda();
             }
-            this.broadcast("musica", "tiendaDeGriff")
         } else {
             this.state.jugadorEligiendoTienda = "";
-            this.state.cartasTienda.clear(); // Limpieza por si sobraron (ej. alguien murió)
-            this.broadcast("notificacion_turno", `🏪 La tienda de Griff ha cerrado.`);
-            this.actualizarMusicaAutomatica()
+            this.state.cartasTienda.clear(); 
+            
+            let nombreTienda = this.state.tipoTiendaActual === "Juju" ? "Juju" : "Griff";
+            this.broadcast("notificacion_turno", `🏪 La tienda de ${nombreTienda} ha cerrado.`);
+            
+            this.actualizarMusicaAutomatica();
+            this.state.tipoTiendaActual = "Griff"; // Reseteamos la bandera por seguridad
         }
     }
 
@@ -550,7 +558,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 });
 
-                let cantidadDeCartasExtension = 2;
+                let cantidadDeCartasExtension = 3;
                 
                 let poolRaras = CatalogoCartasEspeciales.obtenerPoolExtensiones();
                 
@@ -839,7 +847,7 @@ export class MyRoom extends Room {
             }
 
             if (cartaAfectada) {
-                this.agregarAlDescarte(cartaAfectada)
+                this.agregarAlDescarte(cartaAfectada, victima, client);
                 this.broadcast("notificacion_turno", `🗑️ ${victima.nombre} decidió descartar su ${cartaAfectada.nombre}.`);
                 
                 let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
@@ -1267,7 +1275,7 @@ export class MyRoom extends Room {
                 if (indiceCarta !== -1) {
                     let cartaDescartada = jugador.mano[indiceCarta];
                     jugador.mano.splice(indiceCarta, 1);
-                    this.agregarAlDescarte(cartaDescartada)
+                    this.agregarAlDescarte(cartaDescartada, jugador, client);
 
                     this.broadcast("notificacion_turno", `🗑️ ${jugador.nombre} descartó una carta.`);
                     
@@ -1538,9 +1546,14 @@ export class MyRoom extends Room {
                 this.state.jugadorDesenfundando !== "");
     }
 
-    agregarAlDescarte(cartaDescartada: Carta): void {
+    agregarAlDescarte(cartaDescartada: Carta, jugador: any = null, client: any = null): void {
         if (!cartaDescartada.esConjurada){
             this.state.descarte.push(cartaDescartada);
+        }
+
+        if (jugador && cartaDescartada.efecto && cartaDescartada.efecto.startsWith("descartar")) {
+            let partesEfecto = cartaDescartada.efecto.split("_");
+            this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, client, jugador, cartaDescartada, -1, partesEfecto, this.gestorPersonajes);
         }
     }
 }
