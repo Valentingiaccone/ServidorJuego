@@ -85,7 +85,7 @@ export class CatalogoCartasEspeciales {
         clon.descripcion = "Los demas jugadores eligen cartas malditas.";
         clon.descripcionEnCatalan = "Els altres jugadors trien cartes maleïdes."
         clon.tipoDeUso = "instantanea";
-        clon.efecto = "tienda";  
+        clon.efecto = "tiendaJuju";  
         clon.esConjurada = false;
         return clon;
     }
