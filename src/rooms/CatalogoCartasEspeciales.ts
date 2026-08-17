@@ -132,7 +132,7 @@ export class CatalogoCartasEspeciales {
             clon.descripcionEnCatalan = "En descartar-la la teva vida màxima baixa en 1.";
             clon.efecto = "descartar_reductor_1";
         } else if (elegida === "comilon") {
-            clon.nombre = "Monstruo Comilón";
+            clon.nombre = "Slime Comilón";
             clon.descripcion = "Al descartarla elimina un equipamiento aleatorio tuyo.";
             clon.descripcionEnCatalan = "En descartar-la elimina un equipament aleatori teu.";
             clon.efecto = "descartar_comilon_1";
