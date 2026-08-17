@@ -84,7 +84,7 @@ export class MyRoom extends Room {
             return
         }
 
-        if (totalVivos > 4){
+        if (totalVivos > 5){
             this.broadcast("musica", "juego")
         } else if (totalVivos == 5){
             this.broadcast("musica", "juegoQuedan5")
@@ -97,7 +97,40 @@ export class MyRoom extends Room {
         }
     }
 
-    evaluarMuerte(victima: any) {
+    evaluarMuerte(victima: any, asesino: any = null) {
+        
+        let totalVivos = 0;
+
+        this.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo) {
+                totalVivos++;
+            }
+        });
+
+        // --- 1. INTENTO DE SUPERVIVENCIA (Botiquines Automáticos) ---
+        while (victima.vidas <= 0 && totalVivos !== 2) {
+            let indiceBotiquin = victima.mano.findIndex((c: any) => c.efecto === "curar_1");
+            
+            if (indiceBotiquin !== -1) {
+                let botiquin = victima.mano.splice(indiceBotiquin, 1)[0];
+                this.agregarAlDescarte(botiquin);
+                victima.vidas++;
+                
+                this.broadcast("notificacion_turno", `🩹 ¡${victima.nombre} usó un ${botiquin.nombre} automáticamente para evitar la muerte!`);
+                
+                let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
+                if (pasivaVictima && pasivaVictima.onRecibirCuracion) {
+                    pasivaVictima.onRecibirCuracion(victima);
+                }
+            } else {
+                break; // No tiene más botiquines, muere oficialmente
+            }
+        }
+
+        // Si la vida subió a 1 o más, se salvó. Cortamos acá.
+        if (victima.vidas > 0) return; 
+
+        // --- 2. MUERTE CONFIRMADA ---
         if (victima.vidas <= 0) {
             victima.estaVivo = false;
             victima.vidas = 0;
@@ -112,6 +145,32 @@ export class MyRoom extends Room {
                 console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
             }
 
+            // --- 3. RECOMPENSAS Y CASTIGOS POR ASESINATO ---
+            if (asesino && asesino.estaVivo) {
+                if (victima.rol === "Forajido") {
+                    this.broadcast("notificacion_turno", `💰 ¡${asesino.nombre} eliminó a un Forajido y cobra la recompensa de 2 cartas!`);
+                    this.repartirCartas(asesino, 2, "recompensa_forajido");
+                } 
+                else if (victima.rol === "Alguacil" && asesino.rol === "Sheriff") {
+                    this.broadcast("notificacion_turno", `🤦‍♂️ ¡El Sheriff mató a su propio Alguacil! Como castigo, pierde todas sus cartas y equipamiento.`);
+                    
+                    asesino.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
+                    asesino.mano.clear();
+                    
+                    if (asesino.cartaArma) this.agregarAlDescarte(asesino.cartaArma);
+                    asesino.nombreArma = "Colt .45";
+                    asesino.alcanceArma = 1;
+                    asesino.cartaArma = null;
+
+                    if (asesino.cartaMustang) { this.agregarAlDescarte(asesino.cartaMustang); asesino.tieneMustang = false; asesino.tieneMustangPro = false; asesino.cartaMustang = null; }
+                    if (asesino.cartaMira) { this.agregarAlDescarte(asesino.cartaMira); asesino.tieneMira = false; asesino.tieneMiraPro = false; asesino.cartaMira = null; }
+                    if (asesino.cartaBarril) { this.agregarAlDescarte(asesino.cartaBarril); asesino.tieneBarril = false; asesino.tieneBarrilPro = false; asesino.cartaBarril = null; }
+                    if (asesino.cartaPrision) { this.agregarAlDescarte(asesino.cartaPrision); asesino.estaEnPrision = false; asesino.cartaPrision = null; }
+                    if (asesino.cartaDinamita) { this.agregarAlDescarte(asesino.cartaDinamita); asesino.tieneDinamita = false; asesino.cartaDinamita = null; }
+                }
+            }
+
+            // --- 4. LIMPIEZA DE EQUIPAMIENTO Y MANO DE LA VÍCTIMA ---
             victima.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
             victima.mano.clear();
             if (victima.cartaArma) this.agregarAlDescarte(victima.cartaArma);
@@ -165,7 +224,7 @@ export class MyRoom extends Room {
             }
 
             let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
-            let totalVivos = 0;
+            totalVivos = 0;
 
             this.state.jugadores.forEach((j) => {
                 if (j.estaVivo) {
@@ -271,8 +330,8 @@ export class MyRoom extends Room {
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `botiquin_${c}`;
                     nuevaCarta.nombre = "Botiquín";
-                    nuevaCarta.descripcion = "Recupera 1 vida (No funciona cuando quedan 2 vivos).";
-                    nuevaCarta.descripcionEnCatalan = "Recupera 1 punt de vida (No funciona quan només queden 2 jugadors vius)."
+                    nuevaCarta.descripcion = "Recupera 1 vida, puede salvarte de morir (No funciona cuando quedan 2 vivos).";
+                    nuevaCarta.descripcionEnCatalan = "Recupera 1 vida, pot salvar-te de morir (No funciona quan només queden 2 vius)."
                     nuevaCarta.tipoDeUso = "instantanea";
                     nuevaCarta.efecto = "curar_1";
                     this.state.mazo.push(nuevaCarta);
@@ -1128,7 +1187,7 @@ export class MyRoom extends Room {
                     pasivaVictima.onRecibirDano(this, jugadorActual, ganadorDuelo, "DUELO");
                 }
                 
-                this.evaluarMuerte(jugadorActual);
+                this.evaluarMuerte(jugadorActual, ganadorDuelo);
                 
                 // Fin del duelo
                 this.state.jugadorEnDuelo = "";
@@ -1175,7 +1234,7 @@ export class MyRoom extends Room {
                         pasivaVictima.onRecibirDano(this, victima, atacante, "BANG");
                     }
 
-                    this.evaluarMuerte(victima);
+                    this.evaluarMuerte(victima, atacante);
                     
                     // Verificamos si logico/físicamente murió
                     if (victima.vidas <= 0) {
@@ -1405,7 +1464,14 @@ export class MyRoom extends Room {
         let victima = this.state.jugadores.get(idJugador);
         
         // 1. Definir probabilidad base
-        let puntosVerdes = (motivo === "Dinamita") ? 14 : 4;
+        let puntosVerdes: number = 4
+        if (motivo == "Barril"){
+            puntosVerdes = 4
+        } else if (motivo == "Prision"){
+            puntosVerdes = 6
+        } else if (motivo == "Dinamita"){
+            puntosVerdes = 14
+        }
 
         // 2. Aplicar la pasiva de Chester (o cualquier otro personaje)
         let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
