@@ -45,6 +45,7 @@ export class MyRoom extends Room {
             }
         } else {
             this.state.jugadorBajoAtaqueIndio = "";
+            this.state.atacanteActual = "";
             this.broadcast("notificacion_turno", `⛺ El ataque de los Indios ha terminado.`);
         }
     }
@@ -330,8 +331,8 @@ export class MyRoom extends Room {
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `botiquin_${c}`;
                     nuevaCarta.nombre = "Botiquín";
-                    nuevaCarta.descripcion = "Recupera 1 vida, puede salvarte de morir (No funciona cuando quedan 2 vivos).";
-                    nuevaCarta.descripcionEnCatalan = "Recupera 1 vida, pot salvar-te de morir (No funciona quan només queden 2 vius)."
+                    nuevaCarta.descripcion = "+1 vida, te salva de morir (No funciona cuando quedan 2 vivos).";
+                    nuevaCarta.descripcionEnCatalan = "+1 vida, et salva de morir (No funciona quan només en queden 2 de vius)."
                     nuevaCarta.tipoDeUso = "instantanea";
                     nuevaCarta.efecto = "curar_1";
                     this.state.mazo.push(nuevaCarta);
@@ -341,8 +342,8 @@ export class MyRoom extends Room {
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `fallo_${c}`;
                     nuevaCarta.nombre = "¡Fallo!";
-                    nuevaCarta.descripcion = "Esquiva un BANG! que te hayan disparado.";
-                    nuevaCarta.descripcionEnCatalan = "Esquiva un BANG! que t'hagin disparat."
+                    nuevaCarta.descripcion = "Esquiva un BANG!.";
+                    nuevaCarta.descripcionEnCatalan = "Esquiva un BANG!."
                     nuevaCarta.tipoDeUso = "oculto"; 
                     nuevaCarta.efecto = "esquivar"; 
                     this.state.mazo.push(nuevaCarta);
@@ -374,8 +375,8 @@ export class MyRoom extends Room {
                     const cat = new Carta();
                     cat.id = `cocoroch_${i}`;
                     cat.nombre = "Cocoroch";
-                    cat.descripcion = "Haz que un jugador descarte una carta de la mano o de la mesa.";
-                    cat.descripcionEnCatalan = "Fes que un jugador descarti una carta de la mà o de la taula."
+                    cat.descripcion = "Un jugador descarta una carta de la mano o equipada.";
+                    cat.descripcionEnCatalan = "Un jugador descarta una carta de la mà o que tingui equipada."
                     cat.tipoDeUso = "objetivoGlobal";
                     cat.efecto = "forzar_enemigo"; 
                     this.state.mazo.push(cat);
@@ -383,8 +384,8 @@ export class MyRoom extends Room {
                     const panico = new Carta();
                     panico.id = `panico_${i}`;
                     panico.nombre = "¡Pánico!";
-                    panico.descripcion = "Robale una carta de su mano o mesa a un jugador a distancia 1.";
-                    panico.descripcionEnCatalan = "Roba-li una carta de la mà o de la taula a un jugador a distància 1."
+                    panico.descripcion = "Roba una carta de la mano o equipada a un jugador a distancia 1.";
+                    panico.descripcionEnCatalan = "Roba una carta de la mà o equipada d un jugador a distància 1."
                     panico.tipoDeUso = "objetivo1";
                     panico.efecto = "robar_enemigo"; 
                     this.state.mazo.push(panico);
@@ -394,8 +395,8 @@ export class MyRoom extends Room {
                     const poco = new Carta();
                     poco.id = `musicoterapia_${i}`;
                     poco.nombre = "Musicoterapia";
-                    poco.descripcion = "Recupera 1 vida a todos los jugadores vivos en la mesa (No funciona cuando quedan 2 vivos).";
-                    poco.descripcionEnCatalan = "Recupera 1 punt de vida a tots els jugadors vius de la taula (No funciona quan només queden 2 jugadors vius)."
+                    poco.descripcion = "+1 vida para todos (No funciona cuando quedan 2 vivos).";
+                    poco.descripcionEnCatalan = "+1 vida per a tothom (No funciona quan només en queden 2 de vius)."
                     poco.tipoDeUso = "instantanea";
                     poco.efecto = "curarATodos";
                     this.state.mazo.push(poco);
@@ -438,8 +439,8 @@ export class MyRoom extends Room {
                     const duelo = new Carta();
                     duelo.id = `duelo_${i}`;
                     duelo.nombre = "Duelo";
-                    duelo.descripcion = "Desafía a cualquier jugador. Deben turnarse para descartar un BANG!. El primero que no lo haga, pierde 1 vida.";
-                    duelo.descripcionEnCatalan = "Desafia qualsevol jugador. Us heu d'alternar per descartar un BANG!. El primer que no ho faci, perd 1 punt de vida."
+                    duelo.descripcion = "Desafía a un jugador: descartan BANG! por turnos. Quien no pueda, pierde 1 vida.";
+                    duelo.descripcionEnCatalan = "Desafia un jugador: descarten BANG! per torns. Qui no pugui, perd 1 vida."
                     duelo.tipoDeUso = "objetivoGlobal"; // Alcance infinito
                     duelo.efecto = "duelo"; 
                     this.state.mazo.push(duelo);
@@ -471,8 +472,8 @@ export class MyRoom extends Room {
                     const barril = new Carta();
                     barril.id = `barril_${i}`;
                     barril.nombre = "Barril";
-                    barril.descripcion = "Si te disparan, podes usar el barril, tenes 25% de esquivar el tiro.";
-                    barril.descripcionEnCatalan = "Si et disparen, pots utilitzar el barril; tens un 25 % de probabilitats d'esquivar el tret."
+                    barril.descripcion = "Podes usar el barril para tener 25% de esquivar un disparo.";
+                    barril.descripcionEnCatalan = "Pots fer servir el barril per tenir un 25% de probabilitat d’esquivar un tret."
                     barril.tipoDeUso = "equipamiento";
                     barril.efecto = "equiparBarril";
                     this.state.mazo.push(barril);
@@ -482,8 +483,8 @@ export class MyRoom extends Room {
                     const prision = new Carta();
                     prision.id = `prision_${i}`;
                     prision.nombre = "Prisión";
-                    prision.descripcion = "Equipala a otro jugador (menos al Sheriff). Tiene 25% de salir de la carcel o perder el turno.";
-                    prision.descripcionEnCatalan = "Equipa-la a un altre jugador (excepte el Sheriff). Té un 25 % de probabilitats de sortir de la presó o de perdre el torn."
+                    prision.descripcion = "Un jugador tiene 37.5% de salir de la carcel o perder el turno (no afecta al Sheriff).";
+                    prision.descripcionEnCatalan = "Un jugador té un 37,5% de sortir de la presó o perdre el torn (no afecta el Sheriff)."
                     prision.tipoDeUso = "objetivoGlobal"; 
                     prision.efecto = "prision";
                     this.state.mazo.push(prision);
@@ -493,8 +494,8 @@ export class MyRoom extends Room {
                     const dinamita = new Carta();
                     dinamita.id = `dinamita_${i}`;
                     dinamita.nombre = "Dinamita";
-                    dinamita.descripcion = "Tenes 12,5% de que te explote la dinamita y perder 3 vidas, en caso contrario pasa al siguiente.";
-                    dinamita.descripcionEnCatalan = "Tens un 12,5 % de probabilitats que t'exploti la dinamita i perdis 3 vides; en cas contrari, passa al següent."
+                    dinamita.descripcion = "Tenes 12,5% de que explote y perder 3 vidas, si no pasa al siguiente.";
+                    dinamita.descripcionEnCatalan = "Tens un 12,5% que exploti i perdis 3 vides; si no, passa al següent."
                     dinamita.tipoDeUso = "equipamiento";
                     dinamita.efecto = "equiparDinamita";
                     this.state.mazo.push(dinamita);
@@ -989,16 +990,21 @@ export class MyRoom extends Room {
                 // Como esquivó y está vivo, avanzamos la cola manualmente
                 this.avanzarColaIndios(); 
                 
-            } else if (datos.accion === "dano") {
+            }else if (datos.accion === "dano") {
                 victima.vidas--;
                 this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por los Indios!`);
                 
+                // NUEVO: Recuperamos al jugador que lanzó los Indios
+                let asesino = this.state.jugadores.get(this.state.atacanteActual);
+
                 let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                    pasivaVictima.onRecibirDano(this, victima, null, "INDIOS");
+                    // Ahora también le pasamos el asesino a la pasiva por si acaso
+                    pasivaVictima.onRecibirDano(this, victima, asesino, "INDIOS");
                 }
                 
-                this.evaluarMuerte(victima); 
+                // NUEVO: Le pasamos el asesino a la función para que cobre/pierda cartas
+                this.evaluarMuerte(victima, asesino); 
 
                 if (victima.vidas > 0) {
                     this.avanzarColaIndios();
