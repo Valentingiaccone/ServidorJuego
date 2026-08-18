@@ -511,6 +511,13 @@ export class EfectoDesequipar implements IEfectoCarta {
             desequipoAlgo = true;
         }
 
+        if (victima.cartaPapa) {
+            victima.mano.push(victima.cartaPapa);
+            victima.cartaPapa = null;
+            victima.tienePapa = false;
+            desequipoAlgo = true;
+        }
+
         // Si después de revisar todo no tenía nada, cancelamos la jugada
         if (!desequipoAlgo) {
             client.send("alerta_personal", `${victima.nombre} no tiene ningún equipamiento para quitarle.`);
@@ -566,6 +573,7 @@ export class EfectoDescartar implements IEfectoCarta {
                 if (jugador.cartaBarril) opciones.push("barril");
                 if (jugador.cartaPrision) opciones.push("prision");
                 if (jugador.cartaDinamita) opciones.push("dinamita");
+                if (jugador.cartaPapa) opciones.push("papa");
 
                 if (opciones.length > 0) {
                     let elegida = opciones[Math.floor(Math.random() * opciones.length)];
@@ -577,6 +585,7 @@ export class EfectoDescartar implements IEfectoCarta {
                     else if (elegida === "barril") { cartaPerdida = jugador.cartaBarril; jugador.cartaBarril = null; jugador.tieneBarril = false; jugador.tieneBarrilPro = false; }
                     else if (elegida === "prision") { cartaPerdida = jugador.cartaPrision; jugador.cartaPrision = null; jugador.estaEnPrision = false; }
                     else if (elegida === "dinamita") { cartaPerdida = jugador.cartaDinamita; jugador.cartaDinamita = null; jugador.tieneDinamita = false; }
+                    else if (elegida === "papa") { cartaPerdida = jugador.cartaPapa; jugador.cartaPapa = null; jugador.tienePapa = false; }
 
                     if (cartaPerdida) {
                         sala.broadcast("notificacion_turno", `👾 ¡Una maldición devoró un equipamiento (${cartaPerdida.nombre}) de ${jugador.nombre}!`);
