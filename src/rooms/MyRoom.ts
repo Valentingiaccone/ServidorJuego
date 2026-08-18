@@ -176,6 +176,7 @@ export class MyRoom extends Room {
                     if (asesino.cartaBarril) { this.agregarAlDescarte(asesino.cartaBarril); asesino.tieneBarril = false; asesino.tieneBarrilPro = false; asesino.cartaBarril = null; }
                     if (asesino.cartaPrision) { this.agregarAlDescarte(asesino.cartaPrision); asesino.estaEnPrision = false; asesino.cartaPrision = null; }
                     if (asesino.cartaDinamita) { this.agregarAlDescarte(asesino.cartaDinamita); asesino.tieneDinamita = false; asesino.cartaDinamita = null; }
+                    if (asesino.cartaPapa) { this.agregarAlDescarte(asesino.cartaPapa); asesino.tienePapa = false; asesino.cartaPapa = null; }
                 }
             }
 
@@ -768,6 +769,10 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaDinamita;
                 victima.cartaDinamita = null;
                 victima.tieneDinamita = false;
+            } else if (datos.zonaObjetivo === "papa" && victima.cartaPapa) {
+                cartaAfectada = victima.cartaPapa;
+                victima.cartaPapa = null;
+                victima.tienePapa = false;
             }
 
             if (!cartaAfectada) return; 
@@ -847,6 +852,10 @@ export class MyRoom extends Room {
                 cartaAfectada = victima.cartaDinamita;
                 victima.cartaDinamita = null;
                 victima.tieneDinamita = false;
+            } else if (datos.zona === "papa" && victima.cartaPapa) {
+                cartaAfectada = victima.cartaPapa;
+                victima.cartaPapa = null;
+                victima.tienePapa = false;
             }
 
             if (cartaAfectada) {

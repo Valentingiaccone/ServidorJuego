@@ -160,7 +160,6 @@ export class KayFaraday implements IPersonaje {
     vidasBase = 4;
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
-        // Solo roba si el atacante es un jugador real (no la dinamita) y si tiene cartas
         if (atacante && atacante.mano.length > 0) {
             let indiceAleatorio = Math.floor(Math.random() * atacante.mano.length);
             let cartaRobada = atacante.mano.splice(indiceAleatorio, 1)[0];
