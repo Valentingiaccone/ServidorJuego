@@ -102,6 +102,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearRayo(): Carta {
+        let clon = new Carta();
+        clon.id = `rayo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Rayo";
+        clon.descripcion = "Golpea a los jugadores con mas salud. No se puede esquivar. Te incluye.";
+        clon.descripcionEnCatalan = "Colpeja els jugadors amb més salut. No es pot esquivar. T hi inclou.";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "rayo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
@@ -109,6 +121,7 @@ export class CatalogoCartasEspeciales {
             { id: "tornado", copias: 1},
             { id: "tiendaDeJuju", copias: 1},
             { id: "papapum", copias: 1},
+            { id: "rayo", copias: 1},
         ];
     }
 
@@ -119,6 +132,7 @@ export class CatalogoCartasEspeciales {
             case "tornado": return this.crearTornado()
             case "tiendaDeJuju": return this.crearTiendaDeJuju()
             case "papapum": return this.crearPapapum()
+            case "rayo": return this.crearRayo()
 
             default: return null;
         }
