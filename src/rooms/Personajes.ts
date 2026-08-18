@@ -681,6 +681,7 @@ export class Luciergana implements IPersonaje {
                 victima.vidas = victima.vidasMaximas
             }
             if (atacante){
+                sala.broadcast("notificacion_turno", `🐝💡 La Luciergana le refleja ${cantidad} de daño a ${atacante.nombre}`)
                 atacante.vidas -= cantidad
                 let pasivaVictima = sala.gestorPersonajes.obtener(atacante.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirDano) {
@@ -688,6 +689,8 @@ export class Luciergana implements IPersonaje {
                 }
                 
                 sala.evaluarMuerte(atacante, victima);
+            } else {
+                sala.broadcast("notificacion_turno", `🐝💡 La luciergana absorbe ${cantidad} de daño`)
             }
         } else {
             victima.lucierganaPrendida = true

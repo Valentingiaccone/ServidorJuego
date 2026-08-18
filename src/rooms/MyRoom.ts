@@ -666,7 +666,7 @@ export class MyRoom extends Room {
                     }
                 }
 
-                this.broadcast("notificacion_turno", `¡El jugador ${jugadorActual?.nombre} ha pasado su turno!`);
+                //this.broadcast("notificacion_turno", `¡El jugador ${jugadorActual?.nombre} ha pasado su turno!`);
                 
                 // ¡Llamamos a nuestra nueva función!
                 this.avanzarAlSiguienteTurno(client.sessionId);
