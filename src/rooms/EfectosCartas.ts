@@ -356,7 +356,7 @@ export class EfectoEquiparMira implements IEfectoCarta {
         jugador.cartaMira = cartaJugada;
         jugador.mano.splice(indiceCarta, 1);
         
-        sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Mira Telescópica.`);
+        sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Monoaldea.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         return true
     }
