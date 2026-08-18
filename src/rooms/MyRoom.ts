@@ -1256,8 +1256,9 @@ export class MyRoom extends Room {
             let victima = this.state.jugadores.get(client.sessionId);
             let atacante = this.state.jugadores.get(this.state.atacanteActual);
             
-            // Bandera para saber si el jugador murió en este disparo
             let sobrevivioAlAtaque = true; 
+
+            let recibioBalazo = false;
 
             if (victima) {
                 if (idCartaFallo) {
@@ -1279,6 +1280,7 @@ export class MyRoom extends Room {
                 }
                 else {
                     victima.vidas -= this.state.danoPendiente;
+                    recibioBalazo = true;
                     this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
                     const numero: number = Math.floor(Math.random() * 3);
                     const sfx: string = "bang" + numero
@@ -1300,7 +1302,7 @@ export class MyRoom extends Room {
 
             if (sobrevivioAlAtaque) {
 
-                if (atacante && atacante.tienePapa) {
+                if (recibioBalazo && atacante && atacante.tienePapa) {
                     victima.tienePapa = true;
                     victima.cartaPapa = atacante.cartaPapa;
                     atacante.tienePapa = false;
