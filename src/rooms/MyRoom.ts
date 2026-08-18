@@ -954,7 +954,7 @@ export class MyRoom extends Room {
                             if (victima) victima.cartaDinamita = null;
 
                             let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA");
+                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA", 3);
 
                             this.evaluarMuerte(victima);
                             
@@ -987,7 +987,7 @@ export class MyRoom extends Room {
                             this.state.probabilidadPapa = 1; // Reseteamos el peligro global
                             
                             let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "PAPA");
+                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "PAPA", 2);
 
                             this.evaluarMuerte(victima);
                             
@@ -1050,7 +1050,7 @@ export class MyRoom extends Room {
                 let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirDano) {
                     // Ahora también le pasamos el asesino a la pasiva por si acaso
-                    pasivaVictima.onRecibirDano(this, victima, asesino, "INDIOS");
+                    pasivaVictima.onRecibirDano(this, victima, asesino, "INDIOS", 1);
                 }
                 
                 // NUEVO: Le pasamos el asesino a la función para que cobre/pierda cartas
@@ -1239,7 +1239,7 @@ export class MyRoom extends Room {
                 // HOOK RECIBIR DAÑO
                 let pasivaVictima = this.gestorPersonajes.obtener(jugadorActual.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                    pasivaVictima.onRecibirDano(this, jugadorActual, ganadorDuelo, "DUELO");
+                    pasivaVictima.onRecibirDano(this, jugadorActual, ganadorDuelo, "DUELO", 1);
                 }
                 
                 this.evaluarMuerte(jugadorActual, ganadorDuelo);
@@ -1288,7 +1288,7 @@ export class MyRoom extends Room {
 
                     let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
                     if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                        pasivaVictima.onRecibirDano(this, victima, atacante, "BANG");
+                        pasivaVictima.onRecibirDano(this, victima, atacante, "BANG", this.state.danoPendiente);
                     }
 
                     this.evaluarMuerte(victima, atacante);

@@ -12,7 +12,7 @@ export interface IPersonaje {
     
     // Hooks con esteroides (Ganchos a eventos del juego)
     // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
-    onRecibirDano?(sala: any, victima: any, atacante: any, causa: string): void;
+    onRecibirDano?(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void;
     // motivo puede ser: "VOLUNTARIO", "COCOROCH", "EXCESO_CARTAS"
     onDescartarCarta?(sala: any, jugador: any, cartaDescartada: any, motivo: string): void;
     
@@ -48,7 +48,7 @@ export class ColeCasiddy implements IPersonaje {
     vidasBase = 4;
 
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         if (victima.vidas > 0) {
             sala.repartirCartas(victima, 1, "pasiva");
             sala.broadcast("notificacion_turno", `🤠 Cole Casiddy robó 1 carta tras recibir daño por ${causa}.`);
@@ -159,7 +159,7 @@ export class KayFaraday implements IPersonaje {
     habilidadEnCatalan: string = "La lladre:\nCada vegada que perd una vida a causa d'un jugador, roba una carta a l'atzar de la mà d'aquest jugador."
     vidasBase = 4;
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         if (atacante && atacante.mano.length > 0) {
             let indiceAleatorio = Math.floor(Math.random() * atacante.mano.length);
             let cartaRobada = atacante.mano.splice(indiceAleatorio, 1)[0];
@@ -293,7 +293,7 @@ export class Mikotoba implements IPersonaje {
         }
     }
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         this.actualizarNombre(victima)
         if (this.nombre == "Mikotoba gordo"){
             return
@@ -328,7 +328,7 @@ export class Domino implements IPersonaje {
     habilidadEnCatalan: string = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan."
     vidasBase = 4;
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string): void {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
         const numero: number = Math.floor(Math.random() * 3);
         if (numero === 0){
             const dominoCurativo = new Carta();
@@ -480,7 +480,7 @@ export class Flowery implements IPersonaje {
                     v.vidas--;
                     let pasivaVictima = sala.gestorPersonajes.obtener(v.personaje);
                     if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                        pasivaVictima.onRecibirDano(sala, v, jugador, "FLOWERY"); 
+                        pasivaVictima.onRecibirDano(sala, v, jugador, "FLOWERY", 1); 
                     }
                     
                     sala.evaluarMuerte(v, jugador);
@@ -538,7 +538,7 @@ export class Kazuma implements IPersonaje {
     habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu al cap de 2 o 3 rondes amb 1 vida i 3 cartes. Si és Sheriff, en rebre dany té un 50% de crear l espasa Karuma (2 de dany a distància 1).";
     vidasBase = 4;
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string) {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         if (victima.rol === "Sheriff" && victima.vidas > 0) {
             // 50% de probabilidad
             if (Math.random() < 0.5) {
@@ -665,6 +665,37 @@ export class Robin implements IPersonaje {
     }
 }
 
+export class Luciergana implements IPersonaje {
+    
+    nombre = "Luciergana";
+    habilidad = "Reflejo:\nAl sufrir daño, empieza a brillar, mientras brilla, si sufre daño no le afecta y devuelve el daño al atacante, luego se apaga, al inicio de su turno se apaga, tiene 1 vida menos";
+    habilidadEnCatalan = "Fustera:\nEn descartar una carta en el seu torn, millora un equipament aleatori. Les armes evolucionen i la resta es torna versió 'Pro'.";
+    vidasBase = 3;
+
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number){
+        if (victima.lucierganaPrendida){
+            victima.lucierganaPrendida = false
+            victima.spriteAvatarOpcional = ""
+            victima.vidas += cantidad
+            if (victima.vidas > victima.vidasMaximas){
+                victima.vidas = victima.vidasMaximas
+            }
+            if (atacante){
+                atacante.vidas -= cantidad
+                let pasivaVictima = sala.gestorPersonajes.obtener(atacante.personaje);
+                if (pasivaVictima && pasivaVictima.onRecibirDano) {
+                    pasivaVictima.onRecibirDano(sala, atacante, victima, "LUCIERGANA", cantidad); 
+                }
+                
+                sala.evaluarMuerte(atacante, victima);
+            }
+        } else {
+            victima.lucierganaPrendida = true
+            victima.spriteAvatarOpcional = "Luciergana prendida"
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -693,6 +724,7 @@ export class GestorPersonajes {
         this.registrar(new Kazuma())
         this.registrar(new Leah())
         this.registrar(new Robin())
+        this.registrar(new Luciergana())
     }
 
     private registrar(p: IPersonaje) {

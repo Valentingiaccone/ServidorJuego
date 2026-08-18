@@ -548,7 +548,7 @@ export class EfectoDescartar implements IEfectoCarta {
             
             let pasivaVictima = gestorPersonajes.obtener(jugador.personaje);
             if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                pasivaVictima.onRecibirDano(sala, jugador, null, "MALDICION");
+                pasivaVictima.onRecibirDano(sala, jugador, null, "MALDICION", 1);
             }
             sala.evaluarMuerte(jugador);
         } 
@@ -694,7 +694,7 @@ export class EfectoRayo implements IEfectoCarta {
                 // Disparamos la pasiva de recibir daño
                 let pasivaVictima = gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                    pasivaVictima.onRecibirDano(sala, victima, jugadorQueJuega, "RAYO");
+                    pasivaVictima.onRecibirDano(sala, victima, jugadorQueJuega, "RAYO", 1);
                 }
 
                 // Evaluamos si el rayo lo mató (jugadorQueJuega cobra la recompensa si mata a un forajido, o sufre el castigo si mata a su alguacil)

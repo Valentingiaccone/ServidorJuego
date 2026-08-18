@@ -61,6 +61,7 @@ export class Jugador extends Schema {
     @type("boolean") beneficiarseDeSuMuerte: boolean = true
     @type("number") usosArtesanaEsteTurno: number = 0;
     @type("number") clonesCreadosEsteTurno: number = 0;
+    @type("boolean") lucierganaPrendida: boolean = false
 }
 
 export class MyRoomState extends Schema {
