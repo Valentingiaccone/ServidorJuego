@@ -50,6 +50,8 @@ export class Jugador extends Schema {
     @type("boolean") tieneDinamita: boolean = false;
     @type(Carta) cartaDinamita: Carta;
     @type("string") spriteAvatarOpcional: string = ""
+    @type("boolean") tienePapa: boolean = false;
+    @type(Carta) cartaPapa: Carta;
     // ----------------------------------------
     // roles especificos
     // ----------------------------------------
@@ -57,6 +59,8 @@ export class Jugador extends Schema {
     @type("boolean") estaMuertoFalso: boolean = false;
     @type("number") rondasMuerto: number = 0;
     @type("boolean") beneficiarseDeSuMuerte: boolean = true
+    @type("number") usosArtesanaEsteTurno: number = 0;
+    @type("number") clonesCreadosEsteTurno: number = 0;
 }
 
 export class MyRoomState extends Schema {
@@ -82,5 +86,6 @@ export class MyRoomState extends Schema {
     @type("number") cantidadForajidos: number = 0;
     @type("number") danoPendiente: number = 1;
     @type("string") tipoTiendaActual: string = "Griff";
+    @type("number") probabilidadPapa: number = 1;
 }
 

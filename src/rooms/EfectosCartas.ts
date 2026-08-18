@@ -616,6 +616,33 @@ export class EfectoDescartar implements IEfectoCarta {
     }
 }
 
+export class EfectoEquiparPapapum implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, carta: any, indiceCarta: number, parametros: string[]): boolean {
+        
+        // 1. Validamos que NO haya otra papa ya equipada en la mesa
+        let papaEnJuego = false;
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.tienePapa) papaEnJuego = true;
+        });
+
+        if (papaEnJuego) {
+            client.send("alerta_personal", "Ya hay un Papapum activo en el juego. No podés equipar otra.");
+            return false;
+        }
+
+        // 2. Equipamos la carta y reseteamos el peligro global a 1/16
+        jugador.tienePapa = true;
+        jugador.cartaPapa = carta;
+        sala.state.probabilidadPapa = 1; 
+
+        sala.broadcast("notificacion_turno", `🥔 ¡${jugador.nombre} activó al Papapum!`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada, descripcionCatalan: carta.descripcionEnCatalan});
+
+        jugador.mano.splice(indiceCarta, 1);
+        return true;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -636,7 +663,8 @@ export class DespachadorDeCartas {
         "curarDuo": new EfectoCurarDuo(),
         "desequipar": new EfectoDesequipar(),
         "tiendaJuju": new EfectoTiendaJuju(),
-        "descartar": new EfectoDescartar()
+        "descartar": new EfectoDescartar(),
+        "equiparPapapum": new EfectoEquiparPapapum(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

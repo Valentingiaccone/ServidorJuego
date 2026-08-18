@@ -201,6 +201,9 @@ export class MyRoom extends Room {
             if (victima.cartaDinamita) this.agregarAlDescarte(victima.cartaDinamita)
             victima.tieneDinamita = false;
             victima.cartaDinamita = null;
+            if (victima.cartaPapa) this.agregarAlDescarte(victima.cartaPapa, victima);
+            victima.tienePapa = false;
+            victima.cartaPapa = null;
 
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
@@ -888,7 +891,7 @@ export class MyRoom extends Room {
             let fueExito = this.state.layoutRuleta[indiceObjetivo];
             
             let textoVisual = fueExito ? "¡ÉXITO!" : "FALLÓ";
-            if (motivoActual === "Dinamita") textoVisual = fueExito ? "¡A SALVO!" : "¡BOOM!";
+            if (motivoActual === "Dinamita" || motivoActual === "Papa") textoVisual = fueExito ? "¡A SALVO!" : "¡BOOM!";
 
             this.broadcast("resultado_ruleta", { 
                 exito: fueExito,
@@ -946,7 +949,7 @@ export class MyRoom extends Room {
 
                             this.evaluarMuerte(victima);
                             
-                            if (victima && victima.estaVivo) this.evaluarFasePrision(client.sessionId);
+                            if (victima && victima.estaVivo) this.evaluarFasePapa(client.sessionId);
                             else this.avanzarAlSiguienteTurno(client.sessionId);
                         } else {
                             this.broadcast("notificacion_turno", `💨 ¡Uf! Salió Verde. La Dinamita pasa al siguiente jugador.`);
@@ -959,9 +962,39 @@ export class MyRoom extends Room {
                             if (victima) victima.tieneDinamita = false;
                             if (victima) victima.cartaDinamita = null;
 
+                            this.evaluarFasePapa(client.sessionId);
+                        }
+                    }
+                    else if (motivoActual === "Papa") {
+                        if (!fueExito) { // EXPLOTÓ
+                            this.broadcast("notificacion_turno", `💥 ¡PAPA PAPA PAPAPUM, BOOOM! Salió Rojo. El Papapum explotó encima de ${victima?.nombre}.`);
+                            const numero = Math.floor(Math.random() * 3);
+                            this.broadcast("sfx", "explosion" + numero);
+                            if (victima) victima.vidas -= 2;
+                            
+                            if (victima && victima.cartaPapa) descartarEquipamientoSeguro(victima.cartaPapa);
+                            if (victima) victima.tienePapa = false;
+                            if (victima) victima.cartaPapa = null;
+                            this.state.probabilidadPapa = 1; // Reseteamos el peligro global
+                            
+                            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
+                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "PAPA");
+
+                            this.evaluarMuerte(victima);
+                            
+                            if (victima && victima.estaVivo) this.evaluarFasePrision(client.sessionId);
+                            else this.avanzarAlSiguienteTurno(client.sessionId);
+                            
+                        } else { // SE SALVÓ
+                            this.state.probabilidadPapa++; // ¡Aumenta el peligro para la próxima!
+                            let p: number = this.state.probabilidadPapa
+                            if (p > 15){
+                                p = 15
+                            }
+                            this.broadcast("notificacion_turno", `💨 ¡Salió Verde! La Papa no explotó, pero la probabilidad aumentó a ${p}/16.`);
                             this.evaluarFasePrision(client.sessionId);
                         }
-                    } 
+                    }
                     else if (motivoActual === "Prision") {
                         if (fueExito) {
                             this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.nombre} escapó de la cárcel.`);
@@ -1257,6 +1290,15 @@ export class MyRoom extends Room {
             }
 
             if (sobrevivioAlAtaque) {
+
+                if (atacante && atacante.tienePapa) {
+                    victima.tienePapa = true;
+                    victima.cartaPapa = atacante.cartaPapa;
+                    atacante.tienePapa = false;
+                    atacante.cartaPapa = null;
+                    this.broadcast("notificacion_turno", `🥔 ¡${atacante.nombre} le pasó el Papapum a ${victima.nombre}!`);
+                }
+
                 if (this.colaDePeligro && this.colaDePeligro.length > 0) {
                     this.avanzarColaDePeligro();
                 } else {
@@ -1450,6 +1492,18 @@ export class MyRoom extends Room {
             this.broadcast("notificacion_turno", `🧨 ¡La Dinamita arde frente a ${jugador.nombre}! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Dinamita");
         } else {
+            this.evaluarFasePapa(idJugador);
+        }
+    }
+
+    evaluarFasePapa(idJugador: string) {
+        let jugador = this.state.jugadores.get(idJugador);
+        if (!jugador) return;
+
+        if (jugador.tienePapa) {
+            this.broadcast("notificacion_turno", `🥔 ¡El Papapum quema en las manos de ${jugador.nombre}! Debe desenfundar...`);
+            this.prepararDesenfundar(idJugador, "Papa");
+        } else {
             this.evaluarFasePrision(idJugador);
         }
     }
@@ -1482,14 +1536,22 @@ export class MyRoom extends Room {
             puntosVerdes = 6
         } else if (motivo == "Dinamita"){
             puntosVerdes = 14
+        } else if (motivo == "Papa"){
+            puntosVerdes = 16 - this.state.probabilidadPapa; 
         }
 
         // 2. Aplicar la pasiva de Chester (o cualquier otro personaje)
         let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
-        if (motivo !== "Dinamita" && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
+        if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
             puntosVerdes += personajeVictima.modificarSuerteRuletaNormal();
-        } else if (motivo === "Dinamita" && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
+        } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
             puntosVerdes += personajeVictima.modificarSuerteRuletaDinamita();
+        }
+
+        if (puntosVerdes < 1){
+            puntosVerdes = 1
+        } else if (puntosVerdes > 15){
+            puntosVerdes = 15
         }
 
         // 3. Traducir probabilidad a cantidad exacta de puntos sobre 16

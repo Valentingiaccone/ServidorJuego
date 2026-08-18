@@ -248,8 +248,8 @@ export class HongoUp implements IPersonaje {
 
 export class Hongo implements IPersonaje {
     nombre = "Hongo";
-    habilidad = "NEEDAMUSHROOM:\nCuando otro personaje muere, roba 3 cartas.";
-    habilidadEnCatalan: string = "NEEDAMUSHROOM:\nQuan un altre personatge mor, roba 3 cartes."
+    habilidad = "NEEDAMUSHROOM:\nCuando otro personaje muere, roba 2 cartas.";
+    habilidadEnCatalan: string = "NEEDAMUSHROOM:\nQuan un altre personatge mor, roba 2 cartes."
     vidasBase = 4;
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
@@ -258,7 +258,7 @@ export class Hongo implements IPersonaje {
             return
         }
 
-        const cartas: number = 3
+        const cartas: number = 2
         sala.repartirCartas(jugador, cartas, "pasiva");
         sala.broadcast("notificacion_turno", `🍄 Hongo robó ${cartas} cartas por su pasiva.`);
     }
@@ -368,8 +368,8 @@ export class Domino implements IPersonaje {
 
 export class Tilink implements IPersonaje {
     nombre = "Tilink";
-    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, se clona una carta no clonada de tu mano de forma aleatoria (Máximo 3 veces por turno). Para pasar el turno debe tener su salud -1 cartas en mano.";
-    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, es clona una carta no clonada de la teva mà de manera aleatòria (Màxim 3 vegades per torn). Per poder passar el torn, has de tenir Salut - 1 cartes a la mà.";
+    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, una carta original de tu mano se descarta y te otorga 2 clones de la misma (Máx. 3 por turno). Para pasar el turno debe tener su salud -1 cartas en mano.";
+    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, descartas una carta original de tu mano y obtienes 2 clones de la misma (máx. 3 por turno). Para pasar el turno, debes tener tantas cartas en mano como tu salud -1.";
     vidasBase = 4;
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
@@ -386,7 +386,7 @@ export class Tilink implements IPersonaje {
             return;
         }
         
-        // 3. Verificamos que la carta descartada sea original
+        // 3. Verificamos que la carta descartada inicialmente sea original
         if (!_cartaDescartada.esConjurada) {
             
             // 4. Filtramos la mano para quedarnos solo con las cartas que NO son clones
@@ -399,26 +399,37 @@ export class Tilink implements IPersonaje {
                 let indiceAleatorio = Math.floor(Math.random() * cartasOriginalesEnMano.length);
                 let cartaAClonar = cartasOriginalesEnMano[indiceAleatorio];
                 
-                // Creamos el clon como un objeto completamente nuevo
-                let clon = new Carta();
+                // --- NUEVO SISTEMA ANTI-EXPLOIT ---
+                // Eliminamos la carta original de la mano y la mandamos al descarte real
+                let indiceEnMano = jugador.mano.findIndex((c: any) => c.id === cartaAClonar.id);
+                if (indiceEnMano !== -1) {
+                    jugador.mano.splice(indiceEnMano, 1);
+                    sala.agregarAlDescarte(cartaAClonar, jugador); 
+                }
                 
-                // Generamos un ID único usando la fecha y un random para evitar choques en Colyseus
-                clon.id = `clon_${cartaAClonar.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                // Creamos EXACTAMENTE 2 CLONES para reemplazarla
+                for (let i = 0; i < 2; i++) {
+                    let clon = new Carta();
+                    
+                    // ID único por cada clon generado
+                    clon.id = `clon_${i}_${cartaAClonar.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                    
+                    clon.nombre = cartaAClonar.nombre;
+                    clon.descripcion = cartaAClonar.descripcion;
+                    clon.descripcionEnCatalan = cartaAClonar.descripcionEnCatalan;
+                    clon.tipoDeUso = cartaAClonar.tipoDeUso;
+                    clon.efecto = cartaAClonar.efecto;
+                    
+                    // Al marcarlos como conjuradas, nunca más podrán ser seleccionados por este filtro
+                    clon.esConjurada = true; 
+                    
+                    jugador.mano.push(clon);
+                }
                 
-                clon.nombre = cartaAClonar.nombre;
-                clon.descripcion = cartaAClonar.descripcion;
-                clon.descripcionEnCatalan = cartaAClonar.descripcionEnCatalan;
-                clon.tipoDeUso = cartaAClonar.tipoDeUso;
-                clon.efecto = cartaAClonar.efecto;
-                
-                // ¡Lo marcamos como clonado! Así no puede desencadenar otro clon ni ir al descarte real
-                clon.esConjurada = true; 
-                
-                // Se la metemos en la mano, sumamos al contador y avisamos a la mesa
-                jugador.mano.push(clon);
                 jugador.clonesCreadosEsteTurno++;
                 
-                sala.broadcast("notificacion_turno", `🪞 ¡Tilink descartó una carta original y su pasiva clonó una carta! (${jugador.clonesCreadosEsteTurno}/3)`);
+                // Actualizamos la notificación para que la mesa entienda el sacrificio
+                sala.broadcast("notificacion_turno", `🪞 ¡Tilink sacrificó un/a ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/3)`);
             }
         }
     }
@@ -550,27 +561,27 @@ export class Kazuma implements IPersonaje {
 
 export class Leah implements IPersonaje {
     nombre = "Leah";
-    habilidad = "Artesana:\nCada 2 cartas que descarta en su turno, roba 1.";
-    habilidadEnCatalan = "Artesana:\nCada 2 cartes que descarta en el seu torn, en roba 1.";
+    habilidad = "Artesana:\nDos veces por turno, al descartar una carta, robas 1 carta inmediatamente.";
+    habilidadEnCatalan = "Artesana:\nDues vegades per torn, en descartar una carta, robes 1 carta immediatament.";
     vidasBase = 4;
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
         if (motivo !== "VOLUNTARIO") return;
 
-        if (!jugador.contadorDescartes) jugador.contadorDescartes = 0;
+        if (!jugador.usosArtesanaEsteTurno) {
+            jugador.usosArtesanaEsteTurno = 0;
+        }
         
-        jugador.contadorDescartes++;
-        
-        if (jugador.contadorDescartes >= 2) {
-            jugador.contadorDescartes = 0;
+        if (jugador.usosArtesanaEsteTurno < 2) {
+            jugador.usosArtesanaEsteTurno++;
             
             sala.repartirCartas(jugador, 1, "pasiva");
-            sala.broadcast("notificacion_turno", `🛠️ Leah descartó 2 cartas y su pasiva de Artesana le otorgó 1 carta nueva.`);
+            sala.broadcast("notificacion_turno", `🛠️ Leah descartó una carta y su pasiva de Artesana le otorgó 1 carta nueva (${jugador.usosArtesanaEsteTurno}/2).`);
         }
     }
 
     onPasarTurno(_sala: any, jugador: any) {
-        jugador.contadorDescartes = 0; 
+        jugador.usosArtesanaEsteTurno = 0; 
     }
 }
 

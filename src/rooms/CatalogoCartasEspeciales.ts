@@ -90,13 +90,25 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearPapapum(): Carta {
+        let clon = new Carta();
+        clon.id = `papapum_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Papapum";
+        clon.descripcion = "Pasá la papapum golpeando con BANG!. Daño 2. Si no explota, su probabilidad aumenta.";
+        clon.descripcionEnCatalan = "Passa la Papapum colpejant-la amb BANG!. Fa 2 de dany. Si no explota, la seva probabilitat augmenta.";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = "equiparPapapum";
+        clon.esConjurada = false;
+        return clon;
+    }
 
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
             { id: "anderlandis", copias: 2 },
             { id: "tornado", copias: 1},
-            { id: "tiendaDeJuju", copias: 1}
+            { id: "tiendaDeJuju", copias: 1},
+            { id: "papapum", copias: 1},
         ];
     }
 
@@ -106,6 +118,7 @@ export class CatalogoCartasEspeciales {
             case "anderlandis": return this.crearAnderlandis()
             case "tornado": return this.crearTornado()
             case "tiendaDeJuju": return this.crearTiendaDeJuju()
+            case "papapum": return this.crearPapapum()
 
             default: return null;
         }
