@@ -536,7 +536,7 @@ export class EfectoDescartar implements IEfectoCarta {
         let cantidad = parametros[2] ? parseInt(parametros[2]) : 1;
 
         if (tipoMaldicion === "venenoso") {
-            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y pierde ${cantidad} vida(s)!`);
+            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y pierde ${cantidad} vida!`);
             jugador.vidas -= cantidad;
             
             let pasivaVictima = gestorPersonajes.obtener(jugador.personaje);
@@ -546,11 +546,15 @@ export class EfectoDescartar implements IEfectoCarta {
             sala.evaluarMuerte(jugador);
         } 
         else if (tipoMaldicion === "reductor") {
-            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y su salud máxima bajó en ${cantidad}!`);
-            jugador.vidasMaximas -= cantidad;
-            if (jugador.vidas > jugador.vidasMaximas) {
-                jugador.vidas = jugador.vidasMaximas;
-                sala.evaluarMuerte(jugador); 
+            if (jugador.vidasMaximas > 1){
+                sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y su salud máxima bajó en ${cantidad}!`);
+                jugador.vidasMaximas -= cantidad;
+                if (jugador.vidas > jugador.vidasMaximas) {
+                    jugador.vidas = jugador.vidasMaximas;
+                    sala.evaluarMuerte(jugador); 
+                }
+            } else {
+                sala.broadcast("notificacion_turno", `🍄 ${jugador.nombre} descartó un ${carta.nombre} pero su salud maxima no puede bajar de 1`);
             }
         } 
         else if (tipoMaldicion === "comilon") {
@@ -592,7 +596,7 @@ export class EfectoDescartar implements IEfectoCarta {
                     let indiceRandom = Math.floor(Math.random() * jugador.mano.length);
                     let cartaExtra = jugador.mano.splice(indiceRandom, 1)[0];
                     
-                    sala.broadcast("notificacion_turno", `👻 ¡Una maldición obligó a ${jugador.nombre} a descartar un/a ${cartaExtra.nombre}!`);
+                    sala.broadcast("notificacion_turno", `👻 ¡Una maldición obligó a ${jugador.nombre} a descartar ${cartaExtra.nombre}!`);
                     
                     let pasivaVictima = gestorPersonajes.obtener(jugador.personaje);
                     if (pasivaVictima && pasivaVictima.onDescartarCarta) {

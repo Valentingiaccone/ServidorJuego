@@ -1161,7 +1161,8 @@ export class MyRoom extends Room {
                 
                 this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada, descripcionCatalan: cartaUsada.descripcionEnCatalan});
                 this.broadcast("notificacion_turno", `⛓️ ¡${atacante.nombre} mandó a la cárcel a ${victima.nombre}!`);
-            
+                this.broadcast("sfx", "prision")
+
                 let pasiva = this.gestorPersonajes.obtener(atacante.personaje)
                 if (pasiva && pasiva.onJugarCarta){
                     pasiva.onJugarCarta(this, atacante, cartaUsada)
