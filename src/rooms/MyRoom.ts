@@ -561,7 +561,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 });
 
-                let cantidadDeCartasExtension = 3;
+                let cantidadDeCartasExtension = 4;
                 
                 let poolRaras = CatalogoCartasEspeciales.obtenerPoolExtensiones();
                 
