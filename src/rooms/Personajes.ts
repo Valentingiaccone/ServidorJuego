@@ -710,6 +710,48 @@ export class Luciergana implements IPersonaje {
     }
 }
 
+export class Haley implements IPersonaje {
+    nombre = "Haley";
+    habilidad = "Fuera de acá, pobretón:\nTus BANG! tienen alcance infinito y no tienen límite de usos si el objetivo es el jugador (o los jugadores) con menos cartas en la mano (sin contarte a vos).";
+    habilidadEnCatalan = "Fora d aquí, pobre:\nEls teus BANG! tenen abast infinit i no tenen límit d'usos si l'objectiu és el jugador (o els jugadors) amb menys cartes a la mà (sense comptar-te a tu).";
+    vidasBase = 4;
+
+    // Función auxiliar secreta de Haley para escanear la mesa
+    private esElDeMenosCartas(sala: any, yo: any, victima: any): boolean {
+        let minCartas = 999;
+        
+        // 1. Buscamos el número mínimo de cartas entre los vivos (excluyéndola a ella)
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo && j !== yo) {
+                if (j.mano.length < minCartas) {
+                    minCartas = j.mano.length;
+                }
+            }
+        });
+
+        // 2. Si la víctima a la que intenta atacar tiene ese número mínimo, autorizamos
+        return victima.mano.length === minCartas;
+    }
+
+    puedeDispararBang(sala: any, atacante: any, victima: any): boolean {
+        // Si la víctima es la que menos cartas tiene, ignora la regla de "1 Bang por turno"
+        return this.esElDeMenosCartas(sala, atacante, victima);
+    }
+
+    modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
+        // Aseguramos que Haley sea la que apunta (observador) y no la víctima
+        if (observador.personaje === this.nombre) {
+            // Si el objetivo es el que menos cartas tiene, le ponemos distancia 0 (infinito)
+            if (this.esElDeMenosCartas(sala, observador, objetivo)) {
+                return 0; 
+            }
+        }
+        
+        // Si no cumple, la distancia sigue siendo la normal
+        return distanciaBase;
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -739,6 +781,7 @@ export class GestorPersonajes {
         this.registrar(new Leah())
         this.registrar(new Robin())
         this.registrar(new Luciergana())
+        this.registrar(new Haley())
     }
 
     private registrar(p: IPersonaje) {
