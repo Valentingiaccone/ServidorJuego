@@ -352,8 +352,8 @@ export class MyRoom extends Room {
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `botiquin_${c}`;
                     nuevaCarta.nombre = "Botiquín";
-                    nuevaCarta.descripcion = "+1 vida, te salva de morir (No funciona cuando quedan 2 vivos).";
-                    nuevaCarta.descripcionEnCatalan = "+1 vida, et salva de morir (No funciona quan només en queden 2 de vius)."
+                    nuevaCarta.descripcion = "+1 vida, te salva de morir..";
+                    nuevaCarta.descripcionEnCatalan = "+1 vida, et salva de morir.."
                     nuevaCarta.tipoDeUso = "instantanea";
                     nuevaCarta.efecto = "curar_1";
                     this.state.mazo.push(nuevaCarta);
@@ -416,8 +416,8 @@ export class MyRoom extends Room {
                     const poco = new Carta();
                     poco.id = `musicoterapia_${i}`;
                     poco.nombre = "Musicoterapia";
-                    poco.descripcion = "+1 vida para todos (No funciona cuando quedan 2 vivos).";
-                    poco.descripcionEnCatalan = "+1 vida per a tothom (No funciona quan només en queden 2 de vius)."
+                    poco.descripcion = "+1 vida para todos.";
+                    poco.descripcionEnCatalan = "+1 vida per a tothom."
                     poco.tipoDeUso = "instantanea";
                     poco.efecto = "curarATodos";
                     this.state.mazo.push(poco);
@@ -539,21 +539,26 @@ export class MyRoom extends Room {
                         descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 3.",
                         alcance: 3 },
                     { id: "arma_4", 
+                        nombre: "Revolver de Casiddy", 
+                        descripcion: "Equipa esta arma para obtener alcance: 3", 
+                        descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 3.",
+                        alcance: 3 },
+                    { id: "arma_5", 
                         nombre: "Rifle de Ashe", 
                         descripcion: "Equipa esta arma para obtener alcance: 4", 
                         descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 4.",
                         alcance: 4 },
-                    { id: "arma_5", 
+                    { id: "arma_6", 
                         nombre: "Francotirador", 
                         descripcion: "Equipa esta arma para obtener alcance: 5", 
                         descripcionEnCatalan: "Equipa aquesta arma per obtenir un abast de 5.",
                         alcance: 5 },
-                    { id: "arma_6", 
+                    { id: "arma_7", 
                         nombre: "Pistola de Tracer", 
                         descripcion: "Equipa esta arma para no tener limites de uso de BANG!", 
                         descripcionEnCatalan: "Equipa aquesta arma per no tenir límits d'ús de BANG!.",
                         alcance: 1 },
-                    { id: "arma_7", 
+                    { id: "arma_8", 
                         nombre: "Pistola de Tracer", 
                         descripcion: "Equipa esta arma para no tener limites de uso de BANG!",
                         descripcionEnCatalan: "Equipa aquesta arma per no tenir límits d'ús de BANG!.",
@@ -1192,7 +1197,18 @@ export class MyRoom extends Room {
             
             if (!atacante || !victima) return;
 
-            // REGLAS: No al Sheriff, no a uno mismo, no si ya está preso
+            let totalVivos = 0;
+
+            this.state.jugadores.forEach((j: any) => {
+                if (j.estaVivo) {
+                    totalVivos++;
+                }
+            });
+
+            if (totalVivos == 2){
+                client.send("alerta_personal", "No se puede usar prision cuando quedan 2 jugadores.");
+                return false
+            }
             if (victima.rol === "Sheriff") {
                 client.send("alerta_personal", "No podés meter preso al Sheriff.");
                 return;
