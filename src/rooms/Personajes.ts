@@ -9,7 +9,7 @@ export interface IPersonaje {
     habilidad: string;
     habilidadEnCatalan: string;
     vidasBase: number;
-    // actualizacion
+    // actualizacion WALENCIA
     // Hooks con esteroides (Ganchos a eventos del juego)
     // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
     onRecibirDano?(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void;
