@@ -655,7 +655,12 @@ export class EfectoEquiparPapapum implements IEfectoCarta {
 export class EfectoRayo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
         
-        // 1. Buscamos cuál es la salud más alta actualmente en la mesa
+        // ¡LA MAGIA ACÁ! 1. Consumimos la carta ANTES de hacer cualquier cálculo.
+        // Así el índice nunca se rompe por recompensas, robos pasivos o muertes.
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        // 2. Buscamos cuál es la salud más alta
         let maximaSalud = -1;
         sala.state.jugadores.forEach((j: any) => {
             if (j.estaVivo && j.vidas > maximaSalud) {
@@ -663,7 +668,7 @@ export class EfectoRayo implements IEfectoCarta {
             }
         });
 
-        // 2. Obtenemos el orden exacto de la mesa, empezando por el que jugó la carta
+        // 3. Obtenemos el orden de la mesa
         let idsJugadores = Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
         let ordenMesa: string[] = [];
@@ -673,17 +678,15 @@ export class EfectoRayo implements IEfectoCarta {
             ordenMesa.push(idsJugadores[idx] as string);
         }
 
-        // 3. Filtramos ese orden para quedarnos solo con las víctimas que tienen la salud máxima
         let victimasIds = ordenMesa.filter(id => {
             let j = sala.state.jugadores.get(id);
             return j && j.estaVivo && j.vidas === maximaSalud;
         });
 
-        // 4. Anunciamos el conjuro de la carta
         sala.broadcast("notificacion_turno", `⚡ ¡${jugadorQueJuega.nombre} invocó un Rayo sobre los jugadores con más salud!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan });
 
-        // 5. Aplicamos el castigo en orden
+        // 4. Aplicamos el daño
         victimasIds.forEach(id => {
             let victima = sala.state.jugadores.get(id);
             if (victima && victima.estaVivo) {
@@ -691,20 +694,14 @@ export class EfectoRayo implements IEfectoCarta {
                 sala.broadcast("notificacion_turno", `⚡ ¡KABOOM! El rayo impacta a ${victima.nombre} y pierde 1 vida.`);
                 victima.vidas--;
                 
-                // Disparamos la pasiva de recibir daño
                 let pasivaVictima = gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirDano) {
                     pasivaVictima.onRecibirDano(sala, victima, jugadorQueJuega, "RAYO", 1);
                 }
 
-                // Evaluamos si el rayo lo mató (jugadorQueJuega cobra la recompensa si mata a un forajido, o sufre el castigo si mata a su alguacil)
                 sala.evaluarMuerte(victima, jugadorQueJuega);
             }
         });
-
-        // 6. Consumimos la carta y llamamos a tu sistema mágico de descartes
-        jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         return true;
     }
