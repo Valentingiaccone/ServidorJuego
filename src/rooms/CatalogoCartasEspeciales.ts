@@ -121,7 +121,7 @@ export class CatalogoCartasEspeciales {
             { id: "tornado", copias: 1},
             { id: "tiendaDeJuju", copias: 1},
             { id: "papapum", copias: 1},
-            { id: "rayo", copias: 1},
+            //{ id: "rayo", copias: 1},
         ];
     }
 
