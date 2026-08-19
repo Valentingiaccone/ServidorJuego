@@ -117,7 +117,7 @@ export class MyRoom extends Room {
         });
 
         // --- 1. INTENTO DE SUPERVIVENCIA (Botiquines Automáticos) ---
-        while (victima.vidas <= 0 && totalVivos !== 2) {
+        while (victima.vidas <= 0 && totalVivos !== 2 && !victima.estaDesconectado) {
             let indiceBotiquin = victima.mano.findIndex((c: any) => c.efecto === "curar_1");
             
             if (indiceBotiquin !== -1) {
@@ -1413,7 +1413,7 @@ export class MyRoom extends Room {
             this.broadcast("notificacion_turno", `🏃 ${jugadorQueSeVa.nombre} ha abandonado la partida y su personaje muere.`);
 
             // 1. Le ponemos la vida en 0 y llamamos a tu función de muerte para que suelte sus cartas
-            jugadorQueSeVa.vidas = 0;
+            jugadorQueSeVa.vidas = -999;
             jugadorQueSeVa.estaMuertoFalso = false;
             jugadorQueSeVa.estaDesconectado = true
             this.evaluarMuerte(jugadorQueSeVa);
