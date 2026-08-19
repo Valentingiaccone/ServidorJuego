@@ -668,8 +668,8 @@ export class Robin implements IPersonaje {
 export class Luciergana implements IPersonaje {
     
     nombre = "Luciergana";
-    habilidad = "Reflejo:\nAl sufrir daño, empieza a brillar, mientras brilla, si sufre daño no le afecta y devuelve el daño al atacante, luego se apaga, al inicio de su turno se apaga, tiene 1 vida menos";
-    habilidadEnCatalan = "Fustera:\nEn descartar una carta en el seu torn, millora un equipament aleatori. Les armes evolucionen i la resta es torna versió 'Pro'.";
+    habilidad = "Reflejo:\nAl sufrir daño, empieza a brillar, mientras brilla, si sufre daño no le afecta y devuelve el daño al atacante, luego se apaga, al final de su turno se apaga, tiene 1 vida menos.";
+    habilidadEnCatalan = "Reflex:\nEn rebre dany, comença a brillar. Mentre brilla, el dany no l afecta i el retorna a l atacant. Després s apaga. Al final del seu torn, s apaga, i perds 1 vida.";
     vidasBase = 3;
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number){
@@ -695,6 +695,13 @@ export class Luciergana implements IPersonaje {
         } else {
             victima.lucierganaPrendida = true
             victima.spriteAvatarOpcional = "Luciergana prendida"
+        }
+    }
+
+    onPasarTurno(sala: any, jugador: any): void {
+        if (jugador.lucierganaPrendida){
+            jugador.lucierganaPrendida = false
+            jugador.spriteAvatarOpcional = ""
         }
     }
 }

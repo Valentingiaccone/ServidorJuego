@@ -1011,6 +1011,10 @@ export class MyRoom extends Room {
                             this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
                         } else {
                             this.broadcast("notificacion_turno", `⛓️ ¡Salió Rojo! ${victima?.nombre} se queda encerrado.`);
+                            let pasivaJugadorActual = this.gestorPersonajes.obtener(victima?.personaje);
+                            if (pasivaJugadorActual && pasivaJugadorActual.onPasarTurno) {
+                                pasivaJugadorActual.onPasarTurno(this, victima);
+                            }
                             this.avanzarAlSiguienteTurno(client.sessionId);
                         }
                         
