@@ -432,7 +432,8 @@ export class Tilink implements IPersonaje {
                 jugador.clonesCreadosEsteTurno++;
                 
                 // Actualizamos la notificación para que la mesa entienda el sacrificio
-                sala.broadcast("notificacion_turno", `🪞 ¡Tilink sacrificó un/a ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/3)`);
+                sala.broadcast("notificacion_turno", `🪞 ¡Tilink sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/3)`);
+                sala.broadcast("sfx", "tilinkPasiva")
             }
         }
     }
