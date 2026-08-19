@@ -52,6 +52,7 @@ export class Jugador extends Schema {
     @type("string") spriteAvatarOpcional: string = ""
     @type("boolean") tienePapa: boolean = false;
     @type(Carta) cartaPapa: Carta;
+    @type("boolean") estaDesconectado: boolean = false;
     // ----------------------------------------
     // roles especificos
     // ----------------------------------------

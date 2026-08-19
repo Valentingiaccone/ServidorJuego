@@ -157,26 +157,34 @@ export class MyRoom extends Room {
             // --- 3. RECOMPENSAS Y CASTIGOS POR ASESINATO ---
             if (asesino && asesino.estaVivo) {
                 if (victima.rol === "Forajido") {
-                    this.broadcast("notificacion_turno", `💰 ¡${asesino.nombre} eliminó a un Forajido y cobra la recompensa de 2 cartas!`);
-                    this.repartirCartas(asesino, 2, "recompensa_forajido");
+                    if (victima.beneficiarseDeSuMuerte){
+                        this.broadcast("notificacion_turno", `💰 ¡${asesino.nombre} eliminó a un Forajido y cobra la recompensa de 2 cartas!`);
+                        this.repartirCartas(asesino, 2, "recompensa_forajido");
+                    } else {
+                        this.broadcast("notificacion_turno", `${asesino.nombre} no roba cartas por elimininacion porque ${victima.nombre} ya murió antes`)
+                    }
                 } 
                 else if (victima.rol === "Alguacil" && asesino.rol === "Sheriff") {
-                    this.broadcast("notificacion_turno", `🤦‍♂️ ¡El Sheriff mató a su propio Alguacil! Como castigo, pierde todas sus cartas y equipamiento.`);
+                    if (victima.beneficiarseDeSuMuerte){
+                        this.broadcast("notificacion_turno", `🤦‍♂️ ¡El Sheriff mató a su propio Alguacil! Como castigo, pierde todas sus cartas y equipamiento.`);
                     
-                    asesino.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
-                    asesino.mano.clear();
-                    
-                    if (asesino.cartaArma) this.agregarAlDescarte(asesino.cartaArma);
-                    asesino.nombreArma = "Colt .45";
-                    asesino.alcanceArma = 1;
-                    asesino.cartaArma = null;
+                        asesino.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
+                        asesino.mano.clear();
+                        
+                        if (asesino.cartaArma) this.agregarAlDescarte(asesino.cartaArma);
+                        asesino.nombreArma = "Colt .45";
+                        asesino.alcanceArma = 1;
+                        asesino.cartaArma = null;
 
-                    if (asesino.cartaMustang) { this.agregarAlDescarte(asesino.cartaMustang); asesino.tieneMustang = false; asesino.tieneMustangPro = false; asesino.cartaMustang = null; }
-                    if (asesino.cartaMira) { this.agregarAlDescarte(asesino.cartaMira); asesino.tieneMira = false; asesino.tieneMiraPro = false; asesino.cartaMira = null; }
-                    if (asesino.cartaBarril) { this.agregarAlDescarte(asesino.cartaBarril); asesino.tieneBarril = false; asesino.tieneBarrilPro = false; asesino.cartaBarril = null; }
-                    if (asesino.cartaPrision) { this.agregarAlDescarte(asesino.cartaPrision); asesino.estaEnPrision = false; asesino.cartaPrision = null; }
-                    if (asesino.cartaDinamita) { this.agregarAlDescarte(asesino.cartaDinamita); asesino.tieneDinamita = false; asesino.cartaDinamita = null; }
-                    if (asesino.cartaPapa) { this.agregarAlDescarte(asesino.cartaPapa); asesino.tienePapa = false; asesino.cartaPapa = null; }
+                        if (asesino.cartaMustang) { this.agregarAlDescarte(asesino.cartaMustang); asesino.tieneMustang = false; asesino.tieneMustangPro = false; asesino.cartaMustang = null; }
+                        if (asesino.cartaMira) { this.agregarAlDescarte(asesino.cartaMira); asesino.tieneMira = false; asesino.tieneMiraPro = false; asesino.cartaMira = null; }
+                        if (asesino.cartaBarril) { this.agregarAlDescarte(asesino.cartaBarril); asesino.tieneBarril = false; asesino.tieneBarrilPro = false; asesino.cartaBarril = null; }
+                        if (asesino.cartaPrision) { this.agregarAlDescarte(asesino.cartaPrision); asesino.estaEnPrision = false; asesino.cartaPrision = null; }
+                        if (asesino.cartaDinamita) { this.agregarAlDescarte(asesino.cartaDinamita); asesino.tieneDinamita = false; asesino.cartaDinamita = null; }
+                        if (asesino.cartaPapa) { this.agregarAlDescarte(asesino.cartaPapa); asesino.tienePapa = false; asesino.cartaPapa = null; }
+                    } else {
+                        this.broadcast("notificacion_turno", `El Sheriff no pierde nada ya que ${victima.nombre} ya murió anteriormente`)
+                    }
                 }
             }
 
@@ -208,6 +216,7 @@ export class MyRoom extends Room {
 
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
+            victima.beneficiarseDeSuMuerte = false
 
             let idVictima = "";
             this.state.jugadores.forEach((j, id) => {
@@ -1390,6 +1399,7 @@ export class MyRoom extends Room {
             // 1. Le ponemos la vida en 0 y llamamos a tu función de muerte para que suelte sus cartas
             jugadorQueSeVa.vidas = 0;
             jugadorQueSeVa.estaMuertoFalso = false;
+            jugadorQueSeVa.estaDesconectado = true
             this.evaluarMuerte(jugadorQueSeVa);
 
             // 2. Si era su turno, lo pasamos al siguiente
@@ -1462,7 +1472,7 @@ export class MyRoom extends Room {
 
         while (vueltas < idsJugadores.length) {
             // LÓGICA: ¿Pasamos por un fantasma?
-            if (jugadorSiguiente && !jugadorSiguiente.estaVivo && jugadorSiguiente.estaMuertoFalso) {
+            if (jugadorSiguiente && !jugadorSiguiente.estaVivo && jugadorSiguiente.estaMuertoFalso && !jugadorSiguiente.estaDesconectado) {
                 jugadorSiguiente.rondasMuerto--;
                 if (jugadorSiguiente.rondasMuerto <= 0) {
                     jugadorSiguiente.estaMuertoFalso = false;
