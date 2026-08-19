@@ -553,15 +553,17 @@ export class EfectoDescartar implements IEfectoCarta {
             sala.evaluarMuerte(jugador);
         } 
         else if (tipoMaldicion === "reductor") {
-            if (jugador.vidasMaximas > 1){
-                sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y su salud máxima bajó en ${cantidad}!`);
+            if (jugador.vidasMaximas == jugador.vidas){
+                sala.broadcast("notificacion_turno", `⬇️ ${jugador.nombre} descartó un ${carta.nombre} pero no le afecta porque tiene la salud al maximo`);
+            } else if (jugador.vidasMaximas > 1){
+                sala.broadcast("notificacion_turno", `⬇️ ¡${jugador.nombre} descartó un ${carta.nombre} y su salud máxima bajó en ${cantidad}!`);
                 jugador.vidasMaximas -= cantidad;
                 if (jugador.vidas > jugador.vidasMaximas) {
                     jugador.vidas = jugador.vidasMaximas;
                     sala.evaluarMuerte(jugador); 
                 }
             } else {
-                sala.broadcast("notificacion_turno", `🍄 ${jugador.nombre} descartó un ${carta.nombre} pero su salud maxima no puede bajar de 1`);
+                sala.broadcast("notificacion_turno", `⬇️ ${jugador.nombre} descartó un ${carta.nombre} pero su salud maxima no puede bajar de 1`);
             }
         } 
         else if (tipoMaldicion === "comilon") {

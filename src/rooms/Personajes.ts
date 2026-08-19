@@ -62,8 +62,8 @@ export class ColeCasiddy implements IPersonaje {
 
 export class Berry implements IPersonaje {
     nombre = "Berry";
-    habilidad = "Cartas curativas:\nEn su turno, cada 2 cartas que descarta, recupera 1 de vida.";
-    habilidadEnCatalan: string = "Cartes curatives:\nDurant el seu torn, per cada 2 cartes que descarta, recupera 1 punt de vida."
+    habilidad = "Cartas curativas:\nEn su turno, cada 2 cartas que descarta, recupera 1 de vida y roba una carta.";
+    habilidadEnCatalan: string = "Cartes curatives:\nEn el seu torn, per cada 2 cartes que descarta, recupera 1 vida i roba 1 carta."
     vidasBase = 4;
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
@@ -75,10 +75,14 @@ export class Berry implements IPersonaje {
         jugador.contadorDescartes++;
         if (jugador.contadorDescartes >= 2) {
             jugador.contadorDescartes = 0;
+            sala.repartirCartas(jugador, 1, "pasiva")
+            let texto: string = `🍓 Berry roba una carta`
             if (jugador.vidas < jugador.vidasMaximas) {
                 jugador.vidas++;
-                sala.broadcast("notificacion_turno", `🍓 Berry recuperó 1 vida por su pasiva.`);
+                texto += ` y se cura 1 vida`
             }
+            texto += ` por su pasiva.`
+            sala.broadcast("notificacion_turno", texto);
         }
     }
 

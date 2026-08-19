@@ -155,8 +155,8 @@ export class CatalogoCartasEspeciales {
             clon.efecto = "descartar_venenoso_1";
         } else if (elegida === "reductor") {
             clon.nombre = "Reductor";
-            clon.descripcion = "Al descartarla tu vida máxima baja en 1.";
-            clon.descripcionEnCatalan = "En descartar-la la teva vida màxima baixa en 1.";
+            clon.descripcion = "Al descartarla si tu vida no está al maximo, tu vida máxima baja en 1.";
+            clon.descripcionEnCatalan = "En descartar-la, si la teva vida no està al màxim, la teva vida màxima baixa en 1.";
             clon.efecto = "descartar_reductor_1";
         } else if (elegida === "comilon") {
             clon.nombre = "Slime Comilón";
