@@ -40,13 +40,13 @@ export interface IPersonaje {
 
     onJugarCarta?(sala: any, jugador: any, cartaJugada: any): void;
 
-    modificarSuerteGlobalBarril?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void
+    modificarSuerteGlobalBarril?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
 
-    modificarSuerteGlobalPrision?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void
+    modificarSuerteGlobalPrision?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
 
-    modificarSuerteGlobalDinamita?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void
+    modificarSuerteGlobalDinamita?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
 
-    modificarSuerteGlobalPapapum?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void
+    modificarSuerteGlobalPapapum?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -794,22 +794,28 @@ export class Maggey implements IPersonaje {
     habilidadEnCatalan = "Ai! Quina mala sort...:\nLa resta de jugadors té encara més mala sort.";
     vidasBase = 4;
 
-    modificarSuerteGlobalBarril(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void {
+    modificarSuerteGlobalBarril(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
         if (jugadorQueTiraLaRuleta != miJugador){
-
+            return -1
         }
     }
 
-    modificarSuerteGlobalPrision(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void {
-        
+    modificarSuerteGlobalPrision(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
+        if (jugadorQueTiraLaRuleta != miJugador){
+            return -1
+        }
     }
 
-    modificarSuerteGlobalDinamita(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void {
-        
+    modificarSuerteGlobalDinamita(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
+        if (jugadorQueTiraLaRuleta != miJugador){
+            return -1
+        }
     }
 
-    modificarSuerteGlobalPapapum(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void {
-        
+    modificarSuerteGlobalPapapum(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
+        if (jugadorQueTiraLaRuleta != miJugador){
+            return -1
+        }
     }
 }
 
@@ -843,6 +849,7 @@ export class GestorPersonajes {
         this.registrar(new Robin())
         this.registrar(new Luciergana())
         this.registrar(new Haley())
+        this.registrar(new Maggey())
     }
 
     private registrar(p: IPersonaje) {

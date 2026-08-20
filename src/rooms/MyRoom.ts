@@ -357,8 +357,8 @@ export class MyRoom extends Room {
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `botiquin_${c}`;
                     nuevaCarta.nombre = "Botiquín";
-                    nuevaCarta.descripcion = "+1 vida, te salva de morir..";
-                    nuevaCarta.descripcionEnCatalan = "+1 vida, et salva de morir.."
+                    nuevaCarta.descripcion = "+1 vida, te salva de morir.";
+                    nuevaCarta.descripcionEnCatalan = "+1 vida, et salva de morir."
                     nuevaCarta.tipoDeUso = "instantanea";
                     nuevaCarta.efecto = "curar_1";
                     this.state.mazo.push(nuevaCarta);
@@ -1604,6 +1604,24 @@ export class MyRoom extends Room {
         } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
             puntosVerdes += personajeVictima.modificarSuerteRuletaDinamita();
         }
+
+        // modificaciones de suerte globales
+        this.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo) {
+                const jPersonaje = this.gestorPersonajes.obtener(j.personaje)
+                if (jPersonaje){
+                    if (motivo == "Barril" && jPersonaje.modificarSuerteGlobalBarril){
+                        puntosVerdes += jPersonaje.modificarSuerteGlobalBarril(this, victima, j)
+                    } else if (motivo == "Prision" && jPersonaje.modificarSuerteGlobalPrision){
+                        puntosVerdes += jPersonaje.modificarSuerteGlobalPrision(this, victima, j)
+                    } else if (motivo == "Dinamita" && jPersonaje.modificarSuerteGlobalDinamita){
+                        puntosVerdes += jPersonaje.modificarSuerteGlobalDinamita(this, victima, j)
+                    } else if (motivo == "Papa" && jPersonaje.modificarSuerteGlobalPapapum){
+                        puntosVerdes += jPersonaje.modificarSuerteGlobalPapapum(this, victima, j)
+                    }
+                }
+            }
+        });
 
         if (puntosVerdes < 1){
             puntosVerdes = 1
