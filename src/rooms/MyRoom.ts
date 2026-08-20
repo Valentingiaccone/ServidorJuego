@@ -144,11 +144,16 @@ export class MyRoom extends Room {
             victima.estaVivo = false;
             victima.vidas = 0;
 
+            // 1. REPRODUCIR SFX DINÁMICO (Sea el custom del personaje o el de Among Us por defecto)
+            this.broadcast("sfx", { 
+                sfx: victima.sfxMuerte[0], 
+                silencio: victima.sfxMuerte[1] 
+            });
+
             if (victima.personaje === "Kazuma" && victima.rol !== "Sheriff" && !victima.estaMuertoFalso) {
                 victima.estaMuertoFalso = true;
                 victima.rondasMuerto = Math.floor(Math.random() * 2) + 2
                 this.broadcast("notificacion_turno", `☠️ ${victima.nombre} ha sido ELIMINADO?.`);
-                this.broadcast("sfx", {sfx: "kazumaMuere", silencio: true})
             } else {
                 victima.estaMuertoFalso = false;
                 console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
@@ -621,6 +626,17 @@ export class MyRoom extends Room {
                 jugador.personaje = elegida.nombre;
                 jugador.habilidad = elegida.habilidad;
                 jugador.habilidadEnCatalan = elegida.habilidadEnCatalan;
+
+                // --- NUEVO: EXTRAEMOS EL SONIDO USANDO TU GESTOR ---
+            // Traemos todos los personajes del gestor
+            let todosLosPersonajes = this.gestorPersonajes.obtenerTodosParaRepartir();
+            // Buscamos la clase real que coincida con el nombre
+            let personajeReal = todosLosPersonajes.find((p: any) => p.nombre === elegida.nombre);
+            
+            // Si la clase tiene un sonido configurado, pisa al de Among Us
+            if (personajeReal && personajeReal.sfxMuerte) {
+                jugador.sfxMuerte = personajeReal.sfxMuerte;
+            }
                 
                 // Aplicamos las vidas, considerando si es Sheriff
                 jugador.vidas = elegida.vidasBase;

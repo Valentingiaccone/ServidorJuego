@@ -9,6 +9,8 @@ export interface IPersonaje {
     habilidad: string;
     habilidadEnCatalan: string;
     vidasBase: number;
+    // Tupla opcional: [Archivo de sonido, silenciar música]
+    sfxMuerte?: [string, boolean];
     // actualizacion WALENCIA
     // Hooks con esteroides (Ganchos a eventos del juego)
     // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
@@ -46,6 +48,7 @@ export class ColeCasiddy implements IPersonaje {
     habilidad = "Recarga en la recámara:\nCada vez que pierde 1 vida, roba inmediatamente 1 carta.";
     habilidadEnCatalan: string = "Recàrrega a la recambra:\nCada vegada que perd 1 vida, roba immediatament 1 carta."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteCasiddy", false];
 
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
@@ -65,6 +68,7 @@ export class Berry implements IPersonaje {
     habilidad = "Cartas curativas:\nEn su turno, cada 2 cartas que descarta, recupera 1 de vida y roba una carta.";
     habilidadEnCatalan: string = "Cartes curatives:\nEn el seu torn, per cada 2 cartes que descarta, recupera 1 vida i roba 1 carta."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteBerry", false];
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
         // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
@@ -96,6 +100,7 @@ export class Maton implements IPersonaje {
     habilidad = "Seisei koi kiki:\nPuede jugar cualquier cantidad de BANG! durante su turno.";
     habilidadEnCatalan: string = "Seisei koi kiki:\nPot jugar qualsevol quantitat de BANG! durant el seu torn."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteMaton", false];
 
     puedeDispararBang(_sala: any, _atacante: any, _victima: any): boolean {
         return true; 
@@ -107,6 +112,7 @@ export class Mandy implements IPersonaje {
     habilidad = "Concentración:\nConsidera a todos los demás jugadores a distancia -2.";
     habilidadEnCatalan: string = "Concentració:\nConsidera tots els altres jugadors a distància -2."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteMandy", false];
 
     modificarDistancia(_sala: any, _observador: any, _objetivo: any, distanciaBase: number): number {
         return Math.max(0, distanciaBase - 2);
@@ -118,6 +124,7 @@ export class Tralalero implements IPersonaje {
     habilidad = "Los tralaleritos dicen tralalá:\nAl pasar el turno, si no tiene cartas en la mano, recupera 1 vida y roba 2 cartas.";
     habilidadEnCatalan: string = "Els tralaleritos diuen tralalà:\nEn passar el torn, si no té cartes a la mà, recupera 1 punt de vida i roba 2 cartes.."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteTralalero", true];
 
     onPasarTurno(sala: any, jugador: any) {
         if (jugador.mano.length === 0) {
@@ -140,6 +147,7 @@ export class Darryl implements IPersonaje {
     habilidad = "Darryl el Barryl:\nTiene el efecto de la carta Barril siempre activo, si se equipa un barril, es como si tuviera dos.";
     habilidadEnCatalan: string = "Darryl el Barryl:\nTé l'efecte de la carta Barril sempre actiu; si s'equipa un barril, és com si en tingués dos."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteDarryl", false];
 }
 
 export class JetpackCat implements IPersonaje {
@@ -147,6 +155,7 @@ export class JetpackCat implements IPersonaje {
     habilidad = "Gato en las alturas:\nLos demás jugadores lo consideran a distancia +1.";
     habilidadEnCatalan: string = "Gat a les altures:\nEls altres jugadors el consideren a distància +1."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteJetpackCat", false];
 
     modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
         // Si alguien lo está mirando a él para atacarlo, le sumamos 1 a la distancia
@@ -162,6 +171,7 @@ export class KayFaraday implements IPersonaje {
     habilidad = "La ladrona:\nCada vez que pierde una vida por un jugador, roba una carta al azar de la mano de ese jugador.";
     habilidadEnCatalan: string = "La lladre:\nCada vegada que perd una vida a causa d'un jugador, roba una carta a l'atzar de la mà d'aquest jugador."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteKay", true];
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         if (atacante && atacante.mano.length > 0) {
@@ -179,6 +189,7 @@ export class Chester implements IPersonaje {
     habilidad = "Ruleta trucada:\nTiene mucha mas suerte cuando usa la ruleta.";
     habilidadEnCatalan: string = "Ruleta trucada:\nTé molta més sort quan utilitza la ruleta."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteChester", false];
 
     modificarSuerteRuletaNormal(): number {
         return 4
@@ -194,6 +205,7 @@ export class Frank implements IPersonaje {
     habilidad = "Esponja:\nTiene +1 de vida.";
     habilidadEnCatalan: string = "Esponja:\nTé +1 de vida."
     vidasBase = 5;
+    sfxMuerte: [string, boolean] = ["muerteFrank", true];
 }
 
 export class Trucy implements IPersonaje {
@@ -201,6 +213,7 @@ export class Trucy implements IPersonaje {
     habilidad = "Baraja de cartas:\nCada vez que roba cartas, roba una extra, pero para pasar el turno, sus cartas en mano deben ser su salud - 1.";
     habilidadEnCatalan: string = "Baralla de cartes:\nCada vegada que roba cartes, en roba una d'extra, però per passar el torn, les cartes que té a la mà han de ser la seva vida - 1."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteTrucy", false];
 
     modificarRepartirCarta(causa: string): number {
         return 1
@@ -216,6 +229,7 @@ export class Pam implements IPersonaje {
     habilidad = "Beso materno:\nCuando usa un botiquin se cura 2 en vez de 1.";
     habilidadEnCatalan: string = "Beso matern:\nQuan utilitza un botiquí, es cura 2 en comptes d'1."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muertePam", false];
 
     modificarCuraBotiquin(): number {
         return 1
@@ -227,6 +241,7 @@ export class HongoUp implements IPersonaje {
     habilidad = "Descomposicion:\nCuando otro personaje muere, se cura 2 de vida.";
     habilidadEnCatalan: string = "Descomposició:\nQuan un altre personatge mor, es cura 2 punts de vida."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteHongoUp", true];
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
@@ -254,6 +269,7 @@ export class Hongo implements IPersonaje {
     habilidad = "NEEDAMUSHROOM:\nCuando otro personaje muere, roba 2 cartas.";
     habilidadEnCatalan: string = "NEEDAMUSHROOM:\nQuan un altre personatge mor, roba 2 cartes."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteHongo", false];
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
@@ -272,6 +288,7 @@ export class Mikotoba implements IPersonaje {
     habilidad = "Cambio de masa:\nSi tiene 3 o mas vidas, se vuelve GORDO, si no se vuelve FLACO, estando GORDO, cuando es su turno roba 3 en vez de 2, pero la carta Fallo no sirve, estando FLACO, los botiquines curan 2 y al recibir daño roba una carta.";
     habilidadEnCatalan: string = "Canvi de massa:\nSi té 3 o més vides, es torna GROS; si no, es torna PRIM. Estant GROS, quan és el seu torn roba 3 cartes en comptes de 2, però la carta Fallo no serveix. Estant PRIM, els botiquins curen 2 i, quan rep dany, roba una carta."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteMikotoba", false];
 
     onRecibirCuracion(jugador: any): void {
         this.actualizarNombre(jugador)
@@ -324,6 +341,7 @@ export class Lesly implements IPersonaje {
     habilidad = "SAPA:\nComo una buena sapa lesly puede sapear la carta de mas a la izquierda de la mano de cada rival en todo momento.";
     habilidadEnCatalan: string = "SAPA:\nCom una bona Sapa Lesly, pot sapear la carta de més a l'esquerra de la mà de cada rival en tot moment."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteLesly", false];
 }
 
 export class Domino implements IPersonaje {
@@ -331,6 +349,7 @@ export class Domino implements IPersonaje {
     habilidad = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan.";
     habilidadEnCatalan: string = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteDominub", false];
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
         const numero: number = Math.floor(Math.random() * 3);
@@ -374,6 +393,8 @@ export class Tilink implements IPersonaje {
     habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, una carta original de tu mano se descarta y te otorga 2 clones de la misma (Máx. 3 por turno). Para pasar el turno debe tener su salud -1 cartas en mano.";
     habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, descartas una carta original de tu mano y obtienes 2 clones de la misma (máx. 3 por turno). Para pasar el turno, debes tener tantas cartas en mano como tu salud -1.";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteTilink", false];
+
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
         // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
@@ -452,6 +473,7 @@ export class Flowery implements IPersonaje {
     habilidad = "Tu padre es mi mejor amigo:\nPor cada carta jugada crece aleatoriamente entre 0.25 y 0.30 metros. Al descartar decrece entre 0.20 y 0.25 metros. Al llegar a 3.00, inflige 1 de daño a todos de forma inesquivable, los mete a la cárcel (menos al Sheriff), y luego roba 3 cartas del mazo.";
     habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix aleatòriament entre 0,25 i 0,30 metres. En descartar decreix entre 0,20 i 0,25 metres. En arribar a 3,00, infligeix 1 de dany a tots de forma inesquivable, els posa a la presó (excepte al Sheriff), i després roba 3 cartes de la baralla.";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteFlowery", true];
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
         // Genera un número aleatorio entre 25 y 30, luego lo divide por 100
@@ -535,6 +557,7 @@ export class Leon implements IPersonaje {
     habilidad = "Noooo leooooon:\nOculta su salud, cantidad de cartas y equipamiento a los demas.";
     habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l’equipament als altres."
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteLeon", true];
 }
 
 export class Kazuma implements IPersonaje {
@@ -542,6 +565,7 @@ export class Kazuma implements IPersonaje {
     habilidad = "Renacer del Héroe:\nSi no es Sheriff, al morir revive en 2 o 3 rondas con 1 vida y 3 cartas. Si es Sheriff, al recibir daño tiene 50% de crear la espada Karuma (2 de daño a distancia 1).";
     habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu al cap de 2 o 3 rondes amb 1 vida i 3 cartes. Si és Sheriff, en rebre dany té un 50% de crear l espasa Karuma (2 de dany a distància 1).";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["kazumaMuere", true];
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         if (victima.rol === "Sheriff" && victima.vidas > 0) {
@@ -568,6 +592,7 @@ export class Leah implements IPersonaje {
     habilidad = "Artesana:\nDos veces por turno, al descartar una carta, robas 1 carta inmediatamente.";
     habilidadEnCatalan = "Artesana:\nDues vegades per torn, en descartar una carta, robes 1 carta immediatament.";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteStardew", true];
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
         if (motivo !== "VOLUNTARIO") return;
@@ -594,6 +619,7 @@ export class Robin implements IPersonaje {
     habilidad = "Carpintera:\nAl descartar una carta en su turno, mejora un equipamiento aleatorio. Las armas evolucionan y el resto se vuelve versión 'Pro'.";
     habilidadEnCatalan = "Fustera:\nEn descartar una carta en el seu torn, millora un equipament aleatori. Les armes evolucionen i la resta es torna versió 'Pro'.";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteStardew", true];
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string): void {
         if (motivo !== "VOLUNTARIO") return;
@@ -716,6 +742,7 @@ export class Haley implements IPersonaje {
     habilidad = "Fuera de acá, pobretón:\nTus BANG! tienen alcance infinito y no tienen límite de usos si el objetivo es el jugador (o los jugadores) con menos cartas en la mano (sin contarte a vos).";
     habilidadEnCatalan = "Fora d aquí, pobre:\nEls teus BANG! tenen abast infinit i no tenen límit d'usos si l'objectiu és el jugador (o els jugadors) amb menys cartes a la mà (sense comptar-te a tu).";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteStardew", true];
 
     // Función auxiliar secreta de Haley para escanear la mesa
     private esElDeMenosCartas(sala: any, yo: any, victima: any): boolean {
