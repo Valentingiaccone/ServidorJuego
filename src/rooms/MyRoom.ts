@@ -1025,7 +1025,8 @@ export class MyRoom extends Room {
                             else this.avanzarAlSiguienteTurno(client.sessionId);
                             
                         } else { // SE SALVÓ
-                            this.state.probabilidadPapa++; // ¡Aumenta el peligro para la próxima!
+                            this.state.probabilidadPapa++;
+                            this.state.probabilidadPapa++;
                             let p: number = this.state.probabilidadPapa
                             if (p > 15){
                                 p = 15

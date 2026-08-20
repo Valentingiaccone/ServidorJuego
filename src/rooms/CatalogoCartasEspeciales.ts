@@ -70,10 +70,10 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `tornado_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         clon.nombre = "Tornado"; 
-        clon.descripcion = "Desequipa todo lo que tenga equipado un jugador.";
-        clon.descripcionEnCatalan = "Desequipa tot el que tingui equipat un jugador.";
+        clon.descripcion = "Elimina un equipamiento aleatorio de un jugador.";
+        clon.descripcionEnCatalan = "Elimina un equipament aleatori d un jugador.";
         clon.tipoDeUso = "objetivoUniversal"; 
-        clon.efecto = "desequipar";
+        clon.efecto = "desequipar_1";
         clon.esConjurada = false;
         return clon;
     }
