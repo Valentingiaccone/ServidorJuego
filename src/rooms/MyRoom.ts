@@ -627,16 +627,15 @@ export class MyRoom extends Room {
                 jugador.habilidad = elegida.habilidad;
                 jugador.habilidadEnCatalan = elegida.habilidadEnCatalan;
 
-                // --- NUEVO: EXTRAEMOS EL SONIDO USANDO TU GESTOR ---
-            // Traemos todos los personajes del gestor
-            let todosLosPersonajes = this.gestorPersonajes.obtenerTodosParaRepartir();
-            // Buscamos la clase real que coincida con el nombre
-            let personajeReal = todosLosPersonajes.find((p: any) => p.nombre === elegida.nombre);
-            
-            // Si la clase tiene un sonido configurado, pisa al de Among Us
-            if (personajeReal && personajeReal.sfxMuerte) {
-                jugador.sfxMuerte = personajeReal.sfxMuerte;
-            }
+                // Traemos todos los personajes del gestor
+                let todosLosPersonajes = this.gestorPersonajes.obtenerTodosParaRepartir();
+                // Buscamos la clase real que coincida con el nombre
+                let personajeReal = todosLosPersonajes.find((p: any) => p.nombre === elegida.nombre);
+                
+                // Si la clase tiene un sonido configurado, pisa al de Among Us
+                if (personajeReal && personajeReal.sfxMuerte) {
+                    jugador.sfxMuerte = personajeReal.sfxMuerte;
+                }
                 
                 // Aplicamos las vidas, considerando si es Sheriff
                 jugador.vidas = elegida.vidasBase;

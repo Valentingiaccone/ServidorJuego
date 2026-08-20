@@ -15,7 +15,7 @@ export interface IPersonaje {
     // Hooks con esteroides (Ganchos a eventos del juego)
     // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
     onRecibirDano?(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void;
-    // motivo puede ser: "VOLUNTARIO", "COCOROCH", "EXCESO_CARTAS"
+
     onDescartarCarta?(sala: any, jugador: any, cartaDescartada: any, motivo: string): void;
     
     onPasarTurno?(sala: any, jugador: any): void;
@@ -39,6 +39,14 @@ export interface IPersonaje {
     onRecibirCuracion?(jugador: any): void
 
     onJugarCarta?(sala: any, jugador: any, cartaJugada: any): void;
+
+    modificarSuerteGlobalBarril?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void
+
+    modificarSuerteGlobalPrision?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void
+
+    modificarSuerteGlobalDinamita?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void
+
+    modificarSuerteGlobalPapapum?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -288,7 +296,7 @@ export class Mikotoba implements IPersonaje {
     habilidad = "Cambio de masa:\nSi tiene 3 o mas vidas, se vuelve GORDO, si no se vuelve FLACO, estando GORDO, cuando es su turno roba 3 en vez de 2, pero la carta Fallo no sirve, estando FLACO, los botiquines curan 2 y al recibir daño roba una carta.";
     habilidadEnCatalan: string = "Canvi de massa:\nSi té 3 o més vides, es torna GROS; si no, es torna PRIM. Estant GROS, quan és el seu torn roba 3 cartes en comptes de 2, però la carta Fallo no serveix. Estant PRIM, els botiquins curen 2 i, quan rep dany, roba una carta."
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteMikotoba", false];
+    sfxMuerte: [string, boolean] = ["muerteMikotoba", true];
 
     onRecibirCuracion(jugador: any): void {
         this.actualizarNombre(jugador)
@@ -777,6 +785,31 @@ export class Haley implements IPersonaje {
         
         // Si no cumple, la distancia sigue siendo la normal
         return distanciaBase;
+    }
+}
+
+export class Maggey implements IPersonaje {
+    nombre = "Maggey";
+    habilidad = "Ay! pero que mala suerte...:\nEl resto de los jugadores tiene mas mala suerte.";
+    habilidadEnCatalan = "Ai! Quina mala sort...:\nLa resta de jugadors té encara més mala sort.";
+    vidasBase = 4;
+
+    modificarSuerteGlobalBarril(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void {
+        if (jugadorQueTiraLaRuleta != miJugador){
+
+        }
+    }
+
+    modificarSuerteGlobalPrision(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void {
+        
+    }
+
+    modificarSuerteGlobalDinamita(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void {
+        
+    }
+
+    modificarSuerteGlobalPapapum(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): void {
+        
     }
 }
 

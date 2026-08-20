@@ -517,7 +517,7 @@ export class EfectoDesequipar implements IEfectoCarta {
         // --- SI LLEGÓ HASTA ACÁ, LA JUGADA FUE EXITOSA ---
 
         let nombresCartas = cartasVoladas.join(" y ");
-        sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.nombre} lanzó ${cartaJugada.nombre}! ${victima.nombre} perdió [${nombresCartas}] directo al descarte.`);
+        sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.nombre} lanzó ${cartaJugada.nombre}! ${victima.nombre} perdió ${nombresCartas}, directo al descarte.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         
         jugadorQueJuega.mano.splice(indiceCarta, 1);
