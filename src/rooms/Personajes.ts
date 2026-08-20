@@ -797,24 +797,32 @@ export class Maggey implements IPersonaje {
     modificarSuerteGlobalBarril(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
         if (jugadorQueTiraLaRuleta != miJugador){
             return -1
+        } else {
+            return 0
         }
     }
 
     modificarSuerteGlobalPrision(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
         if (jugadorQueTiraLaRuleta != miJugador){
             return -1
+        } else {
+            return 0
         }
     }
 
     modificarSuerteGlobalDinamita(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
         if (jugadorQueTiraLaRuleta != miJugador){
             return -1
+        } else {
+            return 0
         }
     }
 
     modificarSuerteGlobalPapapum(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
         if (jugadorQueTiraLaRuleta != miJugador){
             return -1
+        } else {
+            return 0
         }
     }
 }
@@ -824,25 +832,25 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
-        this.registrar(new Berry());
-        this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
-        this.registrar(new Chester());
-        this.registrar(new Frank());
-        this.registrar(new Pam());
-        this.registrar(new Trucy());
-        this.registrar(new HongoUp());
-        this.registrar(new Hongo());
-        this.registrar(new Lesly());
-        this.registrar(new Mikotoba());
-        this.registrar(new Domino());
-        this.registrar(new Tilink());
-        this.registrar(new Flowery())
+        // this.registrar(new ColeCasiddy());
+        // this.registrar(new Berry());
+        // this.registrar(new Maton());
+        // this.registrar(new Mandy());
+        // this.registrar(new Tralalero());
+        // this.registrar(new Darryl());
+        // this.registrar(new JetpackCat());
+        // this.registrar(new KayFaraday());
+        // this.registrar(new Chester());
+        // this.registrar(new Frank());
+        // this.registrar(new Pam());
+        // this.registrar(new Trucy());
+        // this.registrar(new HongoUp());
+        // this.registrar(new Hongo());
+        // this.registrar(new Lesly());
+        // this.registrar(new Mikotoba());
+        // this.registrar(new Domino());
+        // this.registrar(new Tilink());
+        // this.registrar(new Flowery())
         this.registrar(new Leon())
         this.registrar(new Kazuma())
         this.registrar(new Leah())
