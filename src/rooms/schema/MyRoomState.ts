@@ -90,5 +90,7 @@ export class MyRoomState extends Schema {
     @type("number") danoPendiente: number = 1;
     @type("string") tipoTiendaActual: string = "Griff";
     @type("number") probabilidadPapa: number = 1;
+    @type("string") ruletaVerde: string = "";
+    @type("string") ruletaRojo: string = "";
 }
 

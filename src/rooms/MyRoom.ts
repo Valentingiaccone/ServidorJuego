@@ -1589,12 +1589,20 @@ export class MyRoom extends Room {
         let puntosVerdes: number = 4
         if (motivo == "Barril"){
             puntosVerdes = 4
+            this.state.ruletaVerde = ""
+            this.state.ruletaRojo = ""
         } else if (motivo == "Prision"){
             puntosVerdes = 6
+            this.state.ruletaVerde = ""
+            this.state.ruletaRojo = ""
         } else if (motivo == "Dinamita"){
             puntosVerdes = 14
+            this.state.ruletaVerde = ""
+            this.state.ruletaRojo = "ruletaExplosion"
         } else if (motivo == "Papa"){
             puntosVerdes = 16 - this.state.probabilidadPapa; 
+            this.state.ruletaVerde = ""
+            this.state.ruletaRojo = "ruletaExplosion"
         }
 
         // 2. Aplicar la pasiva de Chester (o cualquier otro personaje)
