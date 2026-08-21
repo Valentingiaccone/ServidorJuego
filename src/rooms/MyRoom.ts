@@ -145,10 +145,13 @@ export class MyRoom extends Room {
             victima.vidas = 0;
 
             // 1. REPRODUCIR SFX DINÁMICO (Sea el custom del personaje o el de Among Us por defecto)
-            this.broadcast("sfx", { 
-                sfx: victima.sfxMuerte[0], 
-                silencio: victima.sfxMuerte[1] 
-            });
+            if (victima.rol !== "Sheriff"){
+                this.broadcast("sfx", { 
+                    sfx: victima.sfxMuerte[0], 
+                    silencio: victima.sfxMuerte[1],
+                    vol: victima.sfxMuerte[2] ?? 1.0
+                });
+            }
 
             if (victima.personaje === "Kazuma" && victima.rol !== "Sheriff" && !victima.estaMuertoFalso) {
                 victima.estaMuertoFalso = true;
@@ -820,7 +823,8 @@ export class MyRoom extends Room {
                 atacante.mano.push(cartaAfectada);
                 this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion, esConjurada: cartaSabotaje.esConjurada, descripcionCatalan: cartaSabotaje.descripcionEnCatalan});
                 this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
-            
+                this.broadcast("sfx", "panico")
+
                 let pasiva = this.gestorPersonajes.obtener(atacante.personaje)
                 if (pasiva && pasiva.onJugarCarta){
                     pasiva.onJugarCarta(this, atacante, cartaSabotaje)

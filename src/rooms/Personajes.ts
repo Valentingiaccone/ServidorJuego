@@ -10,7 +10,7 @@ export interface IPersonaje {
     habilidadEnCatalan: string;
     vidasBase: number;
     // Tupla opcional: [Archivo de sonido, silenciar música]
-    sfxMuerte?: [string, boolean];
+    sfxMuerte?: [string, boolean, number?];
     sfxDefault?: string;
     // actualizacion WALENCIA
     // Hooks con esteroides (Ganchos a eventos del juego)
@@ -200,7 +200,7 @@ export class Chester implements IPersonaje {
     habilidad = "Ruleta trucada:\nTiene mucha mas suerte cuando usa la ruleta.";
     habilidadEnCatalan: string = "Ruleta trucada:\nTé molta més sort quan utilitza la ruleta."
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteChester", false];
+    sfxMuerte: [string, boolean, number] = ["muerteChester", false, 0.5];
 
     modificarSuerteRuletaNormal(): number {
         return 4
@@ -304,7 +304,7 @@ export class Mikotoba implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteMikotoba", true];
 
     onRecibirCuracion(jugador: any): void {
-        this.actualizarNombre(jugador)
+        this.actualizarNombre(jugador, null)
     }
 
     modificarRepartirCarta(causa: string): number {
@@ -328,7 +328,7 @@ export class Mikotoba implements IPersonaje {
     }
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
-        this.actualizarNombre(victima)
+        this.actualizarNombre(victima, sala)
         if (this.nombre == "Mikotoba gordo"){
             return
         } else {
@@ -339,11 +339,16 @@ export class Mikotoba implements IPersonaje {
         }
     }
 
-    private actualizarNombre(jugador: any): void {
+    private actualizarNombre(jugador: any, sala: any): void {
         if (jugador.vidas >= 3){
             this.nombre = "Mikotoba gordo"
         } else {
-            this.nombre = "Mikotoba flaco"
+            if (this.nombre == "Mikotoba gordo"){
+                this.nombre = "Mikotoba flaco"
+                sala.broadcast("sfx", "mikotobaDeGordoAFlaco")
+            } else {
+                this.nombre = "Mikotoba flaco"
+            }
         }
         jugador.personaje = this.nombre
     }
