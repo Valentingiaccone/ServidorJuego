@@ -861,25 +861,25 @@ export class GestorPersonajes {
         this.registrar(new Tralalero());
         this.registrar(new Darryl());
         this.registrar(new JetpackCat());
-        // this.registrar(new KayFaraday());
-        // this.registrar(new Chester());
+        this.registrar(new KayFaraday());
+        this.registrar(new Chester());
         this.registrar(new Frank());
         this.registrar(new Pam());
-        // this.registrar(new Trucy());
+        this.registrar(new Trucy());
         this.registrar(new HongoUp());
         this.registrar(new Hongo());
-        // this.registrar(new Lesly());
+        this.registrar(new Lesly());
         this.registrar(new Mikotoba());
-        // this.registrar(new Domino());
+        this.registrar(new Domino());
         this.registrar(new Tilink());
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
         this.registrar(new Leah())
         this.registrar(new Robin())
         this.registrar(new Luciergana())
         this.registrar(new Haley())
-        // this.registrar(new Maggey())
+        this.registrar(new Maggey())
     }
 
     private registrar(p: IPersonaje) {
