@@ -48,6 +48,8 @@ export interface IPersonaje {
     modificarSuerteGlobalDinamita?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
 
     modificarSuerteGlobalPapapum?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
+
+    pepe?(sala: any, jugador: any): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -65,10 +67,6 @@ export class ColeCasiddy implements IPersonaje {
         if (victima.vidas > 0) {
             sala.repartirCartas(victima, 1, "pasiva");
             sala.broadcast("notificacion_turno", `🤠 Cole Casiddy robó 1 carta tras recibir daño por ${causa}.`);
-            
-            // Ejemplo a futuro (comentado): 
-            // Si quisieras robarle al atacante directamente:
-            // if (atacante && atacante.mano.length > 0) { ... lógica de robo ... }
         }
     }
 }
@@ -411,7 +409,6 @@ export class Tilink implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteTilink", false];
     sfxDefault= "sfxTilink"
 
-
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
         // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
         if (motivo !== "VOLUNTARIO") return;
@@ -729,7 +726,7 @@ export class Luciergana implements IPersonaje {
             if (victima.vidas > victima.vidasMaximas){
                 victima.vidas = victima.vidasMaximas
             }
-            if (atacante){
+            if (atacante && atacante !== victima){
                 sala.broadcast("notificacion_turno", `🐝💡 La Luciergana le refleja ${cantidad} de daño a ${atacante.nombre}`)
                 atacante.vidas -= cantidad
                 let pasivaVictima = sala.gestorPersonajes.obtener(atacante.personaje);
@@ -739,7 +736,7 @@ export class Luciergana implements IPersonaje {
                 
                 sala.evaluarMuerte(atacante, victima);
             } else {
-                sala.broadcast("notificacion_turno", `🐝💡 La luciergana absorbe ${cantidad} de daño`)
+                sala.broadcast("notificacion_turno", `🐝💡 La Luciergana absorbe ${cantidad} de daño`)
             }
         } else {
             victima.lucierganaPrendida = true

@@ -93,5 +93,6 @@ export class MyRoomState extends Schema {
     @type("number") probabilidadPapa: number = 1;
     @type("string") ruletaVerde: string = "";
     @type("string") ruletaRojo: string = "";
+    @type("boolean") faseTransicion: boolean = false; // anti bug prision
 }
 

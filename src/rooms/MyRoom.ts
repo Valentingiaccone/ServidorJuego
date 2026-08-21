@@ -954,8 +954,11 @@ export class MyRoom extends Room {
                 this.state.jugadorDesenfundando = "";
                 this.state.motivoDesenfundar = "";
 
+                this.state.faseTransicion = true;
+
                 this.clock.setTimeout(() => {
 
+                    this.state.faseTransicion = false;
                     // --- HELPER DE SEGURIDAD (Evita que Colyseus crashee el estado) ---
                     let descartarEquipamientoSeguro = (cartaVieja: any) => {
                         if (!cartaVieja) return;
@@ -993,7 +996,9 @@ export class MyRoom extends Room {
                             if (victima) victima.cartaDinamita = null;
 
                             let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA", 3);
+                            if (pasivaVictima && pasivaVictima.onRecibirDano) {
+                                pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA", 3);
+                            }
 
                             this.evaluarMuerte(victima);
                             
@@ -1584,7 +1589,6 @@ export class MyRoom extends Room {
             this.prepararDesenfundar(idJugador, "Prision");
         } else {
             this.repartirCartas(jugador, 2, "turno");
-            console.log(`🃏 ${jugador.nombre} robó 2 cartas.`);
             this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.nombre}!`);
         }
     }
@@ -1615,7 +1619,7 @@ export class MyRoom extends Room {
             this.state.ruletaRojo = "ruletaExplosion"
         }
 
-        // 2. Aplicar la pasiva de Chester (o cualquier otro personaje)
+        // --- Habilidades que afectan a la suerte del que gira la ruleta
         let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
         if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
             puntosVerdes += personajeVictima.modificarSuerteRuletaNormal();
@@ -1694,7 +1698,8 @@ export class MyRoom extends Room {
     }
 
     juegoPausado(): boolean {
-        return (this.state.jugadorEnPeligro !== "" || 
+        return (this.state.faseTransicion ||
+                this.state.jugadorEnPeligro !== "" || 
                 this.state.jugadorDebeDescartar !== "" || 
                 this.state.jugadorBajoAtaqueIndio !== "" ||
                 this.state.jugadorEligiendoTienda !== "" ||
