@@ -633,8 +633,18 @@ export class MyRoom extends Room {
                 let personajeReal = todosLosPersonajes.find((p: any) => p.nombre === elegida.nombre);
                 
                 // Si la clase tiene un sonido configurado, pisa al de Among Us
-                if (personajeReal && personajeReal.sfxMuerte) {
-                    jugador.sfxMuerte = personajeReal.sfxMuerte;
+                // Si encontramos la clase real, le copiamos sus sonidos al Jugador
+                if (personajeReal) {
+                    
+                    // 1. El de muerte (que ya tenías)
+                    if (personajeReal.sfxMuerte) {
+                        jugador.sfxMuerte = personajeReal.sfxMuerte;
+                    }
+
+                    // 2. NUEVO: El de tocar el avatar (Info)
+                    if (personajeReal.sfxDefault) {
+                        jugador.sfxDefault = personajeReal.sfxDefault;
+                    }
                 }
                 
                 // Aplicamos las vidas, considerando si es Sheriff

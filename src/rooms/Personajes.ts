@@ -11,6 +11,7 @@ export interface IPersonaje {
     vidasBase: number;
     // Tupla opcional: [Archivo de sonido, silenciar música]
     sfxMuerte?: [string, boolean];
+    sfxDefault?: string;
     // actualizacion WALENCIA
     // Hooks con esteroides (Ganchos a eventos del juego)
     // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
@@ -57,6 +58,7 @@ export class ColeCasiddy implements IPersonaje {
     habilidadEnCatalan: string = "Recàrrega a la recambra:\nCada vegada que perd 1 vida, roba immediatament 1 carta."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteCasiddy", false];
+    sfxDefault= "sfxCasiddy"
 
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
@@ -109,6 +111,7 @@ export class Maton implements IPersonaje {
     habilidadEnCatalan: string = "Seisei koi kiki:\nPot jugar qualsevol quantitat de BANG! durant el seu torn."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMaton", false];
+    sfxDefault= "sfxMaton"
 
     puedeDispararBang(_sala: any, _atacante: any, _victima: any): boolean {
         return true; 
@@ -133,6 +136,7 @@ export class Tralalero implements IPersonaje {
     habilidadEnCatalan: string = "Els tralaleritos diuen tralalà:\nEn passar el torn, si no té cartes a la mà, recupera 1 punt de vida i roba 2 cartes.."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTralalero", true];
+    sfxDefault= "sfxTralalero"
 
     onPasarTurno(sala: any, jugador: any) {
         if (jugador.mano.length === 0) {
@@ -164,6 +168,7 @@ export class JetpackCat implements IPersonaje {
     habilidadEnCatalan: string = "Gat a les altures:\nEls altres jugadors el consideren a distància +1."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteJetpackCat", false];
+    sfxDefault= "sfxJetpackCat"
 
     modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
         // Si alguien lo está mirando a él para atacarlo, le sumamos 1 a la distancia
@@ -250,6 +255,7 @@ export class HongoUp implements IPersonaje {
     habilidadEnCatalan: string = "Descomposició:\nQuan un altre personatge mor, es cura 2 punts de vida."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteHongoUp", true];
+    sfxDefault= "sfxHongoUp"
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
@@ -278,6 +284,7 @@ export class Hongo implements IPersonaje {
     habilidadEnCatalan: string = "NEEDAMUSHROOM:\nQuan un altre personatge mor, roba 2 cartes."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteHongo", false];
+    sfxDefault= "sfxHongo"
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
@@ -402,6 +409,7 @@ export class Tilink implements IPersonaje {
     habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, descartas una carta original de tu mano y obtienes 2 clones de la misma (máx. 3 por turno). Para pasar el turno, debes tener tantas cartas en mano como tu salud -1.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTilink", false];
+    sfxDefault= "sfxTilink"
 
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
@@ -710,6 +718,8 @@ export class Luciergana implements IPersonaje {
     habilidad = "Reflejo:\nAl sufrir daño, empieza a brillar, mientras brilla, si sufre daño no le afecta y devuelve el daño al atacante, luego se apaga, al final de su turno se apaga, tiene 1 vida menos.";
     habilidadEnCatalan = "Reflex:\nEn rebre dany, comença a brillar. Mentre brilla, el dany no l afecta i el retorna a l atacant. Després s apaga. Al final del seu torn, s apaga, i perds 1 vida.";
     vidasBase = 3;
+    sfxMuerte: [string, boolean] = ["muerteLuciernaga", true];
+    sfxDefault= "sfxLuciernaga"
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number){
         if (victima.lucierganaPrendida){
@@ -832,25 +842,25 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy());
-        // this.registrar(new Berry());
-        // this.registrar(new Maton());
-        // this.registrar(new Mandy());
-        // this.registrar(new Tralalero());
-        // this.registrar(new Darryl());
-        // this.registrar(new JetpackCat());
-        // this.registrar(new KayFaraday());
-        // this.registrar(new Chester());
-        // this.registrar(new Frank());
-        // this.registrar(new Pam());
-        // this.registrar(new Trucy());
-        // this.registrar(new HongoUp());
-        // this.registrar(new Hongo());
-        // this.registrar(new Lesly());
-        // this.registrar(new Mikotoba());
-        // this.registrar(new Domino());
-        // this.registrar(new Tilink());
-        // this.registrar(new Flowery())
+        this.registrar(new ColeCasiddy());
+        this.registrar(new Berry());
+        this.registrar(new Maton());
+        this.registrar(new Mandy());
+        this.registrar(new Tralalero());
+        this.registrar(new Darryl());
+        this.registrar(new JetpackCat());
+        this.registrar(new KayFaraday());
+        this.registrar(new Chester());
+        this.registrar(new Frank());
+        this.registrar(new Pam());
+        this.registrar(new Trucy());
+        this.registrar(new HongoUp());
+        this.registrar(new Hongo());
+        this.registrar(new Lesly());
+        this.registrar(new Mikotoba());
+        this.registrar(new Domino());
+        this.registrar(new Tilink());
+        this.registrar(new Flowery())
         this.registrar(new Leon())
         this.registrar(new Kazuma())
         this.registrar(new Leah())

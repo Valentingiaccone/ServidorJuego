@@ -35,6 +35,7 @@ export class Jugador extends Schema {
     @type("string") personaje: string = "";
     @type("string") habilidad: string = "";
     @type("string") habilidadEnCatalan: string = "";
+    @type("string") sfxDefault: string = "sfxMensaje";
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     @type([Carta]) mano = new ArraySchema<Carta>();
     @type(Carta) cartaMustang: Carta;
