@@ -200,7 +200,7 @@ export class Chester implements IPersonaje {
     habilidad = "Ruleta trucada:\nTiene mucha mas suerte cuando usa la ruleta.";
     habilidadEnCatalan: string = "Ruleta trucada:\nTé molta més sort quan utilitza la ruleta."
     vidasBase = 4;
-    sfxMuerte: [string, boolean, number] = ["muerteChester", false, 0.5];
+    sfxMuerte: [string, boolean, number] = ["muerteChester", false, 0.25];
 
     modificarSuerteRuletaNormal(): number {
         return 4
