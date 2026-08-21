@@ -123,7 +123,7 @@ export class Mandy implements IPersonaje {
     habilidadEnCatalan: string = "Concentració:\nConsidera tots els altres jugadors a distància -2."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMandy", false];
-    sfxDefault: "sfxMandy"
+    sfxDefault = "sfxMandy"
 
     modificarDistancia(_sala: any, _observador: any, _objetivo: any, distanciaBase: number): number {
         return Math.max(0, distanciaBase - 2);
