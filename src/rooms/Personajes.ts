@@ -77,7 +77,7 @@ export class Berry implements IPersonaje {
     habilidadEnCatalan: string = "Cartes curatives:\nEn el seu torn, per cada 2 cartes que descarta, recupera 1 vida i roba 1 carta."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteBerry", false];
-    sfxDefault: "sfxBerry"
+    sfxDefault = "sfxBerry"
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
         // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
@@ -160,7 +160,7 @@ export class Darryl implements IPersonaje {
     habilidadEnCatalan: string = "Darryl el Barryl:\nTé l'efecte de la carta Barril sempre actiu; si s'equipa un barril, és com si en tingués dos."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteDarryl", false];
-    sfxDefault: "sfxDarryl"
+    sfxDefault = "sfxDarryl"
 }
 
 export class JetpackCat implements IPersonaje {
@@ -245,7 +245,7 @@ export class Pam implements IPersonaje {
     habilidadEnCatalan: string = "Beso matern:\nQuan utilitza un botiquí, es cura 2 en comptes d'1."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muertePam", false];
-    sfxDefault: "sfxPam"
+    sfxDefault = "sfxPam"
 
     modificarCuraBotiquin(): number {
         return 1
@@ -307,7 +307,7 @@ export class Mikotoba implements IPersonaje {
     habilidadEnCatalan: string = "Canvi de massa:\nSi té 3 o més vides, es torna GROS; si no, es torna PRIM. Estant GROS, quan és el seu torn roba 3 cartes en comptes de 2, però la carta Fallo no serveix. Estant PRIM, els botiquins curen 2 i, quan rep dany, roba una carta."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMikotoba", true];
-    sfxDefault: "mikotobaDeGordoAFlaco"
+    sfxDefault = "mikotobaDeGordoAFlaco"
 
     onRecibirCuracion(jugador: any): void {
         this.actualizarNombre(jugador, null)
@@ -582,7 +582,7 @@ export class Leon implements IPersonaje {
     habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l’equipament als altres."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLeon", true];
-    sfxDefault: "sfxLeon"
+    sfxDefault = "sfxLeon"
 }
 
 export class Kazuma implements IPersonaje {
@@ -618,7 +618,7 @@ export class Leah implements IPersonaje {
     habilidadEnCatalan = "Artesana:\nDues vegades per torn, en descartar una carta, robes 1 carta immediatament.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
-    sfxDefault: "sfxStardew"
+    sfxDefault = "sfxStardew"
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
         if (motivo !== "VOLUNTARIO") return;
@@ -646,7 +646,7 @@ export class Robin implements IPersonaje {
     habilidadEnCatalan = "Fustera:\nEn descartar una carta en el seu torn, millora un equipament aleatori. Les armes evolucionen i la resta es torna versió 'Pro'.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
-    sfxDefault: "sfxStardew"
+    sfxDefault = "sfxStardew"
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string): void {
         if (motivo !== "VOLUNTARIO") return;
@@ -772,7 +772,7 @@ export class Haley implements IPersonaje {
     habilidadEnCatalan = "Fora d aquí, pobre:\nEls teus BANG! tenen abast infinit i no tenen límit d'usos si l'objectiu és el jugador (o els jugadors) amb menys cartes a la mà (sense comptar-te a tu).";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
-    sfxDefault: "sfxStardew"
+    sfxDefault = "sfxStardew"
 
     // Función auxiliar secreta de Haley para escanear la mesa
     private esElDeMenosCartas(sala: any, yo: any, victima: any): boolean {
