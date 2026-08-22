@@ -36,7 +36,7 @@ export class Jugador extends Schema {
     @type("string") habilidad: string = "";
     @type("string") habilidadEnCatalan: string = "";
     @type("string") sfxDefault: string = "sfxMensaje";
-    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
+    sfxMuerte: [string, boolean, number?] = ["muerteAmongus", false];
     @type([Carta]) mano = new ArraySchema<Carta>();
     @type(Carta) cartaMustang: Carta;
     @type(Carta) cartaMira: Carta;
@@ -55,6 +55,8 @@ export class Jugador extends Schema {
     @type("boolean") tienePapa: boolean = false;
     @type(Carta) cartaPapa: Carta;
     @type("boolean") estaDesconectado: boolean = false;
+    @type(["string"]) embrujos = new ArraySchema<string>();
+    @type("boolean") yaJugoFantasma: boolean = false;
     // ----------------------------------------
     // roles especificos
     // ----------------------------------------
@@ -85,7 +87,7 @@ export class MyRoomState extends Schema {
     @type("string") motivoDesenfundar: string = ""; // Puede ser "Barril", "Prision" o "Dinamita"
     @type(Carta) cartaDesenfundada: Carta = new Carta();
     @type("number") usosBarril: number = 0;
-    @type(["boolean"]) layoutRuleta = new ArraySchema<boolean>();
+    @type(["string"]) layoutRuleta = new ArraySchema<string>();
     @type("number") cantidadAlguaciles: number = 0;
     @type("number") cantidadForajidos: number = 0;
     @type("number") danoPendiente: number = 1;

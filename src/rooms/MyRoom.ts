@@ -221,6 +221,8 @@ export class MyRoom extends Room {
             if (victima.cartaPapa) this.agregarAlDescarte(victima.cartaPapa, victima);
             victima.tienePapa = false;
             victima.cartaPapa = null;
+            
+            victima.embrujos.clear()
 
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
@@ -690,6 +692,15 @@ export class MyRoom extends Room {
 
                 let modificacion: number = 0
                 let jugadorActual = this.state.jugadores.get(client.sessionId);
+
+                // se le borra las cartas en mano al fantasma al pasar el turno
+                if (!jugadorActual.estaVivo) {
+                    jugadorActual.mano.clear();
+                    jugadorActual.yaJugoFantasma = false;
+                    this.avanzarAlSiguienteTurno(client.sessionId);
+                    return; 
+                }
+
                 let pasivaJugadorActual = this.gestorPersonajes.obtener(jugadorActual.personaje);
                 if (pasivaJugadorActual && pasivaJugadorActual.modificarCartasEnManoAlPasarTurno) {
                     modificacion = pasivaJugadorActual.modificarCartasEnManoAlPasarTurno();
@@ -741,6 +752,11 @@ export class MyRoom extends Room {
             if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && !this.juegoPausado()) {
                 let jugador = this.state.jugadores.get(client.sessionId);
                 
+                if (!jugador.estaVivo && jugador.yaJugoFantasma) {
+                    client.send("alerta_personal", "Solo podés lanzar un maleficio por turno.");
+                    return;
+                }
+
                 // Exigimos que venga el idObjetivo
                 if (jugador && datos.idObjetivo) {
                     let indiceCarta = jugador.mano.findIndex((c: any) => c.id === datos.idCarta);
@@ -940,13 +956,24 @@ export class MyRoom extends Room {
             
             // LA MAGIA AQUÍ: Elegimos un índice al azar de la ruleta generada
             let indiceObjetivo = Math.floor(Math.random() * 16);
-            let fueExito = this.state.layoutRuleta[indiceObjetivo];
+            let fueExitoStr = this.state.layoutRuleta[indiceObjetivo]; // AHORA ES UN STRING
             
-            let textoVisual = fueExito ? "¡ÉXITO!" : "FALLÓ";
-            if (motivoActual === "Dinamita" || motivoActual === "Papa") textoVisual = fueExito ? "¡A SALVO!" : "¡BOOM!";
+            let textoVisual = fueExitoStr === "exito" ? "¡ÉXITO!" : "FALLÓ";
+            let colorVerde = (fueExitoStr === "exito");
+
+            // ASIGNACIÓN DE TEXTOS Y COLORES SEGÚN EL TIPO DE RULETA
+            if (motivoActual === "Dinamita" || motivoActual === "Papa") {
+                textoVisual = fueExitoStr === "exito" ? "¡A SALVO!" : "¡BOOM!";
+            } else if (motivoActual === "Embrujo") {
+                if (fueExitoStr === "vacio") { textoVisual = "¡SE SALVÓ!"; colorVerde = true; }
+                else if (fueExitoStr === "curar") { textoVisual = "¡CURACIÓN!"; colorVerde = true; }
+                else if (fueExitoStr === "robar") { textoVisual = "¡ROBO!"; colorVerde = true; }
+                else if (fueExitoStr === "dano") { textoVisual = "¡DAÑO!"; colorVerde = false; }
+                else if (fueExitoStr === "descartar") { textoVisual = "¡DESCARTE!"; colorVerde = false; }
+            }
 
             this.broadcast("resultado_ruleta", { 
-                exito: fueExito,
+                exito: colorVerde,
                 texto: textoVisual,
                 objetivoIndex: indiceObjetivo // Mandamos el índice exacto a Cocos
             });
@@ -963,6 +990,7 @@ export class MyRoom extends Room {
                 this.clock.setTimeout(() => {
 
                     this.state.faseTransicion = false;
+                    
                     // --- HELPER DE SEGURIDAD (Evita que Colyseus crashee el estado) ---
                     let descartarEquipamientoSeguro = (cartaVieja: any) => {
                         if (!cartaVieja) return;
@@ -970,16 +998,16 @@ export class MyRoom extends Room {
                         clon.id = cartaVieja.id; 
                         clon.nombre = cartaVieja.nombre; 
                         clon.descripcion = cartaVieja.descripcion;
-                        clon.descripcionEnCatalan = cartaVieja.descripcionEnCatalan
+                        clon.descripcionEnCatalan = cartaVieja.descripcionEnCatalan;
                         clon.tipoDeUso = cartaVieja.tipoDeUso; 
                         clon.efecto = cartaVieja.efecto;
-                        clon.esConjurada = cartaVieja.esConjurada
-                        this.agregarAlDescarte(clon)
+                        clon.esConjurada = cartaVieja.esConjurada;
+                        this.agregarAlDescarte(clon);
                     };
 
                     // 3. EJECUTAMOS LAS CONSECUENCIAS
                     if (motivoActual === "Barril") {
-                        if (fueExito) {
+                        if (fueExitoStr === "exito") {
                             this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! El Barril salvó a ${victima?.nombre}.`);
                             if (this.colaDePeligro && this.colaDePeligro.length > 0) this.avanzarColaDePeligro();
                             else { this.state.jugadorEnPeligro = ""; this.state.atacanteActual = ""; this.state.usosBarril = 0; }
@@ -988,11 +1016,11 @@ export class MyRoom extends Room {
                         }
                     } 
                     else if (motivoActual === "Dinamita") {
-                        if (!fueExito) { // Explotó
+                        if (fueExitoStr !== "exito") { // Explotó
                             this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió Rojo. La dinamita explotó en la cara de ${victima?.nombre}.`);
                             const numero: number = Math.floor(Math.random() * 3);
-                            const sfx: string = "explosion" + numero
-                            this.broadcast("sfx", sfx)
+                            const sfx: string = "explosion" + numero;
+                            this.broadcast("sfx", sfx);
                             if (victima) victima.vidas -= 3;
                             
                             if (victima && victima.cartaDinamita) descartarEquipamientoSeguro(victima.cartaDinamita);
@@ -1023,7 +1051,7 @@ export class MyRoom extends Room {
                         }
                     }
                     else if (motivoActual === "Papa") {
-                        if (!fueExito) { // EXPLOTÓ
+                        if (fueExitoStr !== "exito") { // EXPLOTÓ
                             this.broadcast("notificacion_turno", `💥 ¡PAPA PAPA PAPAPUM, BOOOM! Salió Rojo. El Papapum explotó encima de ${victima?.nombre}.`);
                             const numero = Math.floor(Math.random() * 3);
                             this.broadcast("sfx", "explosion" + numero);
@@ -1045,16 +1073,15 @@ export class MyRoom extends Room {
                         } else { // SE SALVÓ
                             this.state.probabilidadPapa++;
                             this.state.probabilidadPapa++;
-                            let p: number = this.state.probabilidadPapa
-                            if (p > 15){
-                                p = 15
-                            }
+                            let p: number = this.state.probabilidadPapa;
+                            if (p > 15) p = 15;
+                            
                             this.broadcast("notificacion_turno", `💨 ¡Salió Verde! La Papa no explotó, pero la probabilidad aumentó a ${p}/16.`);
                             this.evaluarFasePrision(client.sessionId);
                         }
                     }
                     else if (motivoActual === "Prision") {
-                        if (fueExito) {
+                        if (fueExitoStr === "exito") {
                             this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.nombre} escapó de la cárcel.`);
                             this.repartirCartas(victima, 2, "turno");
                             this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
@@ -1072,6 +1099,42 @@ export class MyRoom extends Room {
                             victima.cartaPrision = null;
                             victima.estaEnPrision = false;
                         }
+                    }
+                    // --- NUEVA FASE: EMBRUJOS FANTASMALES ---
+                    else if (motivoActual === "Embrujo") {
+                        if (victima) victima.embrujos.clear(); // Limpiamos la ruleta de embrujos para el proximo turno
+                        
+                        if (fueExitoStr === "dano") {
+                            this.broadcast("notificacion_turno", `👻 ¡El embrujo hirió a ${victima?.nombre}! Pierde 1 vida.`);
+                            if (victima) victima.vidas--;
+                            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
+                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "EMBRUJO", 1);
+                            this.evaluarMuerte(victima);
+                        } else if (fueExitoStr === "curar") {
+                            if (victima && victima.vidas < victima.vidasMaximas) {
+                                victima.vidas++;
+                                this.broadcast("notificacion_turno", `👻 ¡El embrujo sanó a ${victima?.nombre}!`);
+                            } else {
+                                this.broadcast("notificacion_turno", `👻 El embrujo intentó sanar a ${victima?.nombre}, pero ya estaba al máximo.`);
+                            }
+                        } else if (fueExitoStr === "robar") {
+                            if (victima) this.repartirCartas(victima, 1, "embrujo");
+                            this.broadcast("notificacion_turno", `👻 ¡El embrujo le dio una carta extra a ${victima?.nombre}!`);
+                        } else if (fueExitoStr === "descartar") {
+                            if (victima && victima.mano.length > 0) {
+                                let c = victima.mano.splice(Math.floor(Math.random() * victima.mano.length), 1)[0];
+                                this.agregarAlDescarte(c);
+                                this.broadcast("notificacion_turno", `👻 ¡El embrujo descartó una carta de ${victima.nombre}!`);
+                            } else {
+                                this.broadcast("notificacion_turno", `👻 El embrujo falló, la mano de ${victima?.nombre} estaba vacía.`);
+                            }
+                        } else {
+                            this.broadcast("notificacion_turno", `💨 ¡${victima?.nombre} tuvo suerte y se salvó del embrujo!`);
+                        }
+
+                        // El flujo natural: Si sigue vivo después del embrujo, evaluamos la dinamita
+                        if (victima && victima.estaVivo) this.evaluarFaseDinamita(client.sessionId);
+                        else this.avanzarAlSiguienteTurno(client.sessionId);
                     }
                 }, 650); 
             }, 5000); //<- ruleta
@@ -1539,24 +1602,37 @@ export class MyRoom extends Room {
                 }
             }
 
-            // LÓGICA NORMAL: ¿Está vivo?
-            if (jugadorSiguiente && jugadorSiguiente.estaVivo) {
+            // LÓGICA NORMAL Y FANTASMAS: ¿No está desconectado? JUEGA.
+            if (jugadorSiguiente && !jugadorSiguiente.estaDesconectado && !jugadorSiguiente.estaMuertoFalso) {
                 break; 
             }
 
-            // Avanzamos al siguiente
             siguienteIdx = (siguienteIdx + 1) % idsJugadores.length;
             iteradorId = idsJugadores[siguienteIdx];
             jugadorSiguiente = this.state.jugadores.get(iteradorId);
             vueltas++;
         }
 
-        if (vueltas >= idsJugadores.length && !jugadorSiguiente?.estaVivo) {
+        if (vueltas >= idsJugadores.length) {
             this.state.turnoActual = "";
         } else {
             this.state.turnoActual = iteradorId;
             if (jugadorSiguiente) jugadorSiguiente.yaDisparo = false;
-            this.evaluarFaseDinamita(iteradorId); // Esto se encarga de darle sus 2 cartas también
+            
+            // AHORA LA FASE 1 ES EL EMBRUJO, NO LA DINAMITA
+            this.evaluarFaseEmbrujo(iteradorId); 
+        }
+    }
+
+    evaluarFaseEmbrujo(idJugador: string) {
+        let jugador = this.state.jugadores.get(idJugador);
+        if (!jugador) return;
+
+        if (jugador.estaVivo && jugador.embrujos.length > 0) {
+            this.broadcast("notificacion_turno", `👻 ¡${jugador.nombre} siente una presencia! La ruleta del Embrujo gira...`);
+            this.prepararDesenfundar(idJugador, "Embrujo");
+        } else {
+            this.evaluarFaseDinamita(idJugador);
         }
     }
 
@@ -1592,8 +1668,17 @@ export class MyRoom extends Room {
             this.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} está en Prisión! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Prision");
         } else {
-            this.repartirCartas(jugador, 2, "turno");
-            this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.nombre}!`);
+            if (!jugador.estaVivo) {
+                jugador.yaJugoFantasma = false;
+                for (let i = 0; i < 2; i++) {
+                    let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria();
+                    if (cartaFantasma) jugador.mano.push(cartaFantasma);
+                }
+                this.broadcast("notificacion_turno", `👻 ¡Es el turno del espíritu de ${jugador.nombre}!`);
+            } else {
+                this.repartirCartas(jugador, 2, "turno");
+                this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.nombre}!`);
+            }
         }
     }
 
@@ -1602,75 +1687,87 @@ export class MyRoom extends Room {
         this.state.motivoDesenfundar = motivo;
 
         let victima = this.state.jugadores.get(idJugador);
-        
-        // 1. Definir probabilidad base
-        let puntosVerdes: number = 4
-        if (motivo == "Barril"){
-            puntosVerdes = 4
-            this.state.ruletaVerde = ""
-            this.state.ruletaRojo = ""
-        } else if (motivo == "Prision"){
-            puntosVerdes = 6
-            this.state.ruletaVerde = ""
-            this.state.ruletaRojo = ""
-        } else if (motivo == "Dinamita"){
-            puntosVerdes = 14
-            this.state.ruletaVerde = ""
-            this.state.ruletaRojo = "ruletaExplosion"
-        } else if (motivo == "Papa"){
-            puntosVerdes = 16 - this.state.probabilidadPapa; 
-            this.state.ruletaVerde = ""
-            this.state.ruletaRojo = "ruletaExplosion"
-        }
+        let layout: string[] = [];
 
-        // --- Habilidades que afectan a la suerte del que gira la ruleta
-        let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
-        if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
-            puntosVerdes += personajeVictima.modificarSuerteRuletaNormal();
-        } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
-            puntosVerdes += personajeVictima.modificarSuerteRuletaDinamita();
-        }
-
-        // modificaciones de suerte globales
-        this.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) {
-                const jPersonaje = this.gestorPersonajes.obtener(j.personaje)
-                if (jPersonaje){
-                    if (motivo == "Barril" && jPersonaje.modificarSuerteGlobalBarril){
-                        puntosVerdes += jPersonaje.modificarSuerteGlobalBarril(this, victima, j)
-                    } else if (motivo == "Prision" && jPersonaje.modificarSuerteGlobalPrision){
-                        puntosVerdes += jPersonaje.modificarSuerteGlobalPrision(this, victima, j)
-                    } else if (motivo == "Dinamita" && jPersonaje.modificarSuerteGlobalDinamita){
-                        puntosVerdes += jPersonaje.modificarSuerteGlobalDinamita(this, victima, j)
-                    } else if (motivo == "Papa" && jPersonaje.modificarSuerteGlobalPapapum){
-                        puntosVerdes += jPersonaje.modificarSuerteGlobalPapapum(this, victima, j)
-                    }
+        // 1. GENERACIÓN DEL MAPA DE STRINGS
+        if (motivo === "Embrujo") {
+            // FASE FANTASMAL
+            this.state.ruletaVerde = "";
+            this.state.ruletaRojo = "";
+            
+            let misEmbrujos = victima.embrujos;
+            for (let i = 0; i < 16; i++) {
+                if (i < misEmbrujos.length) {
+                    layout.push(misEmbrujos[i]);
+                } else {
+                    layout.push("vacio");
                 }
             }
-        });
+        } else {
+            // FASE NORMAL (Barril, Dinamita, Prision, Papa)
+            let puntosVerdes: number = 4;
+            
+            if (motivo === "Barril") {
+                puntosVerdes = 4;
+                this.state.ruletaVerde = "";
+                this.state.ruletaRojo = "";
+            } else if (motivo === "Prision") {
+                puntosVerdes = 6;
+                this.state.ruletaVerde = "";
+                this.state.ruletaRojo = "";
+            } else if (motivo === "Dinamita") {
+                puntosVerdes = 14;
+                this.state.ruletaVerde = "";
+                this.state.ruletaRojo = "ruletaExplosion";
+            } else if (motivo === "Papa") {
+                puntosVerdes = 16 - this.state.probabilidadPapa; 
+                this.state.ruletaVerde = "";
+                this.state.ruletaRojo = "ruletaExplosion";
+            }
 
-        if (puntosVerdes < 1){
-            puntosVerdes = 1
-        } else if (puntosVerdes > 15){
-            puntosVerdes = 15
+            // Habilidades que afectan a la suerte del que gira la ruleta
+            let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
+            if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
+                puntosVerdes += personajeVictima.modificarSuerteRuletaNormal();
+            } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
+                puntosVerdes += personajeVictima.modificarSuerteRuletaDinamita();
+            }
+
+            // Modificaciones de suerte globales
+            this.state.jugadores.forEach((j: any) => {
+                if (j.estaVivo) {
+                    const jPersonaje = this.gestorPersonajes.obtener(j.personaje);
+                    if (jPersonaje) {
+                        if (motivo === "Barril" && jPersonaje.modificarSuerteGlobalBarril) {
+                            puntosVerdes += jPersonaje.modificarSuerteGlobalBarril(this, victima, j);
+                        } else if (motivo === "Prision" && jPersonaje.modificarSuerteGlobalPrision) {
+                            puntosVerdes += jPersonaje.modificarSuerteGlobalPrision(this, victima, j);
+                        } else if (motivo === "Dinamita" && jPersonaje.modificarSuerteGlobalDinamita) {
+                            puntosVerdes += jPersonaje.modificarSuerteGlobalDinamita(this, victima, j);
+                        } else if (motivo === "Papa" && jPersonaje.modificarSuerteGlobalPapapum) {
+                            puntosVerdes += jPersonaje.modificarSuerteGlobalPapapum(this, victima, j);
+                        }
+                    }
+                }
+            });
+
+            // Limites lógicos
+            if (puntosVerdes < 1) puntosVerdes = 1;
+            else if (puntosVerdes > 15) puntosVerdes = 15;
+
+            // Traducción a strings ("exito" o "fallo")
+            let cantidadVerdes = puntosVerdes;
+            for (let i = 0; i < 16; i++) {
+                layout.push(i < cantidadVerdes ? "exito" : "fallo");
+            }
         }
 
-        // 3. Traducir probabilidad a cantidad exacta de puntos sobre 16
-        let totalPuntos = 16;
-        let cantidadVerdes = puntosVerdes
-
-        // 4. Crear el array y llenarlo con la cantidad exacta de verdes y rojos
-        let layout = [];
-        for (let i = 0; i < totalPuntos; i++) {
-            layout.push(i < cantidadVerdes); // true si es verde, false si es rojo
-        }
-
-        // 5. Mezclar el array (sin patrones, esparcidos aleatoriamente)
+        // 2. Mezclar el array aleatoriamente
         layout.sort(() => Math.random() - 0.5);
 
-        // 6. Guardarlo en el estado sincronizado
+        // 3. Guardarlo en el estado sincronizado
         this.state.layoutRuleta.clear();
-        layout.forEach(esVerde => this.state.layoutRuleta.push(esVerde));
+        layout.forEach(str => this.state.layoutRuleta.push(str));
     }
 
     obtenerSiguienteJugadorVivo(idActual: string): { id: string, jugador: any } {

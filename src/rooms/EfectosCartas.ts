@@ -700,6 +700,41 @@ export class EfectoRayo implements IEfectoCarta {
     }
 }
 
+export class EfectoEmbrujar implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        let idObjetivo = parametros[parametros.length - 1];
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Solo podés embrujar a jugadores vivos.");
+            return false;
+        }
+
+        let tipo = parametros[1]; // "dano", "curar", etc.
+        let cantidad = parseInt(parametros[2]); // 2 o 4
+
+        // Seguridad: Controlamos que la ruleta tenga espacio (máximo 16)
+        if (victima.embrujos.length + cantidad > 16) {
+            client.send("alerta_personal", `La ruleta de ${victima.nombre} ya está demasiado embrujada, no cabe este maleficio.`);
+            return false;
+        }
+
+        // Inyectamos los puntos de embrujo
+        for (let i = 0; i < cantidad; i++) {
+            victima.embrujos.push(tipo);
+        }
+
+        jugadorQueJuega.yaJugoFantasma = true;
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        
+        // ¡Mensaje 100% anónimo!
+        sala.broadcast("notificacion_turno", `👻 ¡Un espíritu maligno ha lanzado un embrujo en secreto!`);
+        // Nota: NO enviamos animacion_carta para que nadie vea la flecha en la mesa
+
+        return true;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -723,6 +758,7 @@ export class DespachadorDeCartas {
         "descartar": new EfectoDescartar(),
         "equiparPapapum": new EfectoEquiparPapapum(),
         "rayo": new EfectoRayo(),
+        "embrujar": new EfectoEmbrujar(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
