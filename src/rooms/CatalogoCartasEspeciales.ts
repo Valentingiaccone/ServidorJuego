@@ -193,7 +193,7 @@ export class CatalogoCartasEspeciales {
             clon.descripcionEnCatalan = "Afegeix 2 espais de curació a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_curar_2";
         } else if (elegida === "robar") {
-            clon.nombre = "Regalo del mas allá";
+            clon.nombre = "Regalo divino";
             clon.descripcion = "Agrega 4 espacios de robo en la ruleta de un jugador vivo.";
             clon.descripcionEnCatalan = "Afegeix 4 espais de robatori a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_robar_4";
