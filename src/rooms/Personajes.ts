@@ -919,6 +919,7 @@ export class GestorPersonajes {
         this.registrar(new Luciergana())
         this.registrar(new Haley())
         this.registrar(new Maggey())
+        this.registrar(new Mortis())
     }
 
     private registrar(p: IPersonaje) {
