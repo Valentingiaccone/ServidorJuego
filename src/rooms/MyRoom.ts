@@ -1585,28 +1585,38 @@ export class MyRoom extends Room {
         let vueltas = 0;
 
         while (vueltas < idsJugadores.length) {
-            // LÓGICA: ¿Pasamos por un fantasma?
-            if (jugadorSiguiente && !jugadorSiguiente.estaVivo && jugadorSiguiente.estaMuertoFalso && !jugadorSiguiente.estaDesconectado) {
-                jugadorSiguiente.rondasMuerto--;
-                if (jugadorSiguiente.rondasMuerto <= 0) {
-                    jugadorSiguiente.estaMuertoFalso = false;
-                    jugadorSiguiente.estaVivo = true;
-                    jugadorSiguiente.vidas = 1;
-                    this.repartirCartas(jugadorSiguiente, 1, "pasiva")
-                    this.broadcast("notificacion_turno", `⚡ ¡KAZUMA HA RESUCITADO DE ENTRE LOS MUERTOS!`);
-                    this.broadcast("sfx", {sfx: "kazumaRevive", silencio: true})
-                    jugadorSiguiente.spriteAvatarOpcional = "Kazuma blanco"
-                    jugadorSiguiente.beneficiarseDeSuMuerte = false
-                    this.actualizarMusicaAutomatica()
-                    break; // FRENAMOS EL BUCLE: ¡Es su turno!
+            
+            // LÓGICA GENERAL: ¿No está desconectado?
+            if (jugadorSiguiente && !jugadorSiguiente.estaDesconectado) {
+                
+                // LÓGICA ESPECIAL DE KAZUMA
+                if (!jugadorSiguiente.estaVivo && jugadorSiguiente.estaMuertoFalso) {
+                    jugadorSiguiente.rondasMuerto--;
+                    
+                    if (jugadorSiguiente.rondasMuerto <= 0) {
+                        // KAZUMA REVIVE (Pasa a estar VIVO)
+                        jugadorSiguiente.estaMuertoFalso = false;
+                        jugadorSiguiente.estaVivo = true;
+                        jugadorSiguiente.vidas = 1;
+                        this.repartirCartas(jugadorSiguiente, 1, "pasiva");
+                        this.broadcast("notificacion_turno", `⚡ ¡KAZUMA HA RESUCITADO DE ENTRE LOS MUERTOS!`);
+                        this.broadcast("sfx", {sfx: "kazumaRevive", silencio: true});
+                        jugadorSiguiente.spriteAvatarOpcional = "Kazuma blanco";
+                        jugadorSiguiente.beneficiarseDeSuMuerte = false;
+                        this.actualizarMusicaAutomatica();
+                        break; // FRENAMOS: Es su turno como VIVO
+                    } else {
+                        // KAZUMA AÚN NO REVIVE
+                        break; // FRENAMOS: Es su turno como FANTASMA
+                    }
+                } 
+                else {
+                    // JUGADOR NORMAL (Vivo o Fantasma común)
+                    break; // FRENAMOS: Es su turno
                 }
             }
 
-            // LÓGICA NORMAL Y FANTASMAS: ¿No está desconectado? JUEGA.
-            if (jugadorSiguiente && !jugadorSiguiente.estaDesconectado && !jugadorSiguiente.estaMuertoFalso) {
-                break; 
-            }
-
+            // Avanzamos al siguiente
             siguienteIdx = (siguienteIdx + 1) % idsJugadores.length;
             iteradorId = idsJugadores[siguienteIdx];
             jugadorSiguiente = this.state.jugadores.get(iteradorId);
