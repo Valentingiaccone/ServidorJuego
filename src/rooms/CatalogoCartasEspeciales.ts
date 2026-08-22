@@ -180,25 +180,25 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `fantasma_${elegida}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         clon.esConjurada = true; 
-        clon.tipoDeUso = "objetivoGlobal"; 
+        clon.tipoDeUso = "objetivoUniversal"; 
         
         if (elegida === "dano") {
-            clon.nombre = "Embrujo Dañino";
+            clon.nombre = "Golpe fantasmal";
             clon.descripcion = "Agrega 2 espacios de daño en la ruleta de un jugador vivo.";
             clon.descripcionEnCatalan = "Afegeix 2 espais de dany a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_dano_2";
         } else if (elegida === "curar") {
-            clon.nombre = "Embrujo Sanador";
+            clon.nombre = "Milagro";
             clon.descripcion = "Agrega 2 espacios de curación en la ruleta de un jugador vivo.";
             clon.descripcionEnCatalan = "Afegeix 2 espais de curació a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_curar_2";
         } else if (elegida === "robar") {
-            clon.nombre = "Embrujo Ladrón";
+            clon.nombre = "Regalo del mas allá";
             clon.descripcion = "Agrega 4 espacios de robo en la ruleta de un jugador vivo.";
             clon.descripcionEnCatalan = "Afegeix 4 espais de robatori a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_robar_4";
         } else if (elegida === "descartar") {
-            clon.nombre = "Embrujo Torpe";
+            clon.nombre = "Cuervo fantasma";
             clon.descripcion = "Agrega 4 espacios de descarte en la ruleta de un jugador vivo.";
             clon.descripcionEnCatalan = "Afegeix 4 espais de descart a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_descartar_4";
