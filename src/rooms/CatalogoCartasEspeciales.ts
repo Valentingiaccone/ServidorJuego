@@ -198,7 +198,7 @@ export class CatalogoCartasEspeciales {
             clon.descripcionEnCatalan = "Afegeix 4 espais de robatori a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_robar_4";
         } else if (elegida === "descartar") {
-            clon.nombre = "Cuervo fantasma";
+            clon.nombre = "Cocoroch fantasma";
             clon.descripcion = "Agrega 4 espacios de descarte en la ruleta de un jugador vivo.";
             clon.descripcionEnCatalan = "Afegeix 4 espais de descart a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_descartar_4";
