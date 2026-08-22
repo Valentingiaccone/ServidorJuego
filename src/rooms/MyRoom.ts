@@ -226,7 +226,6 @@ export class MyRoom extends Room {
 
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
-            victima.beneficiarseDeSuMuerte = false
 
             let idVictima = "";
             this.state.jugadores.forEach((j, id) => {
@@ -269,6 +268,8 @@ export class MyRoom extends Room {
                     }
                 }
             });
+
+            victima.beneficiarseDeSuMuerte = false
 
             let totalJugadores: number = this.state.jugadores.size;
             let todosVivos: boolean = totalJugadores == totalVivos
