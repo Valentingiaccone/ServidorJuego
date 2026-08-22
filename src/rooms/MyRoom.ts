@@ -753,7 +753,7 @@ export class MyRoom extends Room {
                 let jugador = this.state.jugadores.get(client.sessionId);
                 
                 if (!jugador.estaVivo && jugador.yaJugoFantasma) {
-                    client.send("alerta_personal", "Solo podés lanzar un maleficio por turno.");
+                    client.send("alerta_personal", "Los muertos solo pueden lanzar un maleficio por turno.");
                     return;
                 }
 

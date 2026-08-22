@@ -35,7 +35,7 @@ export interface IPersonaje {
 
     modificarCartasEnManoAlPasarTurno?(): number
 
-    onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugadorConPasiva: any): void
+    onMuereOtroPersonaje?(sala: any, victimaMuerta: any, miJugador: any): void
 
     onRecibirCuracion?(jugador: any): void
 
@@ -851,6 +851,40 @@ export class Maggey implements IPersonaje {
         } else {
             return 0
         }
+    }
+}
+
+export class Mortis implements IPersonaje {
+    nombre = "Mortis";
+    habilidad = "Criatura de la noche:\nAl recibir daño, gana una carta fantasmal aleatoria, cuando muere otro jugador, gana 2 cartas fantasmales aleatorias.";
+    habilidadEnCatalan = "Criatura de la nit:\nEn rebre dany, guanya una carta fantasmal aleatòria; quan mor un altre jugador, guanya 2 cartes fantasmals aleatòries.";
+    vidasBase = 4;
+
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
+        if (victima.vidas > 0){
+            let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria()
+            if (cartaFantasma) {
+                victima.mano.push(cartaFantasma)
+            }
+
+            sala.broadcast("notificacion_turno", `🪏 ${victima.personaje} conjura una carta fantasmal por su pasiva.`)
+        }
+    }
+
+    onMuereOtroPersonaje(sala: any, victimaMuerta: any, miJugador: any): void {
+        if (!victimaMuerta.beneficiarseDeSuMuerte){
+            sala.broadcast("notificacion_turno", `🪏 No puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
+            return
+        }
+
+        for (let i = 0; i < 2; i++){
+            let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria()
+            if (cartaFantasma) {
+                miJugador.mano.push(cartaFantasma)
+            }
+        }
+
+        sala.broadcast("notificacion_turno", `🪏 ${miJugador.personaje} conjura dos cartas fantasmales por su pasiva.`)
     }
 }
 
