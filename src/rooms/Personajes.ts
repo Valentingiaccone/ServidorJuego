@@ -204,6 +204,7 @@ export class Chester implements IPersonaje {
     habilidadEnCatalan: string = "Ruleta trucada:\nTé molta més sort quan utilitza la ruleta."
     vidasBase = 4;
     sfxMuerte: [string, boolean, number] = ["muerteChester", false, 0.25];
+    sfxDefault= "sfxChester"
 
     modificarSuerteRuletaNormal(): number {
         return 4
@@ -366,6 +367,7 @@ export class Lesly implements IPersonaje {
     habilidadEnCatalan: string = "SAPA:\nCom una bona Sapa Lesly, pot sapear la carta de més a l'esquerra de la mà de cada rival en tot moment."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLesly", false];
+    sfxDefault = "sfxLesly"
 }
 
 export class Domino implements IPersonaje {
@@ -374,6 +376,7 @@ export class Domino implements IPersonaje {
     habilidadEnCatalan: string = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteDominub", false];
+    sfxDefault = "sfxNitromeme"
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
         const numero: number = Math.floor(Math.random() * 3);
@@ -498,6 +501,7 @@ export class Flowery implements IPersonaje {
     habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix aleatòriament entre 0,25 i 0,30 metres. En descartar decreix entre 0,20 i 0,25 metres. En arribar a 3,00, infligeix 1 de dany a tots de forma inesquivable, els posa a la presó (excepte al Sheriff), i després roba 3 cartes de la baralla.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteFlowery", true];
+    sfxDefault = "sfxFlowery"
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
         // Genera un número aleatorio entre 25 y 30, luego lo divide por 100
@@ -591,6 +595,7 @@ export class Kazuma implements IPersonaje {
     habilidadEnCatalan = "Renaixement de l'Heroi:\nSi no és Sheriff, en morir reviu al cap de 2 o 3 rondes amb 1 vida i 3 cartes. Si és Sheriff, en rebre dany té un 50% de crear l espasa Karuma (2 de dany a distància 1).";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["kazumaMuere", true];
+    sfxDefault = "sfxKazuma"
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         if (victima.rol === "Sheriff" && victima.vidas > 0) {
@@ -854,32 +859,32 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
-        this.registrar(new Berry());
-        this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
+        // this.registrar(new ColeCasiddy());
+        // this.registrar(new Berry());
+        // this.registrar(new Maton());
+        // this.registrar(new Mandy());
+        // this.registrar(new Tralalero());
+        // this.registrar(new Darryl());
+        // this.registrar(new JetpackCat());
+        // this.registrar(new KayFaraday());
         this.registrar(new Chester());
-        this.registrar(new Frank());
-        this.registrar(new Pam());
-        this.registrar(new Trucy());
-        this.registrar(new HongoUp());
-        this.registrar(new Hongo());
-        this.registrar(new Lesly());
-        this.registrar(new Mikotoba());
+        // this.registrar(new Frank());
+        // this.registrar(new Pam());
+        // this.registrar(new Trucy());
+        // this.registrar(new HongoUp());
+        // this.registrar(new Hongo());
+        // this.registrar(new Lesly());
+        // this.registrar(new Mikotoba());
         this.registrar(new Domino());
-        this.registrar(new Tilink());
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
+        // this.registrar(new Tilink());
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
         this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
     }
 
     private registrar(p: IPersonaje) {
