@@ -315,6 +315,7 @@ export class Mikotoba implements IPersonaje {
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.mikotobaEstaGordo = true
+        jugador.puedeUsarFallo = false
     }
 
     onRecibirCuracion(sala: any, jugador: any): void {
@@ -367,6 +368,8 @@ export class Mikotoba implements IPersonaje {
                 jugador.spriteAvatarOpcional = "Mikotoba flaco"
             }
         }
+
+        jugador.puedeUsarFallo = !jugador.mikotobaEstaGordo
     }
 }
 

@@ -5,7 +5,7 @@ import { GestorPersonajes } from "./Personajes.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 
 export class MyRoom extends Room {
-    maxClients = 10;
+    maxClients = 15;
     state = new MyRoomState();
 
     colaDePeligro: string[] = [];
@@ -15,6 +15,8 @@ export class MyRoom extends Room {
     // Instanciamos nuestros nuevos motores
     despachadorCartas = new DespachadorDeCartas();
     gestorPersonajes = new GestorPersonajes();
+
+    private musicaNormal: boolean = false
 
     avanzarColaDePeligro() {
         this.state.usosBarril = 0;
@@ -89,20 +91,38 @@ export class MyRoom extends Room {
         });
 
         if (todosVivos){
-            this.broadcast("musica", "juego")
+            if (this.musicaNormal){
+                this.broadcast("musica", "juego")
+            } else {
+                this.broadcast("musica", "juego_V2")
+            }
             return
         }
 
-        if (totalVivos > 5){
-            this.broadcast("musica", "juego")
-        } else if (totalVivos == 5){
-            this.broadcast("musica", "juegoQuedan5")
-        } else if (totalVivos == 4){
-            this.broadcast("musica", "juegoQuedan4")
-        } else if (totalVivos == 3){
-            this.broadcast("musica", "juegoQuedan3")
-        } else if (totalVivos == 2){
-            this.broadcast("musica", "juegoQuedan2")
+        if (this.musicaNormal){
+            if (totalVivos > 5){
+                this.broadcast("musica", "juego")
+            } else if (totalVivos == 5){
+                this.broadcast("musica", "juegoQuedan5")
+            } else if (totalVivos == 4){
+                this.broadcast("musica", "juegoQuedan4")
+            } else if (totalVivos == 3){
+                this.broadcast("musica", "juegoQuedan3")
+            } else if (totalVivos == 2){
+                this.broadcast("musica", "juegoQuedan2")
+            }
+        } else {
+            if (totalVivos > 5){
+                this.broadcast("musica", "juego_V2")
+            } else if (totalVivos == 5){
+                this.broadcast("musica", "juegoQuedan5_V2")
+            } else if (totalVivos == 4){
+                this.broadcast("musica", "juegoQuedan4_V2")
+            } else if (totalVivos == 3){
+                this.broadcast("musica", "juegoQuedan3_V2")
+            } else if (totalVivos == 2){
+                this.broadcast("musica", "juegoQuedan2_V2")
+            }
         }
     }
 
@@ -617,6 +637,8 @@ export class MyRoom extends Room {
 
                 this.state.estadoJuego = "SeleccionPersonaje";
                 this.lock();
+
+                this.musicaNormal = !this.musicaNormal
             }
         });
 
@@ -691,7 +713,11 @@ export class MyRoom extends Room {
                     }
                 });
 
-                this.broadcast("musica", "juego")
+                if (this.musicaNormal){
+                    this.broadcast("musica", "juego")
+                } else {
+                    this.broadcast("musica", "juego_V2")
+                }
             }
         });
 
