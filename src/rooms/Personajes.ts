@@ -25,19 +25,19 @@ export interface IPersonaje {
     
     modificarDistancia?(sala: any, observador: any, objetivo: any, distanciaBase: number): number;
 
-    modificarSuerteRuletaNormal?(): number
+    modificarSuerteRuletaNormal?(sala: any): number
 
-    modificarSuerteRuletaDinamita?(): number
+    modificarSuerteRuletaDinamita?(sala: any): number
 
-    modificarRepartirCarta?(causa: string): number
+    modificarRepartirCarta?(sala: any, jugador: any, causa: string): number
 
-    modificarCuraBotiquin?(): number
+    modificarCuraBotiquin?(sala: any, jugador: any): number
 
-    modificarCartasEnManoAlPasarTurno?(): number
+    modificarCartasEnManoAlPasarTurno?(sala: any): number
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, miJugador: any): void
 
-    onRecibirCuracion?(jugador: any): void
+    onRecibirCuracion?(sala: any, jugador: any): void
 
     onJugarCarta?(sala: any, jugador: any, cartaJugada: any): void;
 
@@ -49,7 +49,7 @@ export interface IPersonaje {
 
     modificarSuerteGlobalPapapum?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
 
-    pepe?(sala: any, jugador: any): void
+    onIniciarPartida?(sala: any, jugador: any): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -66,7 +66,7 @@ export class ColeCasiddy implements IPersonaje {
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         if (victima.vidas > 0) {
             sala.repartirCartas(victima, 1, "pasiva");
-            sala.broadcast("notificacion_turno", `🤠 Cole Casiddy robó 1 carta tras recibir daño por ${causa}.`);
+            sala.broadcast("notificacion_turno", `🤠 ${victima.personaje} robó 1 carta tras recibir daño por ${causa}.`);
         }
     }
 }
@@ -89,7 +89,7 @@ export class Berry implements IPersonaje {
         if (jugador.contadorDescartes >= 2) {
             jugador.contadorDescartes = 0;
             sala.repartirCartas(jugador, 1, "pasiva")
-            let texto: string = `🍓 Berry roba una carta`
+            let texto: string = `🍓 ${jugador.personaje} roba una carta`
             if (jugador.vidas < jugador.vidasMaximas) {
                 jugador.vidas++;
                 texto += ` y se cura 1 vida`
@@ -118,6 +118,7 @@ export class Maton implements IPersonaje {
 }
 
 export class Mandy implements IPersonaje {
+    // maya bug
     nombre = "Mandy";
     habilidad = "Concentración:\nConsidera a todos los demás jugadores a distancia -2.";
     habilidadEnCatalan: string = "Concentració:\nConsidera tots els altres jugadors a distància -2."
@@ -149,12 +150,13 @@ export class Tralalero implements IPersonaje {
 
             sala.repartirCartas(jugador, 2, "pasiva")
 
-            sala.broadcast("notificacion_turno", `🎵 Tralalero recuperó ${curacion} vida y robó 2 cartas gracias a su pasiva.`);
+            sala.broadcast("notificacion_turno", `🎵 ${jugador.personaje} recuperó ${curacion} vida y robó 2 cartas gracias a su pasiva.`);
         }
     }
 }
 
 export class Darryl implements IPersonaje {
+    // maya bug
     nombre = "Darryl";
     habilidad = "Darryl el Barryl:\nTiene el efecto de la carta Barril siempre activo, si se equipa un barril, es como si tuviera dos.";
     habilidadEnCatalan: string = "Darryl el Barryl:\nTé l'efecte de la carta Barril sempre actiu; si s'equipa un barril, és com si en tingués dos."
@@ -164,6 +166,7 @@ export class Darryl implements IPersonaje {
 }
 
 export class JetpackCat implements IPersonaje {
+    // maya bug
     nombre = "Jetpack Cat";
     habilidad = "Gato en las alturas:\nLos demás jugadores lo consideran a distancia +1.";
     habilidadEnCatalan: string = "Gat a les altures:\nEls altres jugadors el consideren a distància +1."
@@ -206,11 +209,11 @@ export class Chester implements IPersonaje {
     sfxMuerte: [string, boolean, number] = ["muerteChester", false, 0.25];
     sfxDefault= "sfxChester"
 
-    modificarSuerteRuletaNormal(): number {
+    modificarSuerteRuletaNormal(sala: any): number {
         return 4
     }
 
-    modificarSuerteRuletaDinamita(): number {
+    modificarSuerteRuletaDinamita(sala: any): number {
         return 1
     }
 }
@@ -231,11 +234,11 @@ export class Trucy implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTrucy", false];
 
-    modificarRepartirCarta(causa: string): number {
+    modificarRepartirCarta(sala: any, jugador: any, causa: string): number {
         return 1
     }
 
-    modificarCartasEnManoAlPasarTurno(): number {
+    modificarCartasEnManoAlPasarTurno(sala: any): number {
         return -1
     }
 }
@@ -248,7 +251,7 @@ export class Pam implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muertePam", false];
     sfxDefault = "sfxPam"
 
-    modificarCuraBotiquin(): number {
+    modificarCuraBotiquin(sala: any, jugador: any): number {
         return 1
     }
 }
@@ -263,7 +266,7 @@ export class HongoUp implements IPersonaje {
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
-            sala.broadcast("notificacion_turno", `🍄 No puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
+            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
             return
         }
 
@@ -277,7 +280,7 @@ export class HongoUp implements IPersonaje {
             curacion++
         }
         if (curacion > 0){
-            sala.broadcast("notificacion_turno", `🍄 Hongo 1Up se curó ${curacion}.`);
+            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} se curó ${curacion}.`);
         }
     }
 }
@@ -292,42 +295,46 @@ export class Hongo implements IPersonaje {
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
-            sala.broadcast("notificacion_turno", `🍄 No puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
+            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
             return
         }
 
         const cartas: number = 2
         sala.repartirCartas(jugador, cartas, "pasiva");
-        sala.broadcast("notificacion_turno", `🍄 Hongo robó ${cartas} cartas por su pasiva.`);
+        sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} robó ${cartas} cartas por su pasiva.`);
     }
 }
 
 export class Mikotoba implements IPersonaje {
-    nombre = "Mikotoba gordo";
+    nombre = "Mikotoba";
     habilidad = "Cambio de masa:\nSi tiene 3 o mas vidas, se vuelve GORDO, si no se vuelve FLACO, estando GORDO, cuando es su turno roba 3 en vez de 2, pero la carta Fallo no sirve, estando FLACO, los botiquines curan 2 y al recibir daño roba una carta.";
     habilidadEnCatalan: string = "Canvi de massa:\nSi té 3 o més vides, es torna GROS; si no, es torna PRIM. Estant GROS, quan és el seu torn roba 3 cartes en comptes de 2, però la carta Fallo no serveix. Estant PRIM, els botiquins curen 2 i, quan rep dany, roba una carta."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMikotoba", true];
     sfxDefault = "mikotobaDeGordoAFlaco"
 
-    onRecibirCuracion(jugador: any): void {
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.mikotobaEstaGordo = true
+    }
+
+    onRecibirCuracion(sala: any, jugador: any): void {
         this.actualizarNombre(jugador, null)
     }
 
-    modificarRepartirCarta(causa: string): number {
+    modificarRepartirCarta(sala: any, jugador: any, causa: string): number {
         if (causa !== "turno"){
             return 0
         }
 
-        if (this.nombre == "Mikotoba gordo"){
+        if (jugador.mikotobaEstaGordo){
             return 1
         } else {
             return 0
         }
     }
 
-    modificarCuraBotiquin(): number {
-        if (this.nombre == "Mikotoba gordo"){
+    modificarCuraBotiquin(sala: any, jugador: any): number {
+        if (jugador.mikotobaEstaGordo){
             return 0
         } else {
             return 1
@@ -336,32 +343,35 @@ export class Mikotoba implements IPersonaje {
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
         this.actualizarNombre(victima, sala)
-        if (this.nombre == "Mikotoba gordo"){
+        if (victima.mikotobaEstaGordo){
             return
         } else {
             if (victima.vidas > 0) {
                 sala.repartirCartas(victima, 1, "pasiva");
-                sala.broadcast("notificacion_turno", `Mikotoba robó 1 carta tras recibir daño por ${causa}.`);
+                sala.broadcast("notificacion_turno", `${victima.personaje} robó 1 carta tras recibir daño por ${causa}.`);
             }
         }
     }
 
     private actualizarNombre(jugador: any, sala: any): void {
         if (jugador.vidas >= 3){
-            this.nombre = "Mikotoba gordo"
+            jugador.mikotobaEstaGordo = true
+            jugador.spriteAvatarOpcional = ""
         } else {
-            if (this.nombre == "Mikotoba gordo"){
-                this.nombre = "Mikotoba flaco"
+            if (jugador.mikotobaEstaGordo){
+                jugador.mikotobaEstaGordo = false
+                jugador.spriteAvatarOpcional = "Mikotoba flaco"
                 sala.broadcast("sfx", "mikotobaDeGordoAFlaco")
             } else {
-                this.nombre = "Mikotoba flaco"
+                jugador.mikotobaEstaGordo = false
+                jugador.spriteAvatarOpcional = "Mikotoba flaco"
             }
         }
-        jugador.personaje = this.nombre
     }
 }
 
 export class Lesly implements IPersonaje {
+    // maya bug
     nombre = "Lesly";
     habilidad = "SAPA:\nComo una buena sapa lesly puede sapear la carta de mas a la izquierda de la mano de cada rival en todo momento.";
     habilidadEnCatalan: string = "SAPA:\nCom una bona Sapa Lesly, pot sapear la carta de més a l'esquerra de la mà de cada rival en tot moment."
@@ -371,6 +381,7 @@ export class Lesly implements IPersonaje {
 }
 
 export class Domino implements IPersonaje {
+    // maya bug (catalan)
     nombre = "Domino";
     habilidad = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan.";
     habilidadEnCatalan: string = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan."
@@ -417,8 +428,8 @@ export class Domino implements IPersonaje {
 
 export class Tilink implements IPersonaje {
     nombre = "Tilink";
-    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, una carta original de tu mano se descarta y te otorga 2 clones de la misma (Máx. 3 por turno). Para pasar el turno debe tener su salud -1 cartas en mano.";
-    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, descartas una carta original de tu mano y obtienes 2 clones de la misma (máx. 3 por turno). Para pasar el turno, debes tener tantas cartas en mano como tu salud -1.";
+    habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, una carta original de tu mano se descarta y te otorga 2 clones de la misma (Máx. 2 por turno). Para pasar el turno debe tener su salud -1 cartas en mano.";
+    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, descartas una carta original de tu mano y obtienes 2 clones de la misma (máx. 2 por turno). Para pasar el turno, debes tener tantas cartas en mano como tu salud -1.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTilink", false];
     sfxDefault= "sfxTilink"
@@ -432,8 +443,8 @@ export class Tilink implements IPersonaje {
             jugador.clonesCreadosEsteTurno = 0;
         }
 
-        // 2. Freno de seguridad: Límite de 3 por turno
-        if (jugador.clonesCreadosEsteTurno >= 3) {
+        // 2. Freno de seguridad: Límite de 2 por turno
+        if (jugador.clonesCreadosEsteTurno >= 2) {
             return;
         }
         
@@ -480,7 +491,7 @@ export class Tilink implements IPersonaje {
                 jugador.clonesCreadosEsteTurno++;
                 
                 // Actualizamos la notificación para que la mesa entienda el sacrificio
-                sala.broadcast("notificacion_turno", `🪞 ¡Tilink sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/3)`);
+                sala.broadcast("notificacion_turno", `🪞 ¡${jugador.personaje} sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/3)`);
                 sala.broadcast("sfx", "tilinkPasiva")
             }
         }
@@ -490,7 +501,7 @@ export class Tilink implements IPersonaje {
         jugador.clonesCreadosEsteTurno = 0;
     }
 
-    modificarCartasEnManoAlPasarTurno(): number {
+    modificarCartasEnManoAlPasarTurno(sala: any): number {
         return -1;
     }
 }
@@ -504,8 +515,8 @@ export class Flowery implements IPersonaje {
     sfxDefault = "sfxFlowery"
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
-        // Genera un número aleatorio entre 25 y 30, luego lo divide por 100
-        let crecimiento = (Math.floor(Math.random() * 6) + 25) / 100;
+        // Genera un número aleatorio entre 28 y 33, luego lo divide por 100
+        let crecimiento = (Math.floor(Math.random() * 6) + 28) / 100;
         jugador.alturaFlowery += crecimiento;
         
         this.evaluarCrecimiento(sala, jugador);
@@ -516,8 +527,8 @@ export class Flowery implements IPersonaje {
             sala.broadcast("sfx", "floweryDecrece");
         }
         
-        // Genera un número aleatorio entre 20 y 25, luego lo divide por 100
-        let decrecimiento = (Math.floor(Math.random() * 6) + 20) / 100;
+        // Genera un número aleatorio entre 17 y 22, luego lo divide por 100
+        let decrecimiento = (Math.floor(Math.random() * 6) + 17) / 100;
         jugador.alturaFlowery -= decrecimiento;
         
         if (jugador.alturaFlowery < 0) {
@@ -566,7 +577,7 @@ export class Flowery implements IPersonaje {
             // AHORA ROBA 3 CARTAS DEL MAZO
             sala.repartirCartas(jugador, 3, "pasiva");
             
-            sala.broadcast("notificacion_turno", `🌻 Flowery infligió daño a todos, enredó a los rivales en Prisión y robó 3 cartas del mazo.`);
+            sala.broadcast("notificacion_turno", `🌻 ${jugador.personaje} infligió daño a todos, enredó a los rivales en Prisión y robó 3 cartas del mazo.`);
 
             const numero: number = Math.floor(Math.random() * 2);
             const sfx: string = "floweryHabilidad" + numero;
@@ -583,7 +594,7 @@ export class Flowery implements IPersonaje {
 export class Leon implements IPersonaje {
     nombre = "Leon";
     habilidad = "Noooo leooooon:\nOculta su salud, cantidad de cartas y equipamiento a los demas.";
-    habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l’equipament als altres."
+    habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l equipament als altres."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLeon", true];
     sfxDefault = "sfxLeon"
@@ -611,7 +622,7 @@ export class Kazuma implements IPersonaje {
                 kamura.esConjurada = true;
                 
                 victima.mano.push(kamura);
-                sala.broadcast("notificacion_turno", `🗡️ ¡Kazuma ha conjurado su espada Karuma!`);
+                sala.broadcast("notificacion_turno", `🗡️ ¡${victima.personaje} ha conjurado su espada Karuma!`);
             }
         }
     }
@@ -636,7 +647,7 @@ export class Leah implements IPersonaje {
             jugador.usosArtesanaEsteTurno++;
             
             sala.repartirCartas(jugador, 1, "pasiva");
-            sala.broadcast("notificacion_turno", `🛠️ Leah descartó una carta y su pasiva de Artesana le otorgó 1 carta nueva (${jugador.usosArtesanaEsteTurno}/2).`);
+            sala.broadcast("notificacion_turno", `🛠️ ${jugador.personaje} descartó una carta y su pasiva de Artesana le otorgó 1 carta nueva (${jugador.usosArtesanaEsteTurno}/2).`);
         }
     }
 
@@ -655,6 +666,12 @@ export class Robin implements IPersonaje {
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string): void {
         if (motivo !== "VOLUNTARIO") return;
+
+        jugador.robinDescartes++;
+
+        if (jugador.robinDescartes <= 1) {
+            return;
+        }
 
         let opcionesDeMejora: string[] = [];
 
@@ -706,8 +723,12 @@ export class Robin implements IPersonaje {
             textoMejora = `su arma a ${siguienteArma.nombre}`;
         }
 
-        sala.broadcast("notificacion_turno", `🔨 ¡Robin descartó una carta y mejoró ${textoMejora}!`);
+        sala.broadcast("notificacion_turno", `🔨 ¡${jugador.personaje} descartó una carta y mejoró ${textoMejora}!`);
         sala.broadcast("sfx", "robinMejora"); 
+    }
+
+    onPasarTurno(sala: any, jugador: any): void {
+        jugador.robinDescartes = 0;
     }
 
     private obtenerSiguienteArma(armaActual: string): any {
@@ -746,7 +767,7 @@ export class Luciergana implements IPersonaje {
                 victima.vidas = victima.vidasMaximas
             }
             if (atacante && atacante !== victima){
-                sala.broadcast("notificacion_turno", `🐝💡 La Luciergana le refleja ${cantidad} de daño a ${atacante.nombre}`)
+                sala.broadcast("notificacion_turno", `🐝💡 La ${victima.personaje} le refleja ${cantidad} de daño a ${atacante.nombre}`)
                 atacante.vidas -= cantidad
                 let pasivaVictima = sala.gestorPersonajes.obtener(atacante.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirDano) {
@@ -755,7 +776,7 @@ export class Luciergana implements IPersonaje {
                 
                 sala.evaluarMuerte(atacante, victima);
             } else {
-                sala.broadcast("notificacion_turno", `🐝💡 La Luciergana absorbe ${cantidad} de daño`)
+                sala.broadcast("notificacion_turno", `🐝💡 La ${victima.personaje} absorbe ${cantidad} de daño`)
             }
         } else {
             victima.lucierganaPrendida = true
@@ -888,6 +909,277 @@ export class Mortis implements IPersonaje {
     }
 }
 
+export class Maya implements IPersonaje {
+    nombre = "Maya";
+    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos (seguramente no funcione con mandy, darryl, jetpack cat, Frank, domino, lesly, flowery, leon, Haley, mikotoba).";
+    habilidadEnCatalan = "Canalització:\nMentre estigui viva, utilitza les habilitats dels morts (seguramente no funcione con mandy, darryl, jetpack cat, Frank, domino, lesly, flowery, leon, Haley, mikotoba).";
+    vidasBase = 4;
+
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.onRecibirDano) {
+                    pasiva.onRecibirDano(sala, victima, atacante, causa, cantidad);
+                }
+            }
+        });
+
+        victima.spriteAvatarOpcional = ""
+    }
+
+    onDescartarCarta(sala: any, jugador: any, cartaDescartada: any, motivo: string): void {
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.onDescartarCarta) {
+                    pasiva.onDescartarCarta(sala, jugador, cartaDescartada, motivo);
+                }
+            }
+        });
+
+        jugador.spriteAvatarOpcional = ""
+    }
+    
+    onPasarTurno(sala: any, jugador: any): void {
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.onPasarTurno) {
+                    pasiva.onPasarTurno(sala, jugador);
+                }
+            }
+        });
+
+        jugador.spriteAvatarOpcional = ""
+    }
+    
+    puedeDispararBang(sala: any, atacante: any, victima: any): boolean {
+        let puede: boolean = false
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.puedeDispararBang) {
+                    const x: boolean = pasiva.puedeDispararBang(sala, atacante, victima);
+                    if (x){
+                        puede = true
+                    }
+                }
+            }
+        });
+
+        atacante.spriteAvatarOpcional = ""
+
+        return puede
+    }
+    
+    modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
+        let distancia: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarDistancia) {
+                    distancia += pasiva.modificarDistancia(sala, observador, objetivo, distanciaBase);
+                }
+            }
+        });
+
+        //observador.spriteAvatarOpcional = ""
+
+        return distancia
+    }
+
+    modificarSuerteRuletaNormal(sala: any): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarSuerteRuletaNormal) {
+                    modificacion += pasiva.modificarSuerteRuletaNormal(sala);
+                }
+            }
+        });
+
+        return modificacion
+    }
+
+    modificarSuerteRuletaDinamita(sala: any): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarSuerteRuletaDinamita) {
+                    modificacion += pasiva.modificarSuerteRuletaDinamita(sala);
+                }
+            }
+        });
+
+        return modificacion
+    }
+
+    modificarRepartirCarta(sala: any, jugador: any, causa: string): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarRepartirCarta) {
+                    modificacion += pasiva.modificarRepartirCarta(sala, jugador, causa);
+                }
+            }
+        });
+
+        jugador.spriteAvatarOpcional = ""
+
+        return modificacion
+    }
+
+    modificarCuraBotiquin(sala: any, jugador: any): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarCuraBotiquin) {
+                    modificacion += pasiva.modificarCuraBotiquin(sala, jugador);
+                }
+            }
+        });
+
+        jugador.spriteAvatarOpcional = ""
+
+        return modificacion
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarCartasEnManoAlPasarTurno) {
+                    modificacion += pasiva.modificarCartasEnManoAlPasarTurno(sala);
+                }
+            }
+        });
+
+        return modificacion
+    }
+
+    onMuereOtroPersonaje(sala: any, victimaMuerta: any, miJugador: any): void {
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.onMuereOtroPersonaje) {
+                    pasiva.onMuereOtroPersonaje(sala,victimaMuerta, miJugador);
+                }
+            }
+        });
+
+        miJugador.spriteAvatarOpcional = ""
+    }
+
+    onRecibirCuracion(sala: any, jugador: any): void {
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.onRecibirCuracion) {
+                    pasiva.onRecibirCuracion(sala, jugador);
+                }
+            }
+        });
+
+        jugador.spriteAvatarOpcional = ""
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.onJugarCarta) {
+                    pasiva.onJugarCarta(sala, jugador, cartaJugada);
+                }
+            }
+        });
+
+        jugador.spriteAvatarOpcional = ""
+    }
+
+    modificarSuerteGlobalBarril(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarSuerteGlobalBarril) {
+                    modificacion += pasiva.modificarSuerteGlobalBarril(sala, jugadorQueTiraLaRuleta, miJugador);
+                }
+            }
+        });
+
+        miJugador.spriteAvatarOpcional = ""
+
+        return modificacion
+    }
+
+    modificarSuerteGlobalPrision(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarSuerteGlobalPrision) {
+                    modificacion += pasiva.modificarSuerteGlobalPrision(sala, jugadorQueTiraLaRuleta, miJugador);
+                }
+            }
+        });
+
+        miJugador.spriteAvatarOpcional = ""
+
+        return modificacion
+    }
+
+    modificarSuerteGlobalDinamita(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarSuerteGlobalDinamita) {
+                    modificacion += pasiva.modificarSuerteGlobalDinamita(sala, jugadorQueTiraLaRuleta, miJugador);
+                }
+            }
+        });
+
+        miJugador.spriteAvatarOpcional = ""
+
+        return modificacion
+    }
+
+    modificarSuerteGlobalPapapum(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
+        let modificacion: number = 0
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.modificarSuerteGlobalPapapum) {
+                    modificacion += pasiva.modificarSuerteGlobalPapapum(sala, jugadorQueTiraLaRuleta, miJugador);
+                }
+            }
+        });
+
+        miJugador.spriteAvatarOpcional = ""
+
+        return modificacion
+    }
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.onIniciarPartida) {
+                    pasiva.onIniciarPartida(sala, jugador);
+                }
+            }
+        });
+
+        jugador.spriteAvatarOpcional = ""
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -920,14 +1212,11 @@ export class GestorPersonajes {
         this.registrar(new Haley())
         this.registrar(new Maggey())
         this.registrar(new Mortis())
+        this.registrar(new Maya())
     }
 
     private registrar(p: IPersonaje) {
         this.personajes[p.nombre] = p;
-
-        if (p.nombre === "Mikotoba gordo") {
-            this.personajes["Mikotoba flaco"] = p;
-        }
     }
 
     public obtener(nombre: string): IPersonaje | null {

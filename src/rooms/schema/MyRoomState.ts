@@ -57,6 +57,7 @@ export class Jugador extends Schema {
     @type("boolean") estaDesconectado: boolean = false;
     @type(["string"]) embrujos = new ArraySchema<string>();
     @type("boolean") yaJugoFantasma: boolean = false;
+    @type("boolean") puedeUsarFallo: boolean = true;
     // ----------------------------------------
     // roles especificos
     // ----------------------------------------
@@ -67,6 +68,8 @@ export class Jugador extends Schema {
     @type("number") usosArtesanaEsteTurno: number = 0;
     @type("number") clonesCreadosEsteTurno: number = 0;
     @type("boolean") lucierganaPrendida: boolean = false
+    @type("number") robinDescartes: number = 0;
+    @type("boolean") mikotobaEstaGordo: boolean = false
 }
 
 export class MyRoomState extends Schema {

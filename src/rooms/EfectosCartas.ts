@@ -30,10 +30,10 @@ export class EfectoCurar implements IEfectoCarta {
 
             let pasivaJugadorActual = gestorPersonajes.obtener(jugador.personaje);
             if (pasivaJugadorActual && pasivaJugadorActual.modificarCuraBotiquin){
-                jugador.vidas += pasivaJugadorActual.modificarCuraBotiquin()
+                jugador.vidas += pasivaJugadorActual.modificarCuraBotiquin(sala, jugador)
             }
             if (pasivaJugadorActual && pasivaJugadorActual.onRecibirCuracion){
-                pasivaJugadorActual.onRecibirCuracion(jugador)
+                pasivaJugadorActual.onRecibirCuracion(sala, jugador)
             }
 
             if (jugador.vidas >= jugador.vidasMaximas){
@@ -93,10 +93,10 @@ export class EfectoCurarDuo implements IEfectoCarta {
         victima.vidas++;
 
         let pasivaAtacante = gestorPersonajes.obtener(jugadorQueJuega.personaje);
-        if (pasivaAtacante && pasivaAtacante.onRecibirCuracion) pasivaAtacante.onRecibirCuracion(jugadorQueJuega);
+        if (pasivaAtacante && pasivaAtacante.onRecibirCuracion) pasivaAtacante.onRecibirCuracion(sala, jugadorQueJuega);
         
         let pasivaVictima = gestorPersonajes.obtener(victima.personaje);
-        if (pasivaVictima && pasivaVictima.onRecibirCuracion) pasivaVictima.onRecibirCuracion(victima);
+        if (pasivaVictima && pasivaVictima.onRecibirCuracion) pasivaVictima.onRecibirCuracion(sala, victima);
 
         sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.nombre} se curaron mutuamente!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
@@ -179,7 +179,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
                 j.vidas++;
                 let pasivaJugadorActual = gestorPersonajes.obtener(j.personaje);
                 if (pasivaJugadorActual && pasivaJugadorActual.onRecibirCuracion){
-                    pasivaJugadorActual.onRecibirCuracion(j)
+                    pasivaJugadorActual.onRecibirCuracion(sala, j)
                 }
             } 
         });

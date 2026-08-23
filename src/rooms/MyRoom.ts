@@ -129,7 +129,7 @@ export class MyRoom extends Room {
                 
                 let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictima && pasivaVictima.onRecibirCuracion) {
-                    pasivaVictima.onRecibirCuracion(victima);
+                    pasivaVictima.onRecibirCuracion(this, victima);
                 }
             } else {
                 break; // No tiene más botiquines, muere oficialmente
@@ -684,6 +684,13 @@ export class MyRoom extends Room {
 
                 this.state.estadoJuego = "Jugando";
 
+                this.state.jugadores.forEach((j) => {
+                    let pasiva = this.gestorPersonajes.obtener(j.personaje);
+                    if (pasiva && pasiva.onIniciarPartida) {
+                        pasiva.onIniciarPartida(this, j)
+                    }
+                });
+
                 this.broadcast("musica", "juego")
             }
         });
@@ -704,11 +711,11 @@ export class MyRoom extends Room {
 
                 let pasivaJugadorActual = this.gestorPersonajes.obtener(jugadorActual.personaje);
                 if (pasivaJugadorActual && pasivaJugadorActual.modificarCartasEnManoAlPasarTurno) {
-                    modificacion = pasivaJugadorActual.modificarCartasEnManoAlPasarTurno();
+                    modificacion = pasivaJugadorActual.modificarCartasEnManoAlPasarTurno(this);
                 }
 
                 if (jugadorActual) {
-                    if (jugadorActual.mano.length > jugadorActual.vidas + modificacion) {
+                    if (jugadorActual.mano.length > jugadorActual.vidas + modificacion && jugadorActual.mano.length !== 0) {
                         let excedente = jugadorActual.mano.length - jugadorActual.vidas - modificacion;
                         client.send("alerta_personal", `Tenés demasiadas cartas. Descartá ${excedente} para pasar el turno.`);
                         return; 
@@ -1558,7 +1565,7 @@ export class MyRoom extends Room {
     repartirCartas(jugador: any, cantidad: number, causa: string) {
         let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
         if (pasivaJugadorActual && pasivaJugadorActual.modificarRepartirCarta) {
-            cantidad += pasivaJugadorActual.modificarRepartirCarta(causa)
+            cantidad += pasivaJugadorActual.modificarRepartirCarta(this, jugador, causa)
         }
 
         for (let i = 0; i < cantidad; i++) {
@@ -1739,9 +1746,9 @@ export class MyRoom extends Room {
             // Habilidades que afectan a la suerte del que gira la ruleta
             let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
             if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
-                puntosVerdes += personajeVictima.modificarSuerteRuletaNormal();
+                puntosVerdes += personajeVictima.modificarSuerteRuletaNormal(this);
             } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
-                puntosVerdes += personajeVictima.modificarSuerteRuletaDinamita();
+                puntosVerdes += personajeVictima.modificarSuerteRuletaDinamita(this);
             }
 
             // Modificaciones de suerte globales
