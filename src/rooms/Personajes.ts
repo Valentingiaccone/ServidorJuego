@@ -872,6 +872,8 @@ export class Mortis implements IPersonaje {
     habilidad = "Criatura de la noche:\nAl recibir daño, gana una carta fantasmal aleatoria, cuando muere otro jugador, gana 2 cartas fantasmales aleatorias.";
     habilidadEnCatalan = "Criatura de la nit:\nEn rebre dany, guanya una carta fantasmal aleatòria; quan mor un altre jugador, guanya 2 cartes fantasmals aleatòries.";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteMortis", true];
+    sfxDefault = "sfxMortis"
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
         if (victima.vidas > 0){
