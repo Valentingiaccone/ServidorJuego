@@ -237,6 +237,7 @@ export class EfectoIndios implements IEfectoCarta {
             
             sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} lanzó un ataque de ¡Indios!`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+            //musica indios sala.broadcast("musica", "")
             sala.state.atacanteActual = client.sessionId;
             sala.avanzarColaIndios();
             return true

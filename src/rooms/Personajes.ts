@@ -25,15 +25,15 @@ export interface IPersonaje {
     
     modificarDistancia?(sala: any, observador: any, objetivo: any, distanciaBase: number): number;
 
-    modificarSuerteRuletaNormal?(sala: any): number | { cambio: number, fichas: string[] }
+    modificarSuerteRuletaNormal?(sala: any, jugador: any): number | { cambio: number, fichas: string[] }
 
-    modificarSuerteRuletaDinamita?(sala: any): number | { cambio: number, fichas: string[] }
+    modificarSuerteRuletaDinamita?(sala: any, jugador: any): number | { cambio: number, fichas: string[] }
 
     modificarRepartirCarta?(sala: any, jugador: any, causa: string): number
 
     modificarCuraBotiquin?(sala: any, jugador: any): number
 
-    modificarCartasEnManoAlPasarTurno?(sala: any): number
+    modificarCartasEnManoAlPasarTurno?(sala: any, jugador: any): number
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, miJugador: any): void
 
@@ -51,7 +51,6 @@ export interface IPersonaje {
 
     onIniciarPartida?(sala: any, jugador: any): void
 
-    // NUEVO: Hook para cuando caen en tu ficha
     onFichaEspecialSeleccionada?(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void;
 }
 
@@ -212,11 +211,11 @@ export class Chester implements IPersonaje {
     sfxMuerte: [string, boolean, number] = ["muerteChester", false, 0.25];
     sfxDefault= "sfxChester"
 
-    modificarSuerteRuletaNormal(sala: any): number {
+    modificarSuerteRuletaNormal(sala: any, jugador: any): number {
         return 4
     }
 
-    modificarSuerteRuletaDinamita(sala: any): number {
+    modificarSuerteRuletaDinamita(sala: any, jugador: any): number {
         return 1
     }
 }
@@ -241,7 +240,7 @@ export class Trucy implements IPersonaje {
         return 1
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
         return -1
     }
 }
@@ -435,7 +434,7 @@ export class Domino implements IPersonaje {
 export class Tilink implements IPersonaje {
     nombre = "Tilink";
     habilidad = "Clones de tilinks falsos:\nAl descartar una carta no clonada, una carta original de tu mano se descarta y te otorga 2 clones de la misma (Máx. 2 por turno). Para pasar el turno debe tener su salud -1 cartas en mano.";
-    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, descartas una carta original de tu mano y obtienes 2 clones de la misma (máx. 2 por turno). Para pasar el turno, debes tener tantas cartas en mano como tu salud -1.";
+    habilidadEnCatalan: string = "Clons de tilinks falsos:\nEn descartar una carta no clonada, es descarta una carta original de la teva mà i t atorga 2 clons de la mateixa (màx. 2 per torn). Per passar el torn, ha de tenir la seva salut -1 cartes a la mà.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTilink", false];
     sfxDefault= "sfxTilink"
@@ -497,7 +496,7 @@ export class Tilink implements IPersonaje {
                 jugador.clonesCreadosEsteTurno++;
                 
                 // Actualizamos la notificación para que la mesa entienda el sacrificio
-                sala.broadcast("notificacion_turno", `🪞 ¡${jugador.personaje} sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/3)`);
+                sala.broadcast("notificacion_turno", `🪞 ¡${jugador.personaje} sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/2)`);
                 sala.broadcast("sfx", "tilinkPasiva")
             }
         }
@@ -507,7 +506,7 @@ export class Tilink implements IPersonaje {
         jugador.clonesCreadosEsteTurno = 0;
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
         return -1;
     }
 }
@@ -664,8 +663,8 @@ export class Leah implements IPersonaje {
 
 export class Robin implements IPersonaje {
     nombre = "Robin";
-    habilidad = "Carpintera:\nAl descartar una carta en su turno, mejora un equipamiento aleatorio. Las armas evolucionan y el resto se vuelve versión 'Pro'.";
-    habilidadEnCatalan = "Fustera:\nEn descartar una carta en el seu torn, millora un equipament aleatori. Les armes evolucionen i la resta es torna versió 'Pro'.";
+    habilidad = "Carpintera:\nLuego de su primer descarte, cada descarte en su turno mejora un equipamiento aleatorio. Las armas evolucionan y el resto se vuelve versión 'Pro'.";
+    habilidadEnCatalan = "Fustera:\nDesprés del primer descart, cada descart en el seu torn millora un equipament aleatori. Les armes evolucionen i la resta es converteix en una versió 'Pro'.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
     sfxDefault = "sfxStardew"
@@ -844,8 +843,8 @@ export class Haley implements IPersonaje {
 
 export class Maggey implements IPersonaje {
     nombre = "Maggey";
-    habilidad = "Ay! pero que mala suerte...:\nEl resto de los jugadores tiene mas mala suerte.";
-    habilidadEnCatalan = "Ai! Quina mala sort...:\nLa resta de jugadors té encara més mala sort.";
+    habilidad = "Ay! pero que mala suerte...:\nEl resto de los jugadores tiene mas mala suerte y les agrega en su ruleta un punto para robar una carta.";
+    habilidadEnCatalan = "Ai! Quina mala sort...:\nLa resta de jugadors té encara més mala sort i els afegeix a la seva ruleta un punt per robar una carta..";
     vidasBase = 4;
 
     private aplicarMalaSuerte(jugadorQueTira: any, miJugador: any) {
@@ -864,7 +863,6 @@ export class Maggey implements IPersonaje {
         if (fichaVisual === "falloMaggey") {
             sala.repartirCartas(duenoDeLaFicha, 1, "pasiva");
             sala.broadcast("notificacion_turno", `🍀 ¡La desgracia ajena alimenta a ${duenoDeLaFicha.personaje}! Roba 1 carta.`);
-            // sala.broadcast("sfx", "maggeyRisa"); // (Opcional si le pones sonido al robar)
         }
     }
 }
@@ -905,284 +903,243 @@ export class Mortis implements IPersonaje {
 
 export class Maya implements IPersonaje {
     nombre = "Maya";
-    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos (seguramente no funcione con mandy, darryl, jetpack cat, Frank, domino, lesly, flowery, leon, Haley, mikotoba).";
-    habilidadEnCatalan = "Canalització:\nMentre estigui viva, utilitza les habilitats dels morts (seguramente no funcione con mandy, darryl, jetpack cat, Frank, domino, lesly, flowery, leon, Haley, mikotoba).";
+    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos. Para pasar el turno debe tener su salud -1 cartas en mano. (seguramente no funcione con mandy, darryl, jetpack cat, Frank, domino, lesly, flowery, leon, Haley, mikotoba).";
+    habilidadEnCatalan = "Canalització:\nMentre estigui viva, utilitza les habilitats dels morts. Per passar el torn, ha de tenir la seva salut -1 cartes a la mà. (seguramente no funcione con mandy, darryl, jetpack cat, Frank, domino, lesly, flowery, leon, Haley, mikotoba).";
     vidasBase = 4;
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
+    // =================================================================
+    // EL MOTOR CENTRAL: Acá ocurre toda la lógica repetitiva
+    // =================================================================
+    private ejecutarCanalizacion(sala: any, miJugador: any, callback: (pasiva: any) => void) {
+        // 2. ¡EL FRENO MAESTRO! Si no existe o está muerta, cortamos la función entera acá mismo.
+        if (!miJugador || !miJugador.estaVivo) return;
+
+        // 3. Recorremos a los muertos y les robamos la pasiva
         sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
+            if (!j.estaVivo && !j.estaDesconectado) { // De yapa evitamos desconectados
                 let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.onRecibirDano) {
-                    pasiva.onRecibirDano(sala, victima, atacante, causa, cantidad);
+                if (pasiva) {
+                    callback(pasiva); // Ejecutamos la línea específica de cada poder
                 }
             }
         });
 
-        victima.spriteAvatarOpcional = ""
+        // 4. Limpiamos el sprite una sola vez al terminar
+        miJugador.spriteAvatarOpcional = "";
+    }
+    // =================================================================
+
+
+    // --- HOOKS DE ACCIÓN ---
+
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
+        this.ejecutarCanalizacion(sala, victima, (pasiva) => {
+            if (pasiva.onRecibirDano) pasiva.onRecibirDano(sala, victima, atacante, causa, cantidad);
+        });
     }
 
     onDescartarCarta(sala: any, jugador: any, cartaDescartada: any, motivo: string): void {
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.onDescartarCarta) {
-                    pasiva.onDescartarCarta(sala, jugador, cartaDescartada, motivo);
-                }
-            }
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.onDescartarCarta) pasiva.onDescartarCarta(sala, jugador, cartaDescartada, motivo);
         });
-
-        jugador.spriteAvatarOpcional = ""
     }
     
     onPasarTurno(sala: any, jugador: any): void {
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.onPasarTurno) {
-                    pasiva.onPasarTurno(sala, jugador);
-                }
-            }
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.onPasarTurno) pasiva.onPasarTurno(sala, jugador);
         });
-
-        jugador.spriteAvatarOpcional = ""
     }
     
     puedeDispararBang(sala: any, atacante: any, victima: any): boolean {
-        let puede: boolean = false
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.puedeDispararBang) {
-                    const x: boolean = pasiva.puedeDispararBang(sala, atacante, victima);
-                    if (x){
-                        puede = true
-                    }
-                }
-            }
+        let puede: boolean = false;
+        this.ejecutarCanalizacion(sala, atacante, (pasiva) => {
+            if (pasiva.puedeDispararBang && pasiva.puedeDispararBang(sala, atacante, victima)) puede = true;
         });
-
-        atacante.spriteAvatarOpcional = ""
-
-        return puede
+        return puede;
     }
     
     modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
-        let distancia: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarDistancia) {
-                    distancia += pasiva.modificarDistancia(sala, observador, objetivo, distanciaBase);
-                }
-            }
+        let distancia: number = 0;
+        this.ejecutarCanalizacion(sala, observador, (pasiva) => {
+            if (pasiva.modificarDistancia) distancia += pasiva.modificarDistancia(sala, observador, objetivo, distanciaBase);
         });
-
-        //observador.spriteAvatarOpcional = ""
-
-        return distancia
-    }
-
-    modificarSuerteRuletaNormal(sala: any): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarSuerteRuletaNormal) {
-                    modificacion += pasiva.modificarSuerteRuletaNormal(sala);
-                }
-            }
-        });
-
-        return modificacion
-    }
-
-    modificarSuerteRuletaDinamita(sala: any): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarSuerteRuletaDinamita) {
-                    modificacion += pasiva.modificarSuerteRuletaDinamita(sala);
-                }
-            }
-        });
-
-        return modificacion
-    }
-
-    modificarRepartirCarta(sala: any, jugador: any, causa: string): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarRepartirCarta) {
-                    modificacion += pasiva.modificarRepartirCarta(sala, jugador, causa);
-                }
-            }
-        });
-
-        jugador.spriteAvatarOpcional = ""
-
-        return modificacion
-    }
-
-    modificarCuraBotiquin(sala: any, jugador: any): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarCuraBotiquin) {
-                    modificacion += pasiva.modificarCuraBotiquin(sala, jugador);
-                }
-            }
-        });
-
-        jugador.spriteAvatarOpcional = ""
-
-        return modificacion
-    }
-
-    modificarCartasEnManoAlPasarTurno(sala: any): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarCartasEnManoAlPasarTurno) {
-                    modificacion += pasiva.modificarCartasEnManoAlPasarTurno(sala);
-                }
-            }
-        });
-
-        return modificacion
+        return distancia;
     }
 
     onMuereOtroPersonaje(sala: any, victimaMuerta: any, miJugador: any): void {
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.onMuereOtroPersonaje) {
-                    pasiva.onMuereOtroPersonaje(sala,victimaMuerta, miJugador);
-                }
-            }
+        this.ejecutarCanalizacion(sala, victimaMuerta, (pasiva) => {
+            if (pasiva.onMuereOtroPersonaje) pasiva.onMuereOtroPersonaje(sala, victimaMuerta, miJugador);
         });
-
-        miJugador.spriteAvatarOpcional = ""
     }
 
     onRecibirCuracion(sala: any, jugador: any): void {
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.onRecibirCuracion) {
-                    pasiva.onRecibirCuracion(sala, jugador);
-                }
-            }
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.onRecibirCuracion) pasiva.onRecibirCuracion(sala, jugador);
         });
-
-        jugador.spriteAvatarOpcional = ""
     }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.onJugarCarta) {
-                    pasiva.onJugarCarta(sala, jugador, cartaJugada);
-                }
-            }
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.onJugarCarta) pasiva.onJugarCarta(sala, jugador, cartaJugada);
         });
-
-        jugador.spriteAvatarOpcional = ""
-    }
-
-    modificarSuerteGlobalBarril(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarSuerteGlobalBarril) {
-                    modificacion += pasiva.modificarSuerteGlobalBarril(sala, jugadorQueTiraLaRuleta, miJugador);
-                }
-            }
-        });
-
-        miJugador.spriteAvatarOpcional = ""
-
-        return modificacion
-    }
-
-    modificarSuerteGlobalPrision(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarSuerteGlobalPrision) {
-                    modificacion += pasiva.modificarSuerteGlobalPrision(sala, jugadorQueTiraLaRuleta, miJugador);
-                }
-            }
-        });
-
-        miJugador.spriteAvatarOpcional = ""
-
-        return modificacion
-    }
-
-    modificarSuerteGlobalDinamita(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarSuerteGlobalDinamita) {
-                    modificacion += pasiva.modificarSuerteGlobalDinamita(sala, jugadorQueTiraLaRuleta, miJugador);
-                }
-            }
-        });
-
-        miJugador.spriteAvatarOpcional = ""
-
-        return modificacion
-    }
-
-    modificarSuerteGlobalPapapum(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
-        let modificacion: number = 0
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.modificarSuerteGlobalPapapum) {
-                    modificacion += pasiva.modificarSuerteGlobalPapapum(sala, jugadorQueTiraLaRuleta, miJugador);
-                }
-            }
-        });
-
-        miJugador.spriteAvatarOpcional = ""
-
-        return modificacion
     }
 
     onIniciarPartida(sala: any, jugador: any): void {
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.onIniciarPartida) {
-                    pasiva.onIniciarPartida(sala, jugador);
-                }
-            }
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.onIniciarPartida) pasiva.onIniciarPartida(sala, jugador);
         });
-
-        jugador.spriteAvatarOpcional = ""
     }
 
     onFichaEspecialSeleccionada(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void {
-        sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo) {
-                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
-                if (pasiva && pasiva.onFichaEspecialSeleccionada) {
-                    pasiva.onFichaEspecialSeleccionada(sala, duenoDeLaFicha, victimaQueTiro, fichaVisual);
+        this.ejecutarCanalizacion(sala, duenoDeLaFicha, (pasiva) => {
+            if (pasiva.onFichaEspecialSeleccionada) pasiva.onFichaEspecialSeleccionada(sala, duenoDeLaFicha, victimaQueTiro, fichaVisual);
+        });
+    }
+
+
+    // --- HOOKS DE NÚMEROS Y VARIABLES ---
+
+    modificarRepartirCarta(sala: any, jugador: any, causa: string): number {
+        let modificacion: number = 0;
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.modificarRepartirCarta) modificacion += pasiva.modificarRepartirCarta(sala, jugador, causa);
+        });
+        return modificacion;
+    }
+
+    modificarCuraBotiquin(sala: any, jugador: any): number {
+        let modificacion: number = 0;
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.modificarCuraBotiquin) modificacion += pasiva.modificarCuraBotiquin(sala, jugador);
+        });
+        return modificacion;
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        let modificacion: number = 0;
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.modificarCartasEnManoAlPasarTurno) modificacion += pasiva.modificarCartasEnManoAlPasarTurno(sala, jugador);
+        });
+        return modificacion - 1; // El -1 original de Maya se aplica al final
+    }
+
+
+    // --- HOOKS COMPLEJOS DE RULETA (Objetos/Tuplas) ---
+
+    modificarSuerteRuletaNormal(sala: any, jugador: any): number | { cambio: number, fichas: string[] } {
+        let totalCambio: number = 0;
+        let totalFichas: string[] = [];
+
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.modificarSuerteRuletaNormal) {
+                let resultado = pasiva.modificarSuerteRuletaNormal(sala, jugador);
+                if (typeof resultado === "number") {
+                    totalCambio += resultado;
+                } else if (resultado && typeof resultado === "object") {
+                    if (resultado.cambio !== undefined) totalCambio += resultado.cambio;
+                    if (resultado.fichas) totalFichas.push(...resultado.fichas);
                 }
             }
         });
-        duenoDeLaFicha.spriteAvatarOpcional = "";
+
+        if (totalFichas.length > 0) return { cambio: totalCambio, fichas: totalFichas };
+        return totalCambio;
+    }
+
+    modificarSuerteRuletaDinamita(sala: any, jugador: any): number | { cambio: number, fichas: string[] } {
+        let totalCambio: number = 0;
+        let totalFichas: string[] = [];
+
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.modificarSuerteRuletaDinamita) {
+                let resultado = pasiva.modificarSuerteRuletaDinamita(sala);
+                if (typeof resultado === "number") {
+                    totalCambio += resultado;
+                } else if (resultado && typeof resultado === "object") {
+                    if (resultado.cambio !== undefined) totalCambio += resultado.cambio;
+                    if (resultado.fichas) totalFichas.push(...resultado.fichas);
+                }
+            }
+        });
+
+        if (totalFichas.length > 0) return { cambio: totalCambio, fichas: totalFichas };
+        return totalCambio;
+    }
+
+    modificarSuerteGlobalBarril(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] } {
+        let totalCambio: number = 0;
+        let totalFichas: string[] = [];
+
+        this.ejecutarCanalizacion(sala, jugadorQueTiraLaRuleta, (pasiva) => {
+            if (pasiva.modificarSuerteGlobalBarril) {
+                let resultado = pasiva.modificarSuerteGlobalBarril(sala, jugadorQueTiraLaRuleta, miJugador);
+                if (typeof resultado === "number") totalCambio += resultado;
+                else if (resultado && typeof resultado === "object") {
+                    if (resultado.cambio !== undefined) totalCambio += resultado.cambio;
+                    if (resultado.fichas) totalFichas.push(...resultado.fichas);
+                }
+            }
+        });
+
+        if (totalFichas.length > 0) return { cambio: totalCambio, fichas: totalFichas };
+        return totalCambio;
+    }
+
+    modificarSuerteGlobalPrision(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] } {
+        let totalCambio: number = 0;
+        let totalFichas: string[] = [];
+
+        this.ejecutarCanalizacion(sala, jugadorQueTiraLaRuleta, (pasiva) => {
+            if (pasiva.modificarSuerteGlobalPrision) {
+                let resultado = pasiva.modificarSuerteGlobalPrision(sala, jugadorQueTiraLaRuleta, miJugador);
+                if (typeof resultado === "number") totalCambio += resultado;
+                else if (resultado && typeof resultado === "object") {
+                    if (resultado.cambio !== undefined) totalCambio += resultado.cambio;
+                    if (resultado.fichas) totalFichas.push(...resultado.fichas);
+                }
+            }
+        });
+
+        if (totalFichas.length > 0) return { cambio: totalCambio, fichas: totalFichas };
+        return totalCambio;
+    }
+
+    modificarSuerteGlobalDinamita(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] } {
+        let totalCambio: number = 0;
+        let totalFichas: string[] = [];
+
+        this.ejecutarCanalizacion(sala, jugadorQueTiraLaRuleta, (pasiva) => {
+            if (pasiva.modificarSuerteGlobalDinamita) {
+                let resultado = pasiva.modificarSuerteGlobalDinamita(sala, jugadorQueTiraLaRuleta, miJugador);
+                if (typeof resultado === "number") totalCambio += resultado;
+                else if (resultado && typeof resultado === "object") {
+                    if (resultado.cambio !== undefined) totalCambio += resultado.cambio;
+                    if (resultado.fichas) totalFichas.push(...resultado.fichas);
+                }
+            }
+        });
+
+        if (totalFichas.length > 0) return { cambio: totalCambio, fichas: totalFichas };
+        return totalCambio;
+    }
+
+    modificarSuerteGlobalPapapum(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] } {
+        let totalCambio: number = 0;
+        let totalFichas: string[] = [];
+
+        this.ejecutarCanalizacion(sala, jugadorQueTiraLaRuleta, (pasiva) => {
+            if (pasiva.modificarSuerteGlobalPapapum) {
+                let resultado = pasiva.modificarSuerteGlobalPapapum(sala, jugadorQueTiraLaRuleta, miJugador);
+                if (typeof resultado === "number") totalCambio += resultado;
+                else if (resultado && typeof resultado === "object") {
+                    if (resultado.cambio !== undefined) totalCambio += resultado.cambio;
+                    if (resultado.fichas) totalFichas.push(...resultado.fichas);
+                }
+            }
+        });
+
+        if (totalFichas.length > 0) return { cambio: totalCambio, fichas: totalFichas };
+        return totalCambio;
     }
 }
 
@@ -1191,33 +1148,33 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
-        this.registrar(new Berry());
-        this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
+        // this.registrar(new ColeCasiddy());
+        // this.registrar(new Berry());
+        // this.registrar(new Maton());
+        // this.registrar(new Mandy());
+        // this.registrar(new Tralalero());
+        // this.registrar(new Darryl());
+        // this.registrar(new JetpackCat());
+        // this.registrar(new KayFaraday());
         this.registrar(new Chester());
-        this.registrar(new Frank());
-        this.registrar(new Pam());
-        this.registrar(new Trucy());
-        this.registrar(new HongoUp());
-        this.registrar(new Hongo());
-        this.registrar(new Lesly());
-        this.registrar(new Mikotoba());
-        this.registrar(new Domino());
-        this.registrar(new Tilink());
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
+        // this.registrar(new Frank());
+        // this.registrar(new Pam());
+        // this.registrar(new Trucy());
+        // this.registrar(new HongoUp());
+        // this.registrar(new Hongo());
+        // this.registrar(new Lesly());
+        // this.registrar(new Mikotoba());
+        // this.registrar(new Domino());
+        // this.registrar(new Tilink());
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
         this.registrar(new Maggey())
-        this.registrar(new Mortis())
+        // this.registrar(new Mortis())
         this.registrar(new Maya())
     }
 

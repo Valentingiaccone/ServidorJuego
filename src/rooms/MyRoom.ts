@@ -49,6 +49,7 @@ export class MyRoom extends Room {
         } else {
             this.state.jugadorBajoAtaqueIndio = "";
             this.state.atacanteActual = "";
+            this.actualizarMusicaAutomatica()
             this.broadcast("notificacion_turno", `⛺ El ataque de los Indios ha terminado.`);
         }
     }
@@ -738,7 +739,7 @@ export class MyRoom extends Room {
 
                 let pasivaJugadorActual = this.gestorPersonajes.obtener(jugadorActual.personaje);
                 if (pasivaJugadorActual && pasivaJugadorActual.modificarCartasEnManoAlPasarTurno) {
-                    modificacion = pasivaJugadorActual.modificarCartasEnManoAlPasarTurno(this);
+                    modificacion = pasivaJugadorActual.modificarCartasEnManoAlPasarTurno(this, jugadorActual);
                 }
 
                 if (jugadorActual) {
@@ -1815,9 +1816,9 @@ export class MyRoom extends Room {
             //Suerte Local
             let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
             if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
-                procesarSuerte(personajeVictima.modificarSuerteRuletaNormal(this), idJugador);
+                procesarSuerte(personajeVictima.modificarSuerteRuletaNormal(this, personajeVictima), idJugador);
             } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
-                procesarSuerte(personajeVictima.modificarSuerteRuletaDinamita(this), idJugador);
+                procesarSuerte(personajeVictima.modificarSuerteRuletaDinamita(this, personajeVictima), idJugador);
             }
 
             //Suerte Global
