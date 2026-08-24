@@ -11,6 +11,7 @@ export class MyRoom extends Room {
     colaDePeligro: string[] = [];
     colaIndios: string[] = [];
     colaTienda: string[] = [];
+    ruletaInterna: any[] = []; // <-- NUEVO
     
     // Instanciamos nuestros nuevos motores
     despachadorCartas = new DespachadorDeCartas();
@@ -988,12 +989,32 @@ export class MyRoom extends Room {
             let victima = this.state.jugadores.get(client.sessionId);
             let motivoActual = this.state.motivoDesenfundar; 
             
-            // LA MAGIA AQUÍ: Elegimos un índice al azar de la ruleta generada
             let indiceObjetivo = Math.floor(Math.random() * 16);
-            let fueExitoStr = this.state.layoutRuleta[indiceObjetivo]; // AHORA ES UN STRING
             
-            let textoVisual = fueExitoStr === "exito" ? "¡ÉXITO!" : "FALLÓ";
+            // Lógica Sombra si es Fase Normal (Embrujos usa layoutRuleta normal)
+            let fueExitoStr = ""; // Esta variable engañará al código viejo de Walencia
+            let nombreRealFicha = ""; // Esta guarda el string real (ej: "exitoChester") para las pasivas
+            let fichaElegida: any = null;
+            
+            if (motivoActual === "Embrujo") {
+                fueExitoStr = this.state.layoutRuleta[indiceObjetivo];
+                nombreRealFicha = fueExitoStr;
+            } else {
+                fichaElegida = this.ruletaInterna[indiceObjetivo];
+                nombreRealFicha = fichaElegida.visual; 
+                
+                // --- LA TRAMPA PARA WALENCIA ---
+                // Si la ficha empieza con "exito", la disfrazamos de "exito" genérico.
+                if (nombreRealFicha.startsWith("exito")) {
+                    fueExitoStr = "exito"; 
+                } else {
+                    fueExitoStr = nombreRealFicha; // Si es un fallo, lo dejamos pasar normal
+                }
+            }
+            
+            // Como ya disfrazamos la variable, todo vuelve a ser como antes:
             let colorVerde = (fueExitoStr === "exito");
+            let textoVisual = colorVerde ? "¡ÉXITO!" : "FALLÓ";
 
             // ASIGNACIÓN DE TEXTOS Y COLORES SEGÚN EL TIPO DE RULETA
             if (motivoActual === "Dinamita" || motivoActual === "Papa") {
@@ -1038,6 +1059,22 @@ export class MyRoom extends Room {
                         clon.esConjurada = cartaVieja.esConjurada;
                         this.agregarAlDescarte(clon);
                     };
+
+                    //CONSECUENCIAS FICHA ESPECIAL
+                    if (motivoActual !== "Embrujo" && fichaElegida && fichaElegida.ownerId !== "") {
+                    // Buscamos a ese jugador en la mesa
+                    let dueno = this.state.jugadores.get(fichaElegida.ownerId);
+                    
+                        if (dueno && dueno.estaVivo) {
+                            // Buscamos su clase en nuestro Gestor
+                            let pasivaDueno = this.gestorPersonajes.obtener(dueno.personaje);
+                            
+                            // Si el personaje tiene programada la función, ¡la disparamos!
+                            if (pasivaDueno && pasivaDueno.onFichaEspecialSeleccionada) {
+                                pasivaDueno.onFichaEspecialSeleccionada(this, dueno, victima, nombreRealFicha);
+                            }
+                        }
+                    }
 
                     // 3. EJECUTAMOS LAS CONSECUENCIAS
                     if (motivoActual === "Barril") {
@@ -1731,14 +1768,14 @@ export class MyRoom extends Room {
         this.state.motivoDesenfundar = motivo;
 
         let victima = this.state.jugadores.get(idJugador);
-        let layout: string[] = [];
+        if (!victima) return;
 
-        // 1. GENERACIÓN DEL MAPA DE STRINGS
         if (motivo === "Embrujo") {
-            // FASE FANTASMAL
+            // --- FASE FANTASMAL ---
             this.state.ruletaVerde = "";
             this.state.ruletaRojo = "";
             
+            let layout: string[] = []; // <-- Lo movemos aquí adentro
             let misEmbrujos = victima.embrujos;
             for (let i = 0; i < 16; i++) {
                 if (i < misEmbrujos.length) {
@@ -1747,71 +1784,75 @@ export class MyRoom extends Room {
                     layout.push("vacio");
                 }
             }
-        } else {
-            // FASE NORMAL (Barril, Dinamita, Prision, Papa)
-            let puntosVerdes: number = 4;
-            
-            if (motivo === "Barril") {
-                puntosVerdes = 4;
-                this.state.ruletaVerde = "";
-                this.state.ruletaRojo = "";
-            } else if (motivo === "Prision") {
-                puntosVerdes = 6;
-                this.state.ruletaVerde = "";
-                this.state.ruletaRojo = "";
-            } else if (motivo === "Dinamita") {
-                puntosVerdes = 14;
-                this.state.ruletaVerde = "";
-                this.state.ruletaRojo = "ruletaExplosion";
-            } else if (motivo === "Papa") {
-                puntosVerdes = 16 - this.state.probabilidadPapa; 
-                this.state.ruletaVerde = "";
-                this.state.ruletaRojo = "ruletaExplosion";
-            }
 
-            // Habilidades que afectan a la suerte del que gira la ruleta
+            // Mezclamos y guardamos (Solo para fantasmas)
+            layout.sort(() => Math.random() - 0.5);
+            this.state.layoutRuleta.clear();
+            layout.forEach(str => this.state.layoutRuleta.push(str));
+
+        } else {
+            // --- FASE NORMAL (Barril, Dinamita, Prision, Papa) ---
+            let puntosVerdes: number = 4;
+            let fichasEspeciales: { visual: string, ownerId: string }[] = []; 
+            
+            if (motivo === "Barril") { puntosVerdes = 4; this.state.ruletaVerde = ""; this.state.ruletaRojo = ""; } 
+            else if (motivo === "Prision") { puntosVerdes = 6; this.state.ruletaVerde = ""; this.state.ruletaRojo = ""; } 
+            else if (motivo === "Dinamita") { puntosVerdes = 14; this.state.ruletaVerde = ""; this.state.ruletaRojo = "ruletaExplosion"; } 
+            else if (motivo === "Papa") { puntosVerdes = 16 - this.state.probabilidadPapa; this.state.ruletaVerde = ""; this.state.ruletaRojo = "ruletaExplosion"; }
+
+            const procesarSuerte = (resultado: any, ownerId: string) => {
+                if (typeof resultado === "number") {
+                    puntosVerdes += resultado;
+                } else if (resultado && typeof resultado === "object") {
+                    if (resultado.cambio !== undefined) puntosVerdes += resultado.cambio;
+                    if (resultado.fichas && Array.isArray(resultado.fichas)) {
+                        resultado.fichas.forEach((f: string) => fichasEspeciales.push({ visual: f, ownerId: ownerId }));
+                    }
+                }
+            };
+
             let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
             if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
-                puntosVerdes += personajeVictima.modificarSuerteRuletaNormal(this);
+                procesarSuerte(personajeVictima.modificarSuerteRuletaNormal(this), idJugador);
             } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
-                puntosVerdes += personajeVictima.modificarSuerteRuletaDinamita(this);
+                procesarSuerte(personajeVictima.modificarSuerteRuletaDinamita(this), idJugador);
             }
 
-            // Modificaciones de suerte globales
-            this.state.jugadores.forEach((j: any) => {
+            this.state.jugadores.forEach((j: any, sessionId: string) => {
                 if (j.estaVivo) {
                     const jPersonaje = this.gestorPersonajes.obtener(j.personaje);
                     if (jPersonaje) {
-                        if (motivo === "Barril" && jPersonaje.modificarSuerteGlobalBarril) {
-                            puntosVerdes += jPersonaje.modificarSuerteGlobalBarril(this, victima, j);
-                        } else if (motivo === "Prision" && jPersonaje.modificarSuerteGlobalPrision) {
-                            puntosVerdes += jPersonaje.modificarSuerteGlobalPrision(this, victima, j);
-                        } else if (motivo === "Dinamita" && jPersonaje.modificarSuerteGlobalDinamita) {
-                            puntosVerdes += jPersonaje.modificarSuerteGlobalDinamita(this, victima, j);
-                        } else if (motivo === "Papa" && jPersonaje.modificarSuerteGlobalPapapum) {
-                            puntosVerdes += jPersonaje.modificarSuerteGlobalPapapum(this, victima, j);
-                        }
+                        if (motivo === "Barril" && jPersonaje.modificarSuerteGlobalBarril) procesarSuerte(jPersonaje.modificarSuerteGlobalBarril(this, victima, j), sessionId);
+                        else if (motivo === "Prision" && jPersonaje.modificarSuerteGlobalPrision) procesarSuerte(jPersonaje.modificarSuerteGlobalPrision(this, victima, j), sessionId);
+                        else if (motivo === "Dinamita" && jPersonaje.modificarSuerteGlobalDinamita) procesarSuerte(jPersonaje.modificarSuerteGlobalDinamita(this, victima, j), sessionId);
+                        else if (motivo === "Papa" && jPersonaje.modificarSuerteGlobalPapapum) procesarSuerte(jPersonaje.modificarSuerteGlobalPapapum(this, victima, j), sessionId);
                     }
                 }
             });
 
-            // Limites lógicos
-            if (puntosVerdes < 1) puntosVerdes = 1;
-            else if (puntosVerdes > 15) puntosVerdes = 15;
+            let espaciosRestantes = 16 - fichasEspeciales.length;
+            let tieneExitoEspecial = fichasEspeciales.some(f => f.visual.startsWith("exito"));
+            let tieneFalloEspecial = fichasEspeciales.some(f => f.visual.startsWith("fallo"));
 
-            // Traducción a strings ("exito" o "fallo")
-            let cantidadVerdes = puntosVerdes;
-            for (let i = 0; i < 16; i++) {
-                layout.push(i < cantidadVerdes ? "exito" : "fallo");
-            }
+            let maxVerdesPermitidos = espaciosRestantes;
+            if (!tieneFalloEspecial) maxVerdesPermitidos -= 1; 
+            if (puntosVerdes > maxVerdesPermitidos) puntosVerdes = maxVerdesPermitidos;
+
+            let minVerdesPermitidos = tieneExitoEspecial ? 0 : 1; 
+            if (puntosVerdes < minVerdesPermitidos) puntosVerdes = minVerdesPermitidos;
+
+            let ruletaTemp: any[] = [];
+            fichasEspeciales.forEach(ficha => ruletaTemp.push(ficha));
+            for (let i = 0; i < puntosVerdes; i++) ruletaTemp.push({ visual: "exito", ownerId: "" });
+            while (ruletaTemp.length < 16) ruletaTemp.push({ visual: "fallo", ownerId: "" });
+
+            ruletaTemp.sort(() => Math.random() - 0.5);
+            this.ruletaInterna = ruletaTemp; 
+
+            // Actualizamos la ruleta visual para Cocos
+            this.state.layoutRuleta.clear();
+            ruletaTemp.forEach(f => this.state.layoutRuleta.push(f.visual));
         }
-
-        // 2. Mezclar el array aleatoriamente
-        layout.sort(() => Math.random() - 0.5);
-
-        // 3. Guardarlo en el estado sincronizado
-        this.state.layoutRuleta.clear();
-        layout.forEach(str => this.state.layoutRuleta.push(str));
     }
 
     obtenerSiguienteJugadorVivo(idActual: string): { id: string, jugador: any } {

@@ -25,9 +25,9 @@ export interface IPersonaje {
     
     modificarDistancia?(sala: any, observador: any, objetivo: any, distanciaBase: number): number;
 
-    modificarSuerteRuletaNormal?(sala: any): number
+    modificarSuerteRuletaNormal?(sala: any): number | { cambio: number, fichas: string[] }
 
-    modificarSuerteRuletaDinamita?(sala: any): number
+    modificarSuerteRuletaDinamita?(sala: any): number | { cambio: number, fichas: string[] }
 
     modificarRepartirCarta?(sala: any, jugador: any, causa: string): number
 
@@ -41,15 +41,18 @@ export interface IPersonaje {
 
     onJugarCarta?(sala: any, jugador: any, cartaJugada: any): void;
 
-    modificarSuerteGlobalBarril?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
+    modificarSuerteGlobalBarril?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] }
 
-    modificarSuerteGlobalPrision?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
+    modificarSuerteGlobalPrision?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] }
 
-    modificarSuerteGlobalDinamita?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
+    modificarSuerteGlobalDinamita?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] }
 
-    modificarSuerteGlobalPapapum?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number
+    modificarSuerteGlobalPapapum?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] }
 
     onIniciarPartida?(sala: any, jugador: any): void
+
+    // NUEVO: Hook para cuando caen en tu ficha
+    onFichaEspecialSeleccionada?(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void;
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -845,35 +848,23 @@ export class Maggey implements IPersonaje {
     habilidadEnCatalan = "Ai! Quina mala sort...:\nLa resta de jugadors té encara més mala sort.";
     vidasBase = 4;
 
-    modificarSuerteGlobalBarril(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
-        if (jugadorQueTiraLaRuleta != miJugador){
-            return -1
-        } else {
-            return 0
+    private aplicarMalaSuerte(jugadorQueTira: any, miJugador: any) {
+        if (jugadorQueTira.nombre !== miJugador.nombre && jugadorQueTira.personaje !== miJugador.personaje) {
+            return { cambio: -1, fichas: ["falloMaggey", "falloMaggey", "falloMaggey"] }; 
         }
+        return 0; 
     }
 
-    modificarSuerteGlobalPrision(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
-        if (jugadorQueTiraLaRuleta != miJugador){
-            return -1
-        } else {
-            return 0
-        }
-    }
+    modificarSuerteGlobalBarril(sala: any, jugadorQueTira: any, miJugador: any) { return this.aplicarMalaSuerte(jugadorQueTira, miJugador); }
+    modificarSuerteGlobalPrision(sala: any, jugadorQueTira: any, miJugador: any) { return this.aplicarMalaSuerte(jugadorQueTira, miJugador); }
+    modificarSuerteGlobalDinamita(sala: any, jugadorQueTira: any, miJugador: any) { return this.aplicarMalaSuerte(jugadorQueTira, miJugador); }
+    modificarSuerteGlobalPapapum(sala: any, jugadorQueTira: any, miJugador: any) { return this.aplicarMalaSuerte(jugadorQueTira, miJugador); }
 
-    modificarSuerteGlobalDinamita(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
-        if (jugadorQueTiraLaRuleta != miJugador){
-            return -1
-        } else {
-            return 0
-        }
-    }
-
-    modificarSuerteGlobalPapapum(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number {
-        if (jugadorQueTiraLaRuleta != miJugador){
-            return -1
-        } else {
-            return 0
+    onFichaEspecialSeleccionada(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string) {
+        if (fichaVisual === "falloMaggey") {
+            sala.repartirCartas(duenoDeLaFicha, 1, "pasiva");
+            sala.broadcast("notificacion_turno", `🍀 ¡La desgracia ajena alimenta a ${duenoDeLaFicha.personaje}! Roba 1 carta.`);
+            // sala.broadcast("sfx", "maggeyRisa"); // (Opcional si le pones sonido al robar)
         }
     }
 }
@@ -1181,6 +1172,18 @@ export class Maya implements IPersonaje {
 
         jugador.spriteAvatarOpcional = ""
     }
+
+    onFichaEspecialSeleccionada(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void {
+        sala.state.jugadores.forEach((j: any) => {
+            if (!j.estaVivo) {
+                let pasiva = sala.gestorPersonajes.obtener(j.personaje);
+                if (pasiva && pasiva.onFichaEspecialSeleccionada) {
+                    pasiva.onFichaEspecialSeleccionada(sala, duenoDeLaFicha, victimaQueTiro, fichaVisual);
+                }
+            }
+        });
+        duenoDeLaFicha.spriteAvatarOpcional = "";
+    }
 }
 
 // 3. EL GESTOR DE PERSONAJES
@@ -1188,33 +1191,33 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
-        this.registrar(new Berry());
-        this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
+        // this.registrar(new ColeCasiddy());
+        // this.registrar(new Berry());
+        // this.registrar(new Maton());
+        // this.registrar(new Mandy());
+        // this.registrar(new Tralalero());
+        // this.registrar(new Darryl());
+        // this.registrar(new JetpackCat());
+        // this.registrar(new KayFaraday());
         this.registrar(new Chester());
-        this.registrar(new Frank());
-        this.registrar(new Pam());
-        this.registrar(new Trucy());
-        this.registrar(new HongoUp());
-        this.registrar(new Hongo());
-        this.registrar(new Lesly());
-        this.registrar(new Mikotoba());
-        this.registrar(new Domino());
-        this.registrar(new Tilink());
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
+        // this.registrar(new Frank());
+        // this.registrar(new Pam());
+        // this.registrar(new Trucy());
+        // this.registrar(new HongoUp());
+        // this.registrar(new Hongo());
+        // this.registrar(new Lesly());
+        // this.registrar(new Mikotoba());
+        // this.registrar(new Domino());
+        // this.registrar(new Tilink());
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
         this.registrar(new Maggey())
-        this.registrar(new Mortis())
+        // this.registrar(new Mortis())
         this.registrar(new Maya())
     }
 
