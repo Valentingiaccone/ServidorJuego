@@ -1800,6 +1800,7 @@ export class MyRoom extends Room {
             else if (motivo === "Dinamita") { puntosVerdes = 14; this.state.ruletaVerde = ""; this.state.ruletaRojo = "ruletaExplosion"; } 
             else if (motivo === "Papa") { puntosVerdes = 16 - this.state.probabilidadPapa; this.state.ruletaVerde = ""; this.state.ruletaRojo = "ruletaExplosion"; }
 
+            //procesador Suerte
             const procesarSuerte = (resultado: any, ownerId: string) => {
                 if (typeof resultado === "number") {
                     puntosVerdes += resultado;
@@ -1811,6 +1812,7 @@ export class MyRoom extends Room {
                 }
             };
 
+            //Suerte Local
             let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
             if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
                 procesarSuerte(personajeVictima.modificarSuerteRuletaNormal(this), idJugador);
@@ -1818,6 +1820,7 @@ export class MyRoom extends Room {
                 procesarSuerte(personajeVictima.modificarSuerteRuletaDinamita(this), idJugador);
             }
 
+            //Suerte Global
             this.state.jugadores.forEach((j: any, sessionId: string) => {
                 if (j.estaVivo) {
                     const jPersonaje = this.gestorPersonajes.obtener(j.personaje);
@@ -1830,6 +1833,8 @@ export class MyRoom extends Room {
                 }
             });
 
+            //MINIMO 1 ROJO MINIMO 1 VERDE
+            
             let espaciosRestantes = 16 - fichasEspeciales.length;
             let tieneExitoEspecial = fichasEspeciales.some(f => f.visual.startsWith("exito"));
             let tieneFalloEspecial = fichasEspeciales.some(f => f.visual.startsWith("fallo"));

@@ -850,7 +850,7 @@ export class Maggey implements IPersonaje {
 
     private aplicarMalaSuerte(jugadorQueTira: any, miJugador: any) {
         if (jugadorQueTira.nombre !== miJugador.nombre && jugadorQueTira.personaje !== miJugador.personaje) {
-            return { cambio: -1, fichas: ["falloMaggey", "falloMaggey", "falloMaggey"] }; 
+            return { cambio: -1, fichas: ["falloMaggey"] }; 
         }
         return 0; 
     }
@@ -1191,33 +1191,33 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy());
-        // this.registrar(new Berry());
-        // this.registrar(new Maton());
-        // this.registrar(new Mandy());
-        // this.registrar(new Tralalero());
-        // this.registrar(new Darryl());
-        // this.registrar(new JetpackCat());
-        // this.registrar(new KayFaraday());
+        this.registrar(new ColeCasiddy());
+        this.registrar(new Berry());
+        this.registrar(new Maton());
+        this.registrar(new Mandy());
+        this.registrar(new Tralalero());
+        this.registrar(new Darryl());
+        this.registrar(new JetpackCat());
+        this.registrar(new KayFaraday());
         this.registrar(new Chester());
-        // this.registrar(new Frank());
-        // this.registrar(new Pam());
-        // this.registrar(new Trucy());
-        // this.registrar(new HongoUp());
-        // this.registrar(new Hongo());
-        // this.registrar(new Lesly());
-        // this.registrar(new Mikotoba());
-        // this.registrar(new Domino());
-        // this.registrar(new Tilink());
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
-        // this.registrar(new Haley())
+        this.registrar(new Frank());
+        this.registrar(new Pam());
+        this.registrar(new Trucy());
+        this.registrar(new HongoUp());
+        this.registrar(new Hongo());
+        this.registrar(new Lesly());
+        this.registrar(new Mikotoba());
+        this.registrar(new Domino());
+        this.registrar(new Tilink());
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
+        this.registrar(new Haley())
         this.registrar(new Maggey())
-        // this.registrar(new Mortis())
+        this.registrar(new Mortis())
         this.registrar(new Maya())
     }
 
