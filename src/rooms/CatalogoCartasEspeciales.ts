@@ -114,10 +114,10 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
     
-    public static crearEscudo(): Carta {
+    public static crearSpooky(): Carta {
         let clon = new Carta();
-        clon.id = `escudo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        clon.nombre = "Poción de Escudo";
+        clon.id = `spooky_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Spooky";
         clon.descripcion = "Te otorga +1 de vida extra que supera tu máximo. Dura 1 ronda completa.";
         clon.descripcionEnCatalan = "T'atorga +1 de vida extra que supera el teu màxim. Dura 1 ronda completa.";
         clon.tipoDeUso = "instantanea";
@@ -134,7 +134,7 @@ export class CatalogoCartasEspeciales {
             { id: "tiendaDeJuju", copias: 1},
             { id: "papapum", copias: 1},
             { id: "rayo", copias: 1},
-            { id: "escudo", copias: 2 },
+            { id: "spooky", copias: 2 },
         ];
     }
 
@@ -146,7 +146,7 @@ export class CatalogoCartasEspeciales {
             case "tiendaDeJuju": return this.crearTiendaDeJuju();
             case "papapum": return this.crearPapapum();
             case "rayo": return this.crearRayo();
-            case "escudo": return this.crearEscudo();
+            case "spooky": return this.crearSpooky();
 
             default: return null;
         }
