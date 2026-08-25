@@ -143,8 +143,7 @@ export class MyRoom extends Room {
         // --- 1. INTENTO DE SUPERVIVENCIA (Botiquines Automáticos) ---
         while (victima.vidas <= 0 && totalVivos !== 2 && !victima.estaDesconectado) {
             
-            // LA DEBILIDAD DE RAYMUNDO: No puede recuperar vida base, así que muere sin gastar botiquines en vano.
-            if (victima.personaje === "Raymundo Escudos") break; 
+            if (victima.transformarCuraEnEscudo) break; 
 
             let indiceBotiquin = victima.mano.findIndex((c: any) => c.efecto === "curar_1");
             

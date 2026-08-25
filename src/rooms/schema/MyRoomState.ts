@@ -74,6 +74,7 @@ export class Jugador extends Schema {
     @type("boolean") lucierganaPrendida: boolean = false
     @type("number") robinDescartes: number = 0;
     @type("boolean") mikotobaEstaGordo: boolean = false
+    @type("boolean") transformarCuraEnEscudo: boolean = false
 }
 
 export class MyRoomState extends Schema {

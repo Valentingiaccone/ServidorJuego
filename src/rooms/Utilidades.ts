@@ -57,8 +57,7 @@ export class Utilidades {
     public static puedeRecibirCuracion(jugador: any): boolean {
         if (!jugador || !jugador.estaVivo) return false;
         
-        // Raymundo SIEMPRE es un objetivo válido para curarse (porque lo hace escudo)
-        if (jugador.personaje === "Raymundo Escudos") return true;
+        if (jugador.transformarCuraEnEscudo) return true;
 
         // Para los demás, solo si no están al máximo
         return jugador.vidas < jugador.vidasMaximas;
@@ -75,10 +74,9 @@ export class Utilidades {
             cantidadFinal += pasiva.modificarCuraBotiquin(sala, jugador);
         }
 
-        // 2. La magia de RAYMUNDO ESCUDOS
-        if (jugador.personaje === "Raymundo Escudos") {
+        if (jugador.transformarCuraEnEscudo) {
             // Le damos la cantidad de curación, pero en forma de Escudos que duran "infinito" (999 rondas)
-            Utilidades.agregarEscudos(sala, jugador, cantidadFinal, 999, "CURACION");
+            Utilidades.agregarEscudos(sala, jugador, cantidadFinal, Infinity, "CURACION");
             
         } else {
             // 3. Jugadores Normales

@@ -1024,6 +1024,10 @@ export class Maya implements IPersonaje {
         this.ejecutarCanalizacion(sala, victimaMuerta, (pasiva) => {
             if (pasiva.onMuereOtroPersonaje) pasiva.onMuereOtroPersonaje(sala, victimaMuerta, miJugador);
         });
+
+        this.ejecutarCanalizacion(sala, victimaMuerta, (pasiva) => {
+            if (pasiva.onIniciarPartida) pasiva.onIniciarPartida(sala, miJugador);
+        });
     }
 
     onRecibirCuracion(sala: any, jugador: any): void {
@@ -1048,6 +1052,12 @@ export class Maya implements IPersonaje {
         this.ejecutarCanalizacion(sala, duenoDeLaFicha, (pasiva) => {
             if (pasiva.onFichaEspecialSeleccionada) pasiva.onFichaEspecialSeleccionada(sala, duenoDeLaFicha, victimaQueTiro, fichaVisual);
         });
+    }
+
+    onRecibirEscudo(sala: any, jugador: any, cantidad: number, causa: string): void {
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.onRecibirEscudo) pasiva.onRecibirEscudo(sala, jugador, cantidad, causa)
+        })
     }
 
 
@@ -1211,19 +1221,25 @@ export class Geraldo implements IPersonaje {
 
 export class RaymundoEscudos implements IPersonaje {
     nombre = "Raymundo Escudos";
-    habilidad = "Mejor Abogado:\nNo puedes recuperar tu salud base. Toda curación que recibas se convierte en un Escudo Permanente.";
-    habilidadEnCatalan = "Millor Advocat:\nNo pots recuperar la teva salut base. Tota curació que rebis es converteix en un Escut Permanent.";
+    habilidad = "Mejor Abogado:\nNo puedes recuperar tu salud base. Toda curación que recibas se convierte en un Escudo Permanente y robás una carta.";
+    habilidadEnCatalan = "Millor Advocat:\nNo pots recuperar la teva salut base. Tota curació que rebis es converteix en un Escut Permanent i robes una carta.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteRaymundo", true]; 
     sfxDefault = "sfxRaymundo"; 
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.transformarCuraEnEscudo = true
+    }
 
     onRecibirEscudo(sala: any, jugador: any, cantidad: number, causa: string) {
         // 1. Transformamos TODOS sus escudos actuales a duración infinita
         if (jugador.turnosEscudos) {
             for (let i = 0; i < jugador.turnosEscudos.length; i++) {
-                jugador.turnosEscudos[i] = 999;
+                jugador.turnosEscudos[i] = Infinity;
             }
         }
+
+        sala.repartirCartas(jugador, 1, "pasiva");
 
         // 2. Lanzamos el mensaje personalizado según de dónde vino el escudo
         if (causa === "CURACION") {

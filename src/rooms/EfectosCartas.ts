@@ -27,7 +27,6 @@ export class EfectoCurar implements IEfectoCarta {
         // ¡Usamos el escáner!
         if (Utilidades.puedeRecibirCuracion(jugador)) {
             
-            // ¡Usamos el médico! (Él se encarga de Pam, Mikotoba y Raymundo)
             Utilidades.aplicarCuracion(sala, jugador, 1, "BOTIQUIN");
 
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
@@ -156,7 +155,6 @@ export class EfectoCurarATodos implements IEfectoCarta {
         }
 
         sala.state.jugadores.forEach((j: any) => {
-            // El médico cura a los que lo necesiten (o a Raymundo)
             if (Utilidades.puedeRecibirCuracion(j)){
                 Utilidades.aplicarCuracion(sala, j, 1, "CURARTODOS");
             } 
