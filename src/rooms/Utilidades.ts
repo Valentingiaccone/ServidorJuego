@@ -1,38 +1,31 @@
 export class Utilidades {
-    //pepe
+
     public static procesarDano(sala: any, victima: any, atacante: any, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
         
         if (!victima || !victima.estaVivo) return; 
 
         let danoRestante = cantidad;
-        let danoAbsorbidoEscudo = 0;
+        let cantidadDanoEscudo = 0;
 
-        // 1. ROMPER ESCUDOS (Solo si NO es Daño Verdadero)
         if (!ignoraEscudo) {
             while (danoRestante > 0 && victima.turnosEscudos && victima.turnosEscudos.length > 0) {
                 victima.turnosEscudos.shift(); 
                 victima.vidasEscudo--;         
-                danoAbsorbidoEscudo++;
+                cantidadDanoEscudo++;
                 danoRestante--;
             }
         }
 
-        // 2. DAÑO AL CUERPO (Lo que atravesó o el daño directo)
-        let danoCuerpoNum = danoRestante;
-        if (danoCuerpoNum > 0) {
-            victima.vidas -= danoCuerpoNum;
+        let cantidadDanoCuerpo = danoRestante;
+        if (cantidadDanoCuerpo > 0) {
+            victima.vidas -= cantidadDanoCuerpo;
         }
 
-        let huboDanoCuerpo = danoCuerpoNum > 0;
-        let huboDanoEscudo = danoAbsorbidoEscudo > 0;
-
-        // 3. AVISAR A LAS PASIVAS
         let pasivaVictima = sala.gestorPersonajes.obtener(victima.personaje);
         if (pasivaVictima && pasivaVictima.onRecibirDano) {
-            pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, huboDanoCuerpo, huboDanoEscudo);
+            pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
         }
 
-        // 4. EL VEREDICTO FINAL
         sala.evaluarMuerte(victima, atacante, ignoraEscudo);
     }
 
