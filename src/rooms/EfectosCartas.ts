@@ -669,7 +669,7 @@ export class EfectoRayo implements IEfectoCarta {
 
 export class EfectoEscudo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        Utilidades.agregarEscudos(jugadorQueJuega, 1, 1, "EFECTOESCUDO");
+        Utilidades.agregarEscudos(sala, jugadorQueJuega, 1, 1, "EFECTOESCUDO");
 
         sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.nombre} usó ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});

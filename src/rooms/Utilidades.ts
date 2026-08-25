@@ -78,7 +78,7 @@ export class Utilidades {
         // 2. La magia de RAYMUNDO ESCUDOS
         if (jugador.personaje === "Raymundo Escudos") {
             // Le damos la cantidad de curación, pero en forma de Escudos que duran "infinito" (999 rondas)
-            Utilidades.agregarEscudos(jugador, cantidadFinal, 999, "CURACION");
+            Utilidades.agregarEscudos(sala, jugador, cantidadFinal, 999, "CURACION");
             
         } else {
             // 3. Jugadores Normales
