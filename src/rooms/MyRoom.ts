@@ -398,7 +398,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 }
                 
-                for (let c = 0; c < 6; c++) {
+                for (let c = 0; c < 5; c++) { // originalmente 6
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `botiquin_${c}`;
                     nuevaCarta.nombre = "Botiquín";
@@ -409,7 +409,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 }
 
-                for (let c = 0; c < 11; c++) { // originalmente 12
+                for (let c = 0; c < 8; c++) { // originalmente 12
                     const nuevaCarta = new Carta();
                     nuevaCarta.id = `fallo_${c}`;
                     nuevaCarta.nombre = "¡Fallo!";
@@ -418,6 +418,10 @@ export class MyRoom extends Room {
                     nuevaCarta.tipoDeUso = "oculto"; 
                     nuevaCarta.efecto = "esquivar"; 
                     this.state.mazo.push(nuevaCarta);
+                }
+
+                for (let i = 0; i < 4; i++){
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearSpooky())
                 }
 
                 for (let i = 0; i < 3; i++) { // originalmente 2

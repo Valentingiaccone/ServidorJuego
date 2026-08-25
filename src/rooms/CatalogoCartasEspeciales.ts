@@ -126,6 +126,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearSuperBang(): Carta {
+        let clon = new Carta();
+        clon.id = `superBang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Super Bang!";
+        clon.descripcion = "Quita 2 vidas a un jugador a tu alcance.";
+        clon.descripcionEnCatalan = "Treu 2 vidas a un jugador al teu abast.";
+        clon.tipoDeUso = "objetivo";
+        clon.efecto = "dano_2";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
@@ -134,7 +146,7 @@ export class CatalogoCartasEspeciales {
             { id: "tiendaDeJuju", copias: 1},
             { id: "papapum", copias: 1},
             { id: "rayo", copias: 1},
-            { id: "spooky", copias: 2 },
+            { id: "superBang", copias: 1},
         ];
     }
 
@@ -146,7 +158,7 @@ export class CatalogoCartasEspeciales {
             case "tiendaDeJuju": return this.crearTiendaDeJuju();
             case "papapum": return this.crearPapapum();
             case "rayo": return this.crearRayo();
-            case "spooky": return this.crearSpooky();
+            case "superBang": return this.crearSuperBang()
 
             default: return null;
         }
