@@ -285,18 +285,32 @@ export class Pam implements IPersonaje {
     }
 }
 
-export class HongoUp implements IPersonaje {
-    nombre = "Hongo 1Up";
-    habilidad = "Descomposicion:\nCuando otro personaje muere, se cura 2 de vida.";
-    habilidadEnCatalan: string = "Descomposició:\nQuan un altre personatge mor, es cura 2 punts de vida."
+export class Luigi implements IPersonaje {
+    nombre = "Luigi";
+    habilidad = "Hongo curativo:\nCuando otro personaje muere, se cura 2 de vida, y si hay un Mario vivo en la partida, aumenta su vida maxima en 1.";
+    habilidadEnCatalan: string = "Fong curatiu:\nQuan un altre personatge mor, es cura 2 punts de vida, i si hi ha un Mario viu a la partida, augmenta la seva vida màxima en 1."
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteHongoUp", true];
-    sfxDefault= "sfxHongoUp"
+    sfxMuerte: [string, boolean] = ["muerteSuperMario", true];
+    sfxDefault= "sfxLuigi"
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
             sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
             return
+        }
+
+        let estaMario: boolean = false
+        let textoExtra: string = ""
+
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo && j.personaje == "Mario") {
+                estaMario = true
+            }
+        })
+
+        if (estaMario){
+            jugador.vidasMaximas++
+            textoExtra = ` Como Mario está vivio, ${jugador.personaje} aumenta su vida maxima a ${jugador.vidasMaximas}`
         }
 
         let curacion: number = 0
@@ -308,19 +322,20 @@ export class HongoUp implements IPersonaje {
             jugador.vidas++
             curacion++
         }
-        if (curacion > 0){
-            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} se curó ${curacion}.`);
+
+        if (curacion > 0 || estaMario){
+            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} se curó ${curacion}.` + textoExtra);
         }
     }
 }
 
-export class Hongo implements IPersonaje {
-    nombre = "Hongo";
-    habilidad = "NEEDAMUSHROOM:\nCuando otro personaje muere, roba 2 cartas.";
-    habilidadEnCatalan: string = "NEEDAMUSHROOM:\nQuan un altre personatge mor, roba 2 cartes."
+export class Mario implements IPersonaje {
+    nombre = "Mario";
+    habilidad = "NEEDAMUSHROOM:\nCuando otro personaje muere, roba 2 cartas, y si hay un Luigi vivo en la partida, roba una extra.";
+    habilidadEnCatalan: string = "NEEDAMUSHROOM:\nQuan un altre personatge mor, roba 2 cartes, i si hi ha un Luigi viu a la partida, roba una carta addicional.."
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteHongo", false];
-    sfxDefault= "sfxHongo"
+    sfxMuerte: [string, boolean] = ["muerteSuperMario", false];
+    sfxDefault= "sfxMario"
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
@@ -328,9 +343,23 @@ export class Hongo implements IPersonaje {
             return
         }
 
-        const cartas: number = 2
+        let estaLuigi: boolean = false
+        let textoExtra: string = ""
+        let cartas: number = 2
+
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo && j.personaje == "Luigi") {
+                estaLuigi = true
+            }
+        })
+
+        if (estaLuigi){
+            cartas++
+            textoExtra = ` Ademas como Luigi está vivo, ${jugador.personaje} roba una carta extra.`
+        }
+
         sala.repartirCartas(jugador, cartas, "pasiva");
-        sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} robó ${cartas} cartas por su pasiva.`);
+        sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} robó ${cartas} cartas por su pasiva.` + textoExtra);
     }
 }
 
@@ -1195,8 +1224,8 @@ export class GestorPersonajes {
         this.registrar(new Frank());
         this.registrar(new Pam());
         this.registrar(new Trucy());
-        this.registrar(new HongoUp());
-        this.registrar(new Hongo());
+        this.registrar(new Luigi());
+        this.registrar(new Mario());
         this.registrar(new Lesly());
         this.registrar(new Mikotoba());
         this.registrar(new Domino());
