@@ -997,7 +997,7 @@ export class MyRoom extends Room {
             let maxUsos = 0;
             if (victima.tieneBarril) maxUsos++;
             if (victima.tieneBarrilPro) maxUsos++;
-            if (victima.personaje === "Darryl") maxUsos++;
+            if (victima.tieneBarrilPasiva) maxUsos++;
 
             if (maxUsos === 0 || this.state.usosBarril >= maxUsos) return;
 

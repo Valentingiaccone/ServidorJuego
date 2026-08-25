@@ -183,6 +183,10 @@ export class Darryl implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteDarryl", false];
     sfxDefault = "sfxDarryl"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.tieneBarrilPasiva = true
+    }
 }
 
 export class JetpackCat implements IPersonaje {
@@ -242,9 +246,14 @@ export class Frank implements IPersonaje {
     nombre = "Frank";
     habilidad = "Esponja:\nTiene +1 de vida.";
     habilidadEnCatalan: string = "Esponja:\nTé +1 de vida."
-    vidasBase = 5;
+    vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteFrank", true];
     sfxDefault= "sfxFrank"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.vidas++
+        jugador.vidasMaximas++
+    }
 }
 
 export class Trucy implements IPersonaje {
@@ -334,8 +343,7 @@ export class Mikotoba implements IPersonaje {
     sfxDefault = "mikotobaDeGordoAFlaco"
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.mikotobaEstaGordo = true
-        jugador.puedeUsarFallo = false
+        this.actualizarNombre(jugador, sala)
     }
 
     onRecibirCuracion(sala: any, jugador: any): void {
@@ -773,9 +781,14 @@ export class Luciergana implements IPersonaje {
     nombre = "Luciergana";
     habilidad = "Reflejo:\nAl sufrir daño, empieza a brillar, mientras brilla, si sufre daño no le afecta y devuelve el daño al atacante, luego se apaga, al final de su turno se apaga, tiene 1 vida menos.";
     habilidadEnCatalan = "Reflex:\nEn rebre dany, comença a brillar. Mentre brilla, el dany no l afecta i el retorna a l atacant. Després s apaga. Al final del seu torn, s apaga, i perds 1 vida.";
-    vidasBase = 3;
+    vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLuciernaga", true];
     sfxDefault= "sfxLuciernaga"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.vidas--
+        jugador.vidasMaximas--
+    }
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean){
         if (victima.lucierganaPrendida){
@@ -913,8 +926,8 @@ export class Mortis implements IPersonaje {
 
 export class Maya implements IPersonaje {
     nombre = "Maya";
-    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos. Para pasar el turno debe tener su salud -1 cartas en mano. (seguramente no funcione con mandy, darryl, jetpack cat, Frank, domino, lesly, flowery, leon, Haley, mikotoba).";
-    habilidadEnCatalan = "Canalització:\nMentre estigui viva, utilitza les habilitats dels morts. Per passar el torn, ha de tenir la seva salut -1 cartes a la mà. (seguramente no funcione con mandy, darryl, jetpack cat, Frank, domino, lesly, flowery, leon, Haley, mikotoba).";
+    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos. Para pasar el turno debe tener su salud -1 cartas en mano. (seguramente no funcione con mandy, jetpack cat, domino, lesly, flowery, leon, Haley).";
+    habilidadEnCatalan = "Canalització:\nMentre estigui viva, utilitza les habilitats dels morts. Per passar el torn, ha de tenir la seva salut -1 cartes a la mà. (seguramente no funcione con mandy, jetpack cat, domino, lesly, flowery, leon, Haley).";
     vidasBase = 4;
 
     // =================================================================
