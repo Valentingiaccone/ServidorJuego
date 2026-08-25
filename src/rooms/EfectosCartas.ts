@@ -30,7 +30,6 @@ export class EfectoCurar implements IEfectoCarta {
             // ¡Usamos el médico! (Él se encarga de Pam, Mikotoba y Raymundo)
             Utilidades.aplicarCuracion(sala, jugador, 1, "BOTIQUIN");
 
-            console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
             sala.broadcast("sfx", "curacion")
@@ -337,7 +336,7 @@ export class EfectoEquiparMira implements IEfectoCarta {
         jugador.cartaMira = cartaJugada;
         jugador.mano.splice(indiceCarta, 1);
         
-        sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Monoaldea.`);
+        sala.broadcast("notificacion_turno", `🛖 ${jugador.nombre} equipó una Monoaldea.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         return true
     }

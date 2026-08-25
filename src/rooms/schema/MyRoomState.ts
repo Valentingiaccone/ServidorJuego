@@ -58,7 +58,8 @@ export class Jugador extends Schema {
     @type(["string"]) embrujos = new ArraySchema<string>();
     @type("boolean") yaJugoFantasma: boolean = false;
     @type("boolean") puedeUsarFallo: boolean = true;
-    @type("number") vidasEscudo: number = 0; // Lo que lee Cocos
+    @type("number") vidasEscudo: number = 0;
+    @type("boolean") tieneBarrilPasiva: boolean = false;
     turnosEscudos: number[] = []; // Memoria secreta del servidor
 
     // ----------------------------------------
