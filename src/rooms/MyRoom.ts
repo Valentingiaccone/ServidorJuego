@@ -3,6 +3,7 @@ import { Carta, Jugador, MyRoomState, OpcionPersonaje } from "./schema/MyRoomSta
 import { DespachadorDeCartas } from "./EfectosCartas.js";
 import { GestorPersonajes } from "./Personajes.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
+import { Utilidades } from "./Utilidades.js";
 
 export class MyRoom extends Room {
     maxClients = 15;
@@ -34,6 +35,7 @@ export class MyRoom extends Room {
             this.state.jugadorEnPeligro = "";
             this.state.atacanteActual = "";
             this.broadcast("notificacion_turno", `💨 El ataque de Tiratachuela ha terminado.`);
+            this.actualizarMusicaAutomatica();
         }
     }
 
@@ -221,6 +223,11 @@ export class MyRoom extends Room {
             // --- 4. LIMPIEZA DE EQUIPAMIENTO Y MANO DE LA VÍCTIMA ---
             victima.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
             victima.mano.clear();
+
+            // LIMPIEZA DE ESCUDOS
+            victima.vidasEscudo = 0;
+            victima.turnosEscudos = [];
+
             if (victima.cartaArma) this.agregarAlDescarte(victima.cartaArma);
             if (victima.cartaMustang) this.agregarAlDescarte(victima.cartaMustang);
             victima.tieneMustang = false;
@@ -1099,12 +1106,7 @@ export class MyRoom extends Room {
                             if (victima) victima.tieneDinamita = false;
                             if (victima) victima.cartaDinamita = null;
 
-                            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-                            if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                                pasivaVictima.onRecibirDano(this, victima, null, "DINAMITA", 3);
-                            }
-
-                            this.evaluarMuerte(victima);
+                            Utilidades.procesarDano(this, victima, null, 3, "DINAMITA");
                             
                             if (victima && victima.estaVivo) this.evaluarFasePapa(client.sessionId);
                             else this.avanzarAlSiguienteTurno(client.sessionId);
@@ -1134,10 +1136,7 @@ export class MyRoom extends Room {
                             if (victima) victima.cartaPapa = null;
                             this.state.probabilidadPapa = 1; // Reseteamos el peligro global
                             
-                            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "PAPA", 2);
-
-                            this.evaluarMuerte(victima);
+                            Utilidades.procesarDano(this, victima, null, 2, "PAPA");
                             
                             if (victima && victima.estaVivo) this.evaluarFasePrision(client.sessionId);
                             else this.avanzarAlSiguienteTurno(client.sessionId);
@@ -1178,10 +1177,7 @@ export class MyRoom extends Room {
                         
                         if (fueExitoStr === "dano") {
                             this.broadcast("notificacion_turno", `👻 ¡El embrujo hirió a ${victima?.nombre}! Pierde 1 vida.`);
-                            if (victima) victima.vidas--;
-                            let pasivaVictima = this.gestorPersonajes.obtener(victima?.personaje);
-                            if (pasivaVictima && pasivaVictima.onRecibirDano) pasivaVictima.onRecibirDano(this, victima, null, "EMBRUJO", 1);
-                            this.evaluarMuerte(victima);
+                            Utilidades.procesarDano(this, victima, null, 1, "EMBRUJO", true);
                         } else if (fueExitoStr === "curar") {
                             if (victima && victima.vidas < victima.vidasMaximas) {
                                 victima.vidas++;
@@ -1228,21 +1224,11 @@ export class MyRoom extends Room {
                 // Como esquivó y está vivo, avanzamos la cola manualmente
                 this.avanzarColaIndios(); 
                 
-            }else if (datos.accion === "dano") {
-                victima.vidas--;
+            } else if (datos.accion === "dano") {
                 this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por los Indios!`);
-                
-                // NUEVO: Recuperamos al jugador que lanzó los Indios
                 let asesino = this.state.jugadores.get(this.state.atacanteActual);
-
-                let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
-                if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                    // Ahora también le pasamos el asesino a la pasiva por si acaso
-                    pasivaVictima.onRecibirDano(this, victima, asesino, "INDIOS", 1);
-                }
                 
-                // NUEVO: Le pasamos el asesino a la función para que cobre/pierda cartas
-                this.evaluarMuerte(victima, asesino); 
+                Utilidades.procesarDano(this, victima, asesino, 1, "INDIOS");
 
                 if (victima.vidas > 0) {
                     this.avanzarColaIndios();
@@ -1430,20 +1416,11 @@ export class MyRoom extends Room {
                     this.state.oponenteDuelo = temp;
                 }
             } else if (datos.accion === "dano") {
-                jugadorActual.vidas--;
-                
                 let ganadorDuelo = this.state.jugadores.get(this.state.oponenteDuelo);
                 this.broadcast("notificacion_turno", `🩸 ¡${jugadorActual.nombre} no pudo defenderse y perdió el duelo contra ${ganadorDuelo?.nombre}!`);
                 
-                // HOOK RECIBIR DAÑO
-                let pasivaVictima = this.gestorPersonajes.obtener(jugadorActual.personaje);
-                if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                    pasivaVictima.onRecibirDano(this, jugadorActual, ganadorDuelo, "DUELO", 1);
-                }
+                Utilidades.procesarDano(this, jugadorActual, ganadorDuelo, 1, "DUELO");
                 
-                this.evaluarMuerte(jugadorActual, ganadorDuelo);
-                
-                // Fin del duelo
                 this.state.jugadorEnDuelo = "";
                 this.state.oponenteDuelo = "";
             }
@@ -1478,21 +1455,13 @@ export class MyRoom extends Room {
                     }
                 }
                 else {
-                    victima.vidas -= this.state.danoPendiente;
                     recibioBalazo = true;
                     this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
                     const numero: number = Math.floor(Math.random() * 3);
-                    const sfx: string = "bang" + numero
-                    this.broadcast("sfx", sfx)
+                    this.broadcast("sfx", "bang" + numero);
 
-                    let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
-                    if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                        pasivaVictima.onRecibirDano(this, victima, atacante, "BANG", this.state.danoPendiente);
-                    }
-
-                    this.evaluarMuerte(victima, atacante);
+                    Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, "BANG");
                     
-                    // Verificamos si logico/físicamente murió
                     if (victima.vidas <= 0) {
                         sobrevivioAlAtaque = false;
                     }
@@ -1684,6 +1653,36 @@ export class MyRoom extends Room {
                 } 
                 else {
                     // JUGADOR NORMAL (Vivo o Fantasma común)
+                    
+                    // --- NUEVA GESTIÓN DE EXPIRACIÓN DE ESCUDO ---
+                    if (jugadorSiguiente.estaVivo && jugadorSiguiente.turnosEscudos && jugadorSiguiente.turnosEscudos.length > 0) {
+                        
+                        // 1. Restar 1 turno de vida a cada escudo activo
+                        for (let e = 0; e < jugadorSiguiente.turnosEscudos.length; e++) {
+                            jugadorSiguiente.turnosEscudos[e]--;
+                        }
+                        
+                        // 2. Filtrar para quedarnos solo con los escudos que aún tienen tiempo (> 0)
+                        let escudosRestantes = jugadorSiguiente.turnosEscudos.filter((t: number) => t > 0);
+                        let escudosPerdidos = jugadorSiguiente.turnosEscudos.length - escudosRestantes.length;
+                        
+                        jugadorSiguiente.turnosEscudos = escudosRestantes;
+                        
+                        // 3. Ajustar la variable visual de Cocos si se rompió alguno
+                        if (escudosPerdidos > 0) {
+                            jugadorSiguiente.vidasEscudo -= escudosPerdidos;
+                            
+                            // Medida de seguridad por si acaso
+                            if (jugadorSiguiente.vidasEscudo < 0) jugadorSiguiente.vidasEscudo = 0; 
+                            
+                            let textoEscudos = escudosPerdidos > 1 ? `${escudosPerdidos} Escudos` : "un Escudo";
+                            this.broadcast("notificacion_turno", `⏳ El efecto de ${textoEscudos} de ${jugadorSiguiente.nombre} se ha desvanecido.`);
+                            
+                            // Si tienes un sonido de escudo rompiéndose, podés agregarlo acá:
+                            // this.broadcast("sfx", "escudoRoto"); 
+                        }
+                    }
+
                     break; // FRENAMOS: Es su turno
                 }
             }

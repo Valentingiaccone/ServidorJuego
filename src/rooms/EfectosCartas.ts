@@ -2,6 +2,7 @@
 
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { GestorPersonajes } from "./Personajes.js";
+import { Utilidades } from "./Utilidades.js";
 
 // 1. EL CONTRATO: Todas las cartas que agregues en el futuro DEBEN tener este método "ejecutar"
 export interface IEfectoCarta {
@@ -213,6 +214,7 @@ export class EfectoTiratachuela implements IEfectoCarta {
             
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+            sala.broadcast("musica", "tiratachueladaOst")
             
             sala.avanzarColaDePeligro();
             return true
@@ -535,15 +537,10 @@ export class EfectoDescartar implements IEfectoCarta {
         let cantidad = parametros[2] ? parseInt(parametros[2]) : 1;
 
         if (tipoMaldicion === "venenoso") {
-            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y pierde ${cantidad} vida!`);
-            jugador.vidas -= cantidad;
-            
-            let pasivaVictima = gestorPersonajes.obtener(jugador.personaje);
-            if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                pasivaVictima.onRecibirDano(sala, jugador, null, "MALDICION", 1);
-            }
-            sala.evaluarMuerte(jugador);
-        } 
+            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y el veneno le quita ${cantidad} vida (Daño directo)!`);
+            // Pasamos "true" al final para indicar que es daño directo e ignora escudos
+            Utilidades.procesarDano(sala, jugador, null, cantidad, "MALDICION", true);
+        }
         else if (tipoMaldicion === "reductor") {
             if (jugador.vidasMaximas == jugador.vidas){
                 sala.broadcast("notificacion_turno", `⬇️ ${jugador.nombre} descartó un ${carta.nombre} pero no le afecta porque tiene la salud al maximo`);
@@ -684,18 +681,29 @@ export class EfectoRayo implements IEfectoCarta {
         victimasIds.forEach(id => {
             let victima = sala.state.jugadores.get(id);
             if (victima && victima.estaVivo) {
-                
                 sala.broadcast("notificacion_turno", `⚡ ¡KABOOM! El rayo impacta a ${victima.nombre} y pierde 1 vida.`);
-                victima.vidas--;
-                
-                let pasivaVictima = gestorPersonajes.obtener(victima.personaje);
-                if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                    pasivaVictima.onRecibirDano(sala, victima, jugadorQueJuega, "RAYO", 1);
-                }
-
-                sala.evaluarMuerte(victima, jugadorQueJuega);
+                Utilidades.procesarDano(sala, victima, jugadorQueJuega, 1, "RAYO");
             }
         });
+
+        return true;
+    }
+}
+
+export class EfectoEscudo implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        // ¡LA MAGIA DE LA ESCALABILIDAD!
+        // Le damos 1 escudo, que dura 2 turnos (1 ronda completa)
+        Utilidades.agregarEscudos(jugadorQueJuega, 1, 2);
+
+        // Los mensajes y sonidos se quedan acá, así la utilidad es anónima
+        sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.nombre} bebió una ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.broadcast("sfx", "curacion"); 
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada);
 
         return true;
     }
@@ -760,6 +768,7 @@ export class DespachadorDeCartas {
         "equiparPapapum": new EfectoEquiparPapapum(),
         "rayo": new EfectoRayo(),
         "embrujar": new EfectoEmbrujar(),
+        "equiparEscudo": new EfectoEscudo(), // <-- EL REGISTRO
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

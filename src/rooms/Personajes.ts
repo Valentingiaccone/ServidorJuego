@@ -2,6 +2,7 @@
 
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { Carta } from "./schema/MyRoomState.js";
+import { Utilidades } from "./Utilidades.js";
 
 // 1. EL CONTRATO ENRIQUECIDO: Ahora pasamos TODO el contexto de la mesa
 export interface IPersonaje {
@@ -15,7 +16,7 @@ export interface IPersonaje {
     // actualizacion WALENCIA
     // Hooks con esteroides (Ganchos a eventos del juego)
     // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
-    onRecibirDano?(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void;
+    onRecibirDano?(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean): void;
 
     onDescartarCarta?(sala: any, jugador: any, cartaDescartada: any, motivo: string): void;
     
@@ -65,7 +66,7 @@ export class ColeCasiddy implements IPersonaje {
     sfxDefault= "sfxCasiddy"
 
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean) {
         if (victima.vidas > 0) {
             sala.repartirCartas(victima, 1, "pasiva");
             sala.broadcast("notificacion_turno", `🤠 ${victima.personaje} robó 1 carta tras recibir daño por ${causa}.`);
@@ -192,7 +193,7 @@ export class KayFaraday implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteKay", true];
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean) {
         if (atacante && atacante.mano.length > 0) {
             let indiceAleatorio = Math.floor(Math.random() * atacante.mano.length);
             let cartaRobada = atacante.mano.splice(indiceAleatorio, 1)[0];
@@ -344,7 +345,7 @@ export class Mikotoba implements IPersonaje {
         }
     }
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean) {
         this.actualizarNombre(victima, sala)
         if (victima.mikotobaEstaGordo){
             return
@@ -394,7 +395,7 @@ export class Domino implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteDominub", false];
     sfxDefault = "sfxNitromeme"
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean): void {
         const numero: number = Math.floor(Math.random() * 3);
         if (numero === 0){
             const dominoCurativo = new Carta();
@@ -547,14 +548,7 @@ export class Flowery implements IPersonaje {
 
             sala.state.jugadores.forEach((v: any, sessionId: string) => {
                 if (v.estaVivo && v !== jugador) {
-                    
-                    v.vidas--;
-                    let pasivaVictima = sala.gestorPersonajes.obtener(v.personaje);
-                    if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                        pasivaVictima.onRecibirDano(sala, v, jugador, "FLOWERY", 1); 
-                    }
-                    
-                    sala.evaluarMuerte(v, jugador);
+                    Utilidades.procesarDano(sala, v, jugador, 1, "FLOWERY");
 
                     // YA NO ROBA CARTAS DEL RIVAL (Eliminado)
 
@@ -613,7 +607,7 @@ export class Kazuma implements IPersonaje {
     sfxMuerte: [string, boolean] = ["kazumaMuere", true];
     sfxDefault = "sfxKazuma"
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number) {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean) {
         if (victima.rol === "Sheriff" && victima.vidas > 0) {
             // 50% de probabilidad
             if (Math.random() < 0.5) {
@@ -763,7 +757,7 @@ export class Luciergana implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteLuciernaga", true];
     sfxDefault= "sfxLuciernaga"
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number){
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean){
         if (victima.lucierganaPrendida){
             victima.lucierganaPrendida = false
             victima.spriteAvatarOpcional = ""
@@ -773,13 +767,8 @@ export class Luciergana implements IPersonaje {
             }
             if (atacante && atacante !== victima){
                 sala.broadcast("notificacion_turno", `🐝💡 La ${victima.personaje} le refleja ${cantidad} de daño a ${atacante.nombre}`)
-                atacante.vidas -= cantidad
-                let pasivaVictima = sala.gestorPersonajes.obtener(atacante.personaje);
-                if (pasivaVictima && pasivaVictima.onRecibirDano) {
-                    pasivaVictima.onRecibirDano(sala, atacante, victima, "LUCIERGANA", cantidad); 
-                }
-                
-                sala.evaluarMuerte(atacante, victima);
+                Utilidades.procesarDano(sala, atacante, victima, cantidad, "LUCIERGANA");
+            }
             } else {
                 sala.broadcast("notificacion_turno", `🐝💡 La ${victima.personaje} absorbe ${cantidad} de daño`)
             }
@@ -875,7 +864,7 @@ export class Mortis implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteMortis", true];
     sfxDefault = "sfxMortis"
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean): void {
         if (victima.vidas > 0){
             let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria()
             if (cartaFantasma) {
@@ -934,9 +923,9 @@ export class Maya implements IPersonaje {
 
     // --- HOOKS DE ACCIÓN ---
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number): void {
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean): void {
         this.ejecutarCanalizacion(sala, victima, (pasiva) => {
-            if (pasiva.onRecibirDano) pasiva.onRecibirDano(sala, victima, atacante, causa, cantidad);
+            if (pasiva.onRecibirDano) pasiva.onRecibirDano(sala, victima, atacante, causa, cantidad, danoCuerpo, danoEscudo);
         });
     }
 

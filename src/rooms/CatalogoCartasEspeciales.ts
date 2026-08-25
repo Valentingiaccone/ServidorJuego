@@ -113,6 +113,18 @@ export class CatalogoCartasEspeciales {
         clon.esConjurada = false;
         return clon;
     }
+    
+    public static crearEscudo(): Carta {
+        let clon = new Carta();
+        clon.id = `escudo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Poción de Escudo";
+        clon.descripcion = "Te otorga +1 de vida extra que supera tu máximo. Dura 1 ronda completa.";
+        clon.descripcionEnCatalan = "T'atorga +1 de vida extra que supera el teu màxim. Dura 1 ronda completa.";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "equiparEscudo"; // Este es el identificador que leerá el despachador
+        clon.esConjurada = false;
+        return clon;
+    }
 
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
@@ -122,17 +134,19 @@ export class CatalogoCartasEspeciales {
             { id: "tiendaDeJuju", copias: 1},
             { id: "papapum", copias: 1},
             { id: "rayo", copias: 1},
+            { id: "escudo", copias: 2 }, // <-- NUESTRA NUEVA CARTA
         ];
     }
 
     // EL DISTRIBUIDOR
     public static crearCartaExtension(id: string): Carta | null {
         switch (id) {
-            case "anderlandis": return this.crearAnderlandis()
-            case "tornado": return this.crearTornado()
-            case "tiendaDeJuju": return this.crearTiendaDeJuju()
-            case "papapum": return this.crearPapapum()
-            case "rayo": return this.crearRayo()
+            case "anderlandis": return this.crearAnderlandis();
+            case "tornado": return this.crearTornado();
+            case "tiendaDeJuju": return this.crearTiendaDeJuju();
+            case "papapum": return this.crearPapapum();
+            case "rayo": return this.crearRayo();
+            case "escudo": return this.crearEscudo(); // <-- EL CONSTRUCTOR
 
             default: return null;
         }
