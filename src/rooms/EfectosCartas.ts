@@ -2,6 +2,7 @@
 
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { GestorPersonajes } from "./Personajes.js";
+import { Carta } from "./schema/MyRoomState.js";
 import { Utilidades } from "./Utilidades.js";
 
 export interface IEfectoCarta {
@@ -671,6 +672,50 @@ export class EfectoEmbrujar implements IEfectoCarta {
     }
 }
 
+export class EfectoClonarMano implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
+        
+        let cartasOriginalesEnMano = jugadorQueJuega.mano.filter((c: any, index: number) => !c.esConjurada && index !== indiceCarta);
+        
+        if (cartasOriginalesEnMano.length === 0) {
+            client.send("alerta_personal", "No tenés otras cartas originales en la mano para clonar.");
+            return false;
+        }
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        let indiceAleatorio = Math.floor(Math.random() * cartasOriginalesEnMano.length);
+        let cartaAClonar = cartasOriginalesEnMano[indiceAleatorio];
+
+        let indiceEnMano = jugadorQueJuega.mano.findIndex((c: any) => c.id === cartaAClonar.id);
+        if (indiceEnMano !== -1) {
+            jugadorQueJuega.mano.splice(indiceEnMano, 1);
+            sala.agregarAlDescarte(cartaAClonar, jugadorQueJuega, client); 
+        }
+
+        for (let i = 0; i < 2; i++) {
+            let clon = new Carta();
+            clon.id = `clon_${i}_${cartaAClonar.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+            clon.nombre = cartaAClonar.nombre;
+            clon.descripcion = cartaAClonar.descripcion;
+            clon.descripcionEnCatalan = cartaAClonar.descripcionEnCatalan;
+            clon.tipoDeUso = cartaAClonar.tipoDeUso;
+            clon.efecto = cartaAClonar.efecto;
+            
+            clon.esConjurada = true; 
+            
+            jugadorQueJuega.mano.push(clon);
+        }
+
+        sala.broadcast("notificacion_turno", `🪞 ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre}, sacrificó una carta original y fabricó 2 clones!`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.broadcast("sfx", "tilinkPasiva");
+
+        return true;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -695,7 +740,8 @@ export class DespachadorDeCartas {
         "equiparPapapum": new EfectoEquiparPapapum(),
         "rayo": new EfectoRayo(),
         "embrujar": new EfectoEmbrujar(),
-        "equiparEscudo": new EfectoEscudo(), // <-- EL REGISTRO
+        "equiparEscudo": new EfectoEscudo(),
+        "clonarMano": new EfectoClonarMano(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

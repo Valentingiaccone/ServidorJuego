@@ -138,6 +138,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearClon(): Carta {
+        let clon = new Carta();
+        clon.id = `clon_card_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Clon";
+        clon.descripcion = "Descarta una carta original al azar de tu mano y te otorga 2 clones de la misma.";
+        clon.descripcionEnCatalan = "Descarta una carta original a l'atzar de la teva mà i t'atorga 2 clons de la mateixa.";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "clonarMano";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
@@ -147,6 +159,7 @@ export class CatalogoCartasEspeciales {
             { id: "papapum", copias: 1},
             { id: "rayo", copias: 1},
             { id: "superBang", copias: 1},
+            { id: "clon", copias: 2 },
         ];
     }
 
@@ -158,7 +171,8 @@ export class CatalogoCartasEspeciales {
             case "tiendaDeJuju": return this.crearTiendaDeJuju();
             case "papapum": return this.crearPapapum();
             case "rayo": return this.crearRayo();
-            case "superBang": return this.crearSuperBang()
+            case "superBang": return this.crearSuperBang();
+            case "clon": return this.crearClon();
 
             default: return null;
         }
