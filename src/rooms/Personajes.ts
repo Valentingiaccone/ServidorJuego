@@ -13,7 +13,7 @@ export interface IPersonaje {
     // Tupla opcional: [Archivo de sonido, silenciar música]
     sfxMuerte?: [string, boolean, number?];
     sfxDefault?: string;
-    // actualizacion WALENCIA
+    // actualizacion WALENCIA l
     // Hooks con esteroides (Ganchos a eventos del juego)
     // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
     onRecibirDano?(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: boolean, danoEscudo: boolean): void;
@@ -39,6 +39,8 @@ export interface IPersonaje {
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, miJugador: any): void
 
     onRecibirCuracion?(sala: any, jugador: any): void
+
+    onRecibirEscudo?(sala: any, jugador: any, cantidad: number, causa: string): void;
 
     onJugarCarta?(sala: any, jugador: any, cartaJugada: any): void;
 
@@ -1165,6 +1167,32 @@ export class Geraldo implements IPersonaje {
 
 }
 
+export class RaymundoEscudos implements IPersonaje {
+    nombre = "Raymundo Escudos";
+    habilidad = "Mejor Abogado:\nNo puedes recuperar tu salud base. Toda curación que recibas se convierte en un Escudo Permanente.";
+    habilidadEnCatalan = "Millor Advocat:\nNo pots recuperar la teva salut base. Tota curació que rebis es converteix en un Escut Permanent.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteRaymundo", true]; 
+    sfxDefault = "sfxRaymundo"; 
+
+    onRecibirEscudo(sala: any, jugador: any, cantidad: number, causa: string) {
+        // 1. Transformamos TODOS sus escudos actuales a duración infinita
+        if (jugador.turnosEscudos) {
+            for (let i = 0; i < jugador.turnosEscudos.length; i++) {
+                jugador.turnosEscudos[i] = 999;
+            }
+        }
+
+        // 2. Lanzamos el mensaje personalizado según de dónde vino el escudo
+        if (causa === "CURACION") {
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó la curación en un Escudo Infinito!`);
+        } else {
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó su Escudo temporal en un Escudo Infinito!`);
+        }
+    }
+}
+
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -1199,6 +1227,7 @@ export class GestorPersonajes {
         this.registrar(new Mortis())
         this.registrar(new Maya())
         this.registrar(new Geraldo())
+        this.registrar(new RaymundoEscudos());
     }
 
     private registrar(p: IPersonaje) {

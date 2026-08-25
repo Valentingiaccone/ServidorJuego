@@ -130,7 +130,7 @@ export class MyRoom extends Room {
         }
     }
 
-    evaluarMuerte(victima: any, asesino: any = null) {
+    evaluarMuerte(victima: any, asesino: any = null, fueDanoVerdadero: boolean = false) {
         
         let totalVivos = 0;
 
@@ -142,19 +142,21 @@ export class MyRoom extends Room {
 
         // --- 1. INTENTO DE SUPERVIVENCIA (Botiquines Automáticos) ---
         while (victima.vidas <= 0 && totalVivos !== 2 && !victima.estaDesconectado) {
+            
+            // LA DEBILIDAD DE RAYMUNDO: No puede recuperar vida base, así que muere sin gastar botiquines en vano.
+            if (victima.personaje === "Raymundo Escudos") break; 
+
             let indiceBotiquin = victima.mano.findIndex((c: any) => c.efecto === "curar_1");
             
             if (indiceBotiquin !== -1) {
                 let botiquin = victima.mano.splice(indiceBotiquin, 1)[0];
                 this.agregarAlDescarte(botiquin);
-                victima.vidas++;
+                
+                // ¡Llamamos a nuestro médico centralizado!
+                Utilidades.aplicarCuracion(this, victima, 1, "BOTIQUIN");
                 
                 this.broadcast("notificacion_turno", `🩹 ¡${victima.nombre} usó un ${botiquin.nombre} automáticamente para evitar la muerte!`);
                 
-                let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
-                if (pasivaVictima && pasivaVictima.onRecibirCuracion) {
-                    pasivaVictima.onRecibirCuracion(this, victima);
-                }
             } else {
                 break; // No tiene más botiquines, muere oficialmente
             }
@@ -1196,8 +1198,9 @@ export class MyRoom extends Room {
                             this.broadcast("notificacion_turno", `👻 ¡El embrujo hirió a ${victima?.nombre}! Pierde 1 vida.`);
                             Utilidades.procesarDano(this, victima, null, 1, "EMBRUJO", true);
                         } else if (fueExitoStr === "curar") {
-                            if (victima && victima.vidas < victima.vidasMaximas) {
-                                victima.vidas++;
+                            // ¡Usamos el escáner y el médico!
+                            if (victima && Utilidades.puedeRecibirCuracion(victima)) {
+                                Utilidades.aplicarCuracion(this, victima, 1, "EMBRUJO");
                                 this.broadcast("notificacion_turno", `👻 ¡El embrujo sanó a ${victima?.nombre}!`);
                             } else {
                                 this.broadcast("notificacion_turno", `👻 El embrujo intentó sanar a ${victima?.nombre}, pero ya estaba al máximo.`);

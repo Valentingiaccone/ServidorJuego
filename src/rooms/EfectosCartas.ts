@@ -16,9 +16,7 @@ export class EfectoCurar implements IEfectoCarta {
         let totalVivos = 0;
 
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) {
-                totalVivos++;
-            }
+            if (j.estaVivo) totalVivos++;
         });
 
         if (totalVivos == 2){
@@ -26,20 +24,11 @@ export class EfectoCurar implements IEfectoCarta {
             return false
         }
         
-        if (jugador.vidas < jugador.vidasMaximas) {
-            jugador.vidas++
-
-            let pasivaJugadorActual = gestorPersonajes.obtener(jugador.personaje);
-            if (pasivaJugadorActual && pasivaJugadorActual.modificarCuraBotiquin){
-                jugador.vidas += pasivaJugadorActual.modificarCuraBotiquin(sala, jugador)
-            }
-            if (pasivaJugadorActual && pasivaJugadorActual.onRecibirCuracion){
-                pasivaJugadorActual.onRecibirCuracion(sala, jugador)
-            }
-
-            if (jugador.vidas >= jugador.vidasMaximas){
-                jugador.vidas = jugador.vidasMaximas
-            }
+        // ¡Usamos el escáner!
+        if (Utilidades.puedeRecibirCuracion(jugador)) {
+            
+            // ¡Usamos el médico! (Él se encarga de Pam, Mikotoba y Raymundo)
+            Utilidades.aplicarCuracion(sala, jugador, 1, "BOTIQUIN");
 
             console.log(`🩹 ${jugador.nombre} se curó 1 vida.`);
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
@@ -69,11 +58,8 @@ export class EfectoCurarDuo implements IEfectoCarta {
         }
 
         let totalVivos = 0;
-
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) {
-                totalVivos++;
-            }
+            if (j.estaVivo) totalVivos++;
         });
 
         if (totalVivos == 2){
@@ -81,23 +67,19 @@ export class EfectoCurarDuo implements IEfectoCarta {
             return false
         }
 
-        if (jugadorQueJuega.vidas >= jugadorQueJuega.vidasMaximas) {
+        // ¡Usamos el escáner para ambos!
+        if (!Utilidades.puedeRecibirCuracion(jugadorQueJuega)) {
             client.send("alerta_personal", "Tu salud ya está al máximo.");
             return false;
         }
-        if (victima.vidas >= victima.vidasMaximas) {
+        if (!Utilidades.puedeRecibirCuracion(victima)) {
             client.send("alerta_personal", "El objetivo ya tiene la salud al máximo.");
             return false;
         }
 
-        jugadorQueJuega.vidas++;
-        victima.vidas++;
-
-        let pasivaAtacante = gestorPersonajes.obtener(jugadorQueJuega.personaje);
-        if (pasivaAtacante && pasivaAtacante.onRecibirCuracion) pasivaAtacante.onRecibirCuracion(sala, jugadorQueJuega);
-        
-        let pasivaVictima = gestorPersonajes.obtener(victima.personaje);
-        if (pasivaVictima && pasivaVictima.onRecibirCuracion) pasivaVictima.onRecibirCuracion(sala, victima);
+        // ¡Usamos el médico para ambos!
+        Utilidades.aplicarCuracion(sala, jugadorQueJuega, 1, "CURADUO");
+        Utilidades.aplicarCuracion(sala, victima, 1, "CURADUO");
 
         sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.nombre} se curaron mutuamente!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
@@ -155,9 +137,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
         let totalVivos = 0;
 
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) {
-                totalVivos++;
-            }
+            if (j.estaVivo) totalVivos++;
         });
 
         if (totalVivos == 2){
@@ -167,7 +147,8 @@ export class EfectoCurarATodos implements IEfectoCarta {
         
         let alguienNecesitaCura = false;
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo && j.vidas < j.vidasMaximas) alguienNecesitaCura = true;
+            // Escaneamos a toda la mesa
+            if (Utilidades.puedeRecibirCuracion(j)) alguienNecesitaCura = true;
         });
 
         if (!alguienNecesitaCura) {
@@ -176,12 +157,9 @@ export class EfectoCurarATodos implements IEfectoCarta {
         }
 
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo && j.vidas < j.vidasMaximas){
-                j.vidas++;
-                let pasivaJugadorActual = gestorPersonajes.obtener(j.personaje);
-                if (pasivaJugadorActual && pasivaJugadorActual.onRecibirCuracion){
-                    pasivaJugadorActual.onRecibirCuracion(sala, j)
-                }
+            // El médico cura a los que lo necesiten (o a Raymundo)
+            if (Utilidades.puedeRecibirCuracion(j)){
+                Utilidades.aplicarCuracion(sala, j, 1, "CURARTODOS");
             } 
         });
 
@@ -692,7 +670,7 @@ export class EfectoRayo implements IEfectoCarta {
 
 export class EfectoEscudo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        Utilidades.agregarEscudos(jugadorQueJuega, 1, 1);
+        Utilidades.agregarEscudos(jugadorQueJuega, 1, 1, "EFECTOESCUDO");
 
         sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.nombre} usó ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
