@@ -1198,7 +1198,7 @@ export class MyRoom extends Room {
                             Utilidades.procesarDano(this, victima, null, 1, "EMBRUJO", true);
                         } else if (fueExitoStr === "curar") {
                             // ¡Usamos el escáner y el médico!
-                            if (victima && Utilidades.puedeRecibirCuracion(victima)) {
+                            if (victima && Utilidades.puedeRecibirCuracion(this, victima)) {
                                 Utilidades.aplicarCuracion(this, victima, 1, "EMBRUJO");
                                 this.broadcast("notificacion_turno", `👻 ¡El embrujo sanó a ${victima?.nombre}!`);
                             } else {

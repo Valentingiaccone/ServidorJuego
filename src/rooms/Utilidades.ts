@@ -47,12 +47,19 @@ export class Utilidades {
         }
     }
 
-    public static puedeRecibirCuracion(jugador: any): boolean {
+    public static puedeRecibirCuracion(sala: any, jugador: any): boolean {
         if (!jugador || !jugador.estaVivo) return false;
         
         if (jugador.transformarCuraEnEscudo) return true;
 
-        // Para los demás, solo si no están al máximo
+        let totalVivos = 0;
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo) totalVivos++;
+        });
+
+        // para 1vs1
+        if (totalVivos === 2) return true;
+
         return jugador.vidas < jugador.vidasMaximas;
     }
 
@@ -62,23 +69,28 @@ export class Utilidades {
         let cantidadFinal = cantidadBase;
         let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
 
-        // 1. Aplicamos modificadores (Pam/Mikotoba) si es un Botiquín
         if (causa === "BOTIQUIN" && pasiva && pasiva.modificarCuraBotiquin) {
             cantidadFinal += pasiva.modificarCuraBotiquin(sala, jugador);
         }
 
+        let totalVivos = 0;
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo) totalVivos++;
+        });
+
         if (jugador.transformarCuraEnEscudo) {
-            // Le damos la cantidad de curación, pero en forma de Escudos que duran "infinito" (999 rondas)
             Utilidades.agregarEscudos(sala, jugador, cantidadFinal, Infinity, "CURACION");
             
+        } else if (totalVivos === 2) {
+            Utilidades.agregarEscudos(sala, jugador, cantidadFinal, 1, "CURACION");
+            sala.broadcast("notificacion_turno", `🛡️ ¡En duelo a muerte, la curación de ${jugador.nombre} se transforma en Escudo Temporal!`);
+            
         } else {
-            // 3. Jugadores Normales
             jugador.vidas += cantidadFinal;
             if (jugador.vidas > jugador.vidasMaximas) {
                 jugador.vidas = jugador.vidasMaximas;
             }
 
-            // Avisamos a las pasivas normales (Como Mikotoba que cambia de sprite al curarse)
             if (pasiva && pasiva.onRecibirCuracion) {
                 pasiva.onRecibirCuracion(sala, jugador);
             }

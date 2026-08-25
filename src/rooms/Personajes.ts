@@ -85,30 +85,20 @@ export class Berry implements IPersonaje {
     sfxDefault = "sfxBerry"
 
     onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
-        // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
         if (motivo !== "VOLUNTARIO") return;
-
         if (!jugador.contadorDescartes) jugador.contadorDescartes = 0;
         
         jugador.contadorDescartes++;
         if (jugador.contadorDescartes >= 2) {
-
-            let totalVivos = 0;
-
-            sala.state.jugadores.forEach((j: any) => {
-                if (j.estaVivo) {
-                    totalVivos++;
-                }
-            });
-
             jugador.contadorDescartes = 0;
-            sala.repartirCartas(jugador, 1, "pasiva")
-            let texto: string = `🍓 ${jugador.personaje} roba una carta`
-            if (jugador.vidas < jugador.vidasMaximas && totalVivos !== 2) {
-                jugador.vidas++;
-                texto += ` y se cura 1 vida`
+            sala.repartirCartas(jugador, 1, "pasiva");
+            let texto: string = `🍓 ${jugador.personaje} roba una carta`;
+            
+            if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
+                Utilidades.aplicarCuracion(sala, jugador, 1, "PASIVA");
+                texto += ` y recibe curación`;
             }
-            texto += ` por su pasiva.`
+            texto += ` por su pasiva.`;
             sala.broadcast("notificacion_turno", texto);
         }
     }
@@ -155,24 +145,15 @@ export class Tralalero implements IPersonaje {
 
     onPasarTurno(sala: any, jugador: any) {
         if (jugador.mano.length === 0) {
-
-            let totalVivos = 0;
-
-            sala.state.jugadores.forEach((j: any) => {
-                if (j.estaVivo) {
-                    totalVivos++;
-                }
-            });
-
-            let curacion: number = 0
-            if (jugador.vidas < jugador.vidasMaximas && totalVivos !== 2){
-                jugador.vidas++;
-                curacion++
+            let seCuro = false;
+            if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
+                Utilidades.aplicarCuracion(sala, jugador, 1, "PASIVA");
+                seCuro = true;
             }
 
-            sala.repartirCartas(jugador, 2, "pasiva")
-
-            sala.broadcast("notificacion_turno", `🎵 ${jugador.personaje} recuperó ${curacion} vida y robó 2 cartas gracias a su pasiva.`);
+            sala.repartirCartas(jugador, 2, "pasiva");
+            let extra = seCuro ? "recuperó salud/escudo y " : "";
+            sala.broadcast("notificacion_turno", `🎵 ${jugador.personaje} ${extra}robó 2 cartas gracias a su pasiva.`);
         }
     }
 }
@@ -295,38 +276,32 @@ export class Luigi implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteSuperMario", true];
     sfxDefault= "sfxLuigi"
 
-    onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
+    onMuereOtroPersonaje(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
-            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
-            return
+            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`);
+            return;
         }
 
-        let estaMario: boolean = false
-        let textoExtra: string = ""
+        let estaMario: boolean = false;
+        let textoExtra: string = "";
 
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo && j.personaje == "Mario") {
-                estaMario = true
-            }
-        })
+            if (j.estaVivo && j.personaje == "Mario") estaMario = true;
+        });
 
         if (estaMario){
-            jugador.vidasMaximas++
-            textoExtra = ` Como Mario está vivio, ${jugador.personaje} aumenta su vida maxima a ${jugador.vidasMaximas}`
+            jugador.vidasMaximas++;
+            textoExtra = ` Como Mario está vivo, ${jugador.personaje} aumenta su vida máxima a ${jugador.vidasMaximas}.`;
         }
 
-        let curacion: number = 0
-        if (jugador.vidas < jugador.vidasMaximas){
-            jugador.vidas++
-            curacion++
-        }
-        if (jugador.vidas < jugador.vidasMaximas){
-            jugador.vidas++
-            curacion++
+        let seCuro = false;
+        if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
+            Utilidades.aplicarCuracion(sala, jugador, 2, "PASIVA");
+            seCuro = true;
         }
 
-        if (curacion > 0 || estaMario){
-            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} se curó ${curacion}.` + textoExtra);
+        if (seCuro || estaMario){
+            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} recibió curación por su pasiva.` + textoExtra);
         }
     }
 }
@@ -1260,35 +1235,35 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy());
-        // this.registrar(new Berry());
-        // this.registrar(new Maton());
-        // this.registrar(new Mandy());
+        this.registrar(new ColeCasiddy());
+        this.registrar(new Berry());
+        this.registrar(new Maton());
+        this.registrar(new Mandy());
         this.registrar(new Tralalero());
-        // this.registrar(new Darryl());
-        // this.registrar(new JetpackCat());
-        // this.registrar(new KayFaraday());
-        // this.registrar(new Chester());
+        this.registrar(new Darryl());
+        this.registrar(new JetpackCat());
+        this.registrar(new KayFaraday());
+        this.registrar(new Chester());
         this.registrar(new Frank());
-        // this.registrar(new Pam());
-        // this.registrar(new Trucy());
+        this.registrar(new Pam());
+        this.registrar(new Trucy());
         this.registrar(new Luigi());
         this.registrar(new Mario());
-        // this.registrar(new Lesly());
-        // this.registrar(new Mikotoba());
-        // this.registrar(new Domino());
-        // this.registrar(new Tilink());
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
-        // this.registrar(new Haley())
-        // this.registrar(new Maggey())
-        // this.registrar(new Mortis())
-        // this.registrar(new Maya())
-        // this.registrar(new Geraldo())
+        this.registrar(new Lesly());
+        this.registrar(new Mikotoba());
+        this.registrar(new Domino());
+        this.registrar(new Tilink());
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
+        this.registrar(new Haley())
+        this.registrar(new Maggey())
+        this.registrar(new Mortis())
+        this.registrar(new Maya())
+        this.registrar(new Geraldo())
         this.registrar(new RaymundoEscudos());
     }
 

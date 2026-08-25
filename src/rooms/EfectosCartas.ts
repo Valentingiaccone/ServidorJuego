@@ -4,49 +4,31 @@ import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { GestorPersonajes } from "./Personajes.js";
 import { Utilidades } from "./Utilidades.js";
 
-// 1. EL CONTRATO: Todas las cartas que agregues en el futuro DEBEN tener este método "ejecutar"
 export interface IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean;
 }
 
-// 2. LAS ESTRATEGIAS: Cada efecto es una clase separada y limpia
-
 export class EfectoCurar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        let totalVivos = 0;
-
-        sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) totalVivos++;
-        });
-
-        if (totalVivos == 2){
-            client.send("alerta_personal", "No se puede usar curacion cuando quedan 2 jugadores.");
-            return false
-        }
-        
-        // ¡Usamos el escáner!
-        if (Utilidades.puedeRecibirCuracion(jugador)) {
-            
+        if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
             Utilidades.aplicarCuracion(sala, jugador, 1, "BOTIQUIN");
 
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
-            sala.broadcast("sfx", "curacion")
+            sala.broadcast("sfx", "curacion");
 
-            // Consumimos la carta
             jugador.mano.splice(indiceCarta, 1);
             sala.agregarAlDescarte(cartaJugada);
-            return true
+            return true;
         } else {
-            client.send("alerta_personal", "Tu vida ya está al máximo.");
-            return false
+            client.send("alerta_personal", "Tu salud ya está al máximo.");
+            return false;
         }
     }
 }
 
 export class EfectoCurarDuo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
 
@@ -55,37 +37,24 @@ export class EfectoCurarDuo implements IEfectoCarta {
             return false;
         }
 
-        let totalVivos = 0;
-        sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) totalVivos++;
-        });
-
-        if (totalVivos == 2){
-            client.send("alerta_personal", "No se puede usar curacion cuando quedan 2 jugadores.");
-            return false
-        }
-
-        // ¡Usamos el escáner para ambos!
-        if (!Utilidades.puedeRecibirCuracion(jugadorQueJuega)) {
+        if (!Utilidades.puedeRecibirCuracion(sala, jugadorQueJuega)) {
             client.send("alerta_personal", "Tu salud ya está al máximo.");
             return false;
         }
-        if (!Utilidades.puedeRecibirCuracion(victima)) {
+        if (!Utilidades.puedeRecibirCuracion(sala, victima)) {
             client.send("alerta_personal", "El objetivo ya tiene la salud al máximo.");
             return false;
         }
 
-        // ¡Usamos el médico para ambos!
         Utilidades.aplicarCuracion(sala, jugadorQueJuega, 1, "CURADUO");
         Utilidades.aplicarCuracion(sala, victima, 1, "CURADUO");
 
-        sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.nombre} se curaron mutuamente!`);
+        sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.nombre} compartieron curación!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         sala.broadcast("sfx", "curacion");
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
-        
         return true; 
     }
 }
@@ -132,43 +101,30 @@ export class EfectoRobar implements IEfectoCarta {
 
 export class EfectoCurarATodos implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        let totalVivos = 0;
-
-        sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) totalVivos++;
-        });
-
-        if (totalVivos == 2){
-            client.send("alerta_personal", "No se puede usar curacion cuando quedan 2 jugadores.");
-            return false
-        }
         
         let alguienNecesitaCura = false;
         sala.state.jugadores.forEach((j: any) => {
-            // Escaneamos a toda la mesa
-            if (Utilidades.puedeRecibirCuracion(j)) alguienNecesitaCura = true;
+            if (Utilidades.puedeRecibirCuracion(sala, j)) alguienNecesitaCura = true;
         });
 
         if (!alguienNecesitaCura) {
             client.send("alerta_personal", "Todos los jugadores vivos ya tienen la salud al máximo.");
-            return false
+            return false;
         }
 
         sala.state.jugadores.forEach((j: any) => {
-            if (Utilidades.puedeRecibirCuracion(j)){
+            if (Utilidades.puedeRecibirCuracion(sala, j)){
                 Utilidades.aplicarCuracion(sala, j, 1, "CURARTODOS");
             } 
         });
 
-        console.log(`✨ ${jugadorQueJuega.nombre} curó a todos.`);
         sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre} y curó a todos!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
-        sala.broadcast("sfx", "poco")
+        sala.broadcast("sfx", "poco");
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
-
-        return true
+        return true;
     }
 }
 
