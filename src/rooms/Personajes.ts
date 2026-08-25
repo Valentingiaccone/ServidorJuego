@@ -1135,9 +1135,13 @@ export class Maya implements IPersonaje {
 
 export class Geraldo implements IPersonaje {
     nombre = "Geraldo";
-    habilidad = "Criatura de la noche:\nAl recibir daño, gana una carta fantasmal aleatoria, cuando muere otro jugador, gana 2 cartas fantasmales aleatorias.";
-    habilidadEnCatalan = "Criatura de la nit:\nEn rebre dany, guanya una carta fantasmal aleatòria; quan mor un altre jugador, guanya 2 cartes fantasmals aleatòries.";
+    habilidad = "Almacenamiento:\nPuede almacenar 3 cartas extras en su mano.";
+    habilidadEnCatalan = "Emmagatzematge:\nPot emmagatzemar 3 cartes addicionals a la seva mà.";
     vidasBase = 4;
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return 3
+    }
 
 }
 
@@ -1174,6 +1178,7 @@ export class GestorPersonajes {
         this.registrar(new Maggey())
         this.registrar(new Mortis())
         this.registrar(new Maya())
+        this.registrar(new Geraldo())
     }
 
     private registrar(p: IPersonaje) {
