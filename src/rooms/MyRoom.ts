@@ -445,9 +445,9 @@ export class MyRoom extends Room {
                     const panico = new Carta();
                     panico.id = `panico_${i}`;
                     panico.nombre = "¡Pánico!";
-                    panico.descripcion = "Roba una carta de la mano o equipada a un jugador a distancia 1.";
-                    panico.descripcionEnCatalan = "Roba una carta de la mà o equipada d un jugador a distància 1."
-                    panico.tipoDeUso = "objetivo1";
+                    panico.descripcion = "Roba una carta de la mano o equipada a un jugador vecino.";
+                    panico.descripcionEnCatalan = "Roba una carta de la mà o equipada d un jugador veïns."
+                    panico.tipoDeUso = "objetivoVecino";
                     panico.efecto = "robar_enemigo"; 
                     this.state.mazo.push(panico);
                 }
@@ -1270,11 +1270,20 @@ export class MyRoom extends Room {
                 let diferencia = Math.abs(idxAtacante - idxVictima);
                 let distancia = Math.min(diferencia, n - diferencia);
 
-                if (atacante.tieneMiraPro) distancia -= 2;
-                else if (atacante.tieneMira) distancia -= 1;
+                let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
+                let cartaUsada = (indiceCarta !== -1) ? atacante.mano[indiceCarta] : null;
 
-                if (victima.tieneMustangPro) distancia += 2;
-                else if (victima.tieneMustang) distancia += 1;
+                let alcanceMaximo = atacante.alcanceArma;
+
+                if (cartaUsada && cartaUsada.tipoDeUso === "objetivoVecino") {
+                    alcanceMaximo = 1;
+                } else {
+                    if (atacante.tieneMiraPro) distancia -= 2;
+                    else if (atacante.tieneMira) distancia -= 1;
+
+                    if (victima.tieneMustangPro) distancia += 2;
+                    else if (victima.tieneMustang) distancia += 1;
+                }
 
                 // --- HOOK MODIFICAR DISTANCIA (ATACANTE) ---
                 if (pasivaAtacante && pasivaAtacante.modificarDistancia) {
@@ -1285,17 +1294,6 @@ export class MyRoom extends Room {
                 let pasivaVictimaDistancia = this.gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictimaDistancia && pasivaVictimaDistancia.modificarDistancia) {
                     distancia = pasivaVictimaDistancia.modificarDistancia(this, atacante, victima, distancia);
-                }
-
-                let alcanceMaximo = atacante.alcanceArma;
-                
-                // --- NUEVO: PREPARAMOS LA CARTA PARA EVALUAR SU ALCANCE ESPECIAL (KAMURA) ---
-                let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
-                let cartaUsada = (indiceCarta !== -1) ? atacante.mano[indiceCarta] : null;
-
-                // KAMURA: Su alcance siempre es 1, ignorando el arma equipada.
-                if (cartaUsada && cartaUsada.tipoDeUso === "objetivo1") {
-                    alcanceMaximo = 1;
                 }
                 
                 if (distancia > alcanceMaximo) {

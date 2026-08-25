@@ -614,9 +614,9 @@ export class Kazuma implements IPersonaje {
                 const kamura = new Carta();
                 kamura.id = `karuma_${Date.now()}_${Math.floor(Math.random() * 100)}`;
                 kamura.nombre = "Karuma";
-                kamura.descripcion = "Funciona como un BANG! pero inflige 2 de daño a distancia 1.";
-                kamura.descripcionEnCatalan = "Funciona com un BANG! però infligeix 2 de dany a distància 1.";
-                kamura.tipoDeUso = "objetivo1";
+                kamura.descripcion = "Funciona como un BANG! pero inflige 2 de daño a sus vecinos.";
+                kamura.descripcionEnCatalan = "Funciona com un BANG! però infligeix 2 de dany als seus veïns.";
+                kamura.tipoDeUso = "objetivoVecino";
                 kamura.efecto = "dano_2";
                 kamura.esConjurada = true;
                 
