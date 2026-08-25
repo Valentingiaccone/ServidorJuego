@@ -168,8 +168,7 @@ export class MyRoom extends Room {
             victima.estaVivo = false;
             victima.vidas = 0;
 
-            // 1. REPRODUCIR SFX DINÁMICO (Sea el custom del personaje o el de Among Us por defecto)
-            if (victima.rol !== "Sheriff"){
+            if (victima.rol !== "Sheriff" && !victima.estaDesconectado){
                 this.broadcast("sfx", { 
                     sfx: victima.sfxMuerte[0], 
                     silencio: victima.sfxMuerte[1],
@@ -331,6 +330,16 @@ export class MyRoom extends Room {
             if (jugador && jugador.esAnfitrion && this.state.estadoJuego === "Lobby") {
                 const totalJugadores = this.state.jugadores.size;
                 console.log(`🔥 ¡El Anfitrión dio la orden! Inicia la partida con ${totalJugadores} jugadores.`);
+
+                let arrayJugadores = Array.from(this.state.jugadores.entries());
+                
+                arrayJugadores.sort(() => Math.random() - 0.5); 
+                
+                this.state.jugadores.clear(); 
+                
+                arrayJugadores.forEach(([id, jug]) => {
+                    this.state.jugadores.set(id, jug); 
+                });
 
                 this.broadcast("musica", "seleccionDePersonaje")
                 
@@ -1155,7 +1164,7 @@ export class MyRoom extends Room {
                             let p: number = this.state.probabilidadPapa;
                             if (p > 15) p = 15;
                             
-                            this.broadcast("notificacion_turno", `💨 ¡Salió Verde! La Papa no explotó, pero la probabilidad aumentó a ${p}/16.`);
+                            this.broadcast("notificacion_turno", `💨 ¡Salió Verde! La Papapum no explotó, pero la probabilidad aumentó a ${p}/16.`);
                             this.evaluarFasePrision(client.sessionId);
                         }
                     }
@@ -1490,6 +1499,7 @@ export class MyRoom extends Room {
                     this.state.jugadorEnPeligro = "";
                     this.state.atacanteActual = "";
                     this.state.usosBarril = 0;
+                    this.actualizarMusicaAutomatica()
                 }
             }
         });
@@ -1561,6 +1571,7 @@ export class MyRoom extends Room {
             jugadorQueSeVa.vidas = -999;
             jugadorQueSeVa.estaMuertoFalso = false;
             jugadorQueSeVa.estaDesconectado = true
+            this.broadcast("sfx", "desconectado")
             this.evaluarMuerte(jugadorQueSeVa);
 
             // 2. Si era su turno, lo pasamos al siguiente
@@ -1610,7 +1621,7 @@ export class MyRoom extends Room {
         for (let i = 0; i < cantidad; i++) {
             if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
                 let arrayDescarte = Array.from(this.state.descarte);
-                arrayDescarte.sort(() => Math.random() - 0.5);
+                arrayDescarte.sort(() => Math.random() - 0.5)
                 this.state.descarte.clear();
                 arrayDescarte.forEach(carta => this.state.mazo.push(carta));
             }

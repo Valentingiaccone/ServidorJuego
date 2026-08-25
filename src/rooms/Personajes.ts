@@ -90,10 +90,19 @@ export class Berry implements IPersonaje {
         
         jugador.contadorDescartes++;
         if (jugador.contadorDescartes >= 2) {
+
+            let totalVivos = 0;
+
+            sala.state.jugadores.forEach((j: any) => {
+                if (j.estaVivo) {
+                    totalVivos++;
+                }
+            });
+
             jugador.contadorDescartes = 0;
             sala.repartirCartas(jugador, 1, "pasiva")
             let texto: string = `🍓 ${jugador.personaje} roba una carta`
-            if (jugador.vidas < jugador.vidasMaximas) {
+            if (jugador.vidas < jugador.vidasMaximas && totalVivos !== 2) {
                 jugador.vidas++;
                 texto += ` y se cura 1 vida`
             }
@@ -145,8 +154,16 @@ export class Tralalero implements IPersonaje {
     onPasarTurno(sala: any, jugador: any) {
         if (jugador.mano.length === 0) {
 
+            let totalVivos = 0;
+
+            sala.state.jugadores.forEach((j: any) => {
+                if (j.estaVivo) {
+                    totalVivos++;
+                }
+            });
+
             let curacion: number = 0
-            if (jugador.vidas < jugador.vidasMaximas){
+            if (jugador.vidas < jugador.vidasMaximas && totalVivos !== 2){
                 jugador.vidas++;
                 curacion++
             }
@@ -521,6 +538,9 @@ export class Flowery implements IPersonaje {
     sfxDefault = "sfxFlowery"
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
+        if (!jugador.estaVivo){
+            return
+        }
         // Genera un número aleatorio entre 28 y 33, luego lo divide por 100
         let crecimiento = (Math.floor(Math.random() * 6) + 28) / 100;
         jugador.alturaFlowery += crecimiento;
