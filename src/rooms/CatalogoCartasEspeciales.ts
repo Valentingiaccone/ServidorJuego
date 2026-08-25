@@ -121,7 +121,7 @@ export class CatalogoCartasEspeciales {
         clon.descripcion = "Te otorga +1 de vida extra que supera tu máximo. Dura 1 ronda completa.";
         clon.descripcionEnCatalan = "T'atorga +1 de vida extra que supera el teu màxim. Dura 1 ronda completa.";
         clon.tipoDeUso = "instantanea";
-        clon.efecto = "equiparEscudo"; // Este es el identificador que leerá el despachador
+        clon.efecto = "equiparEscudo";
         clon.esConjurada = false;
         return clon;
     }
@@ -134,7 +134,7 @@ export class CatalogoCartasEspeciales {
             { id: "tiendaDeJuju", copias: 1},
             { id: "papapum", copias: 1},
             { id: "rayo", copias: 1},
-            { id: "escudo", copias: 2 }, // <-- NUESTRA NUEVA CARTA
+            { id: "escudo", copias: 2 },
         ];
     }
 
@@ -146,7 +146,7 @@ export class CatalogoCartasEspeciales {
             case "tiendaDeJuju": return this.crearTiendaDeJuju();
             case "papapum": return this.crearPapapum();
             case "rayo": return this.crearRayo();
-            case "escudo": return this.crearEscudo(); // <-- EL CONSTRUCTOR
+            case "escudo": return this.crearEscudo();
 
             default: return null;
         }

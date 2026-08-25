@@ -768,7 +768,6 @@ export class Luciergana implements IPersonaje {
             if (atacante && atacante !== victima){
                 sala.broadcast("notificacion_turno", `🐝💡 La ${victima.personaje} le refleja ${cantidad} de daño a ${atacante.nombre}`)
                 Utilidades.procesarDano(sala, atacante, victima, cantidad, "LUCIERGANA");
-            }
             } else {
                 sala.broadcast("notificacion_turno", `🐝💡 La ${victima.personaje} absorbe ${cantidad} de daño`)
             }

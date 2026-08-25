@@ -692,13 +692,9 @@ export class EfectoRayo implements IEfectoCarta {
 
 export class EfectoEscudo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        
-        // ¡LA MAGIA DE LA ESCALABILIDAD!
-        // Le damos 1 escudo, que dura 2 turnos (1 ronda completa)
-        Utilidades.agregarEscudos(jugadorQueJuega, 1, 2);
+        Utilidades.agregarEscudos(jugadorQueJuega, 1, 1);
 
-        // Los mensajes y sonidos se quedan acá, así la utilidad es anónima
-        sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.nombre} bebió una ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
+        sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.nombre} usó ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         sala.broadcast("sfx", "curacion"); 
 

@@ -616,7 +616,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 });
 
-                let cantidadDeCartasExtension = 5;
+                let cantidadDeCartasExtension = 6
                 
                 let poolRaras = CatalogoCartasEspeciales.obtenerPoolExtensiones();
                 
@@ -721,6 +721,14 @@ export class MyRoom extends Room {
                         pasiva.onIniciarPartida(this, j)
                     }
                 });
+
+                const numero: number = Math.floor(Math.random() * 2)
+
+                if (numero == 0){
+                    this.musicaNormal = true
+                } else {
+                    this.musicaNormal = false
+                }
 
                 if (this.musicaNormal){
                     this.broadcast("musica", "juego")
