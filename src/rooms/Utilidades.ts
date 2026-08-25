@@ -1,5 +1,5 @@
 export class Utilidades {
-    
+    //pepe
     public static procesarDano(sala: any, victima: any, atacante: any, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
         
         if (!victima || !victima.estaVivo) return; 
