@@ -63,25 +63,28 @@ export class EfectoCurarDuo implements IEfectoCarta {
 export class EfectoEquipar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         let nuevoAlcance = parseInt(parametros[2]); 
+        let danoExtraBang = parametros[3] ? parseInt(parametros[3]) : 0;
+        let alcanceMin = parametros[4] ? parseInt(parametros[4]) : 0;
         
         if (jugador.cartaArma) {
             sala.agregarAlDescarte(jugador.cartaArma);
-            console.log(`🗑️ El arma vieja de ${jugador.nombre} fue al descarte.`);
         }
         
         jugador.nombreArma = cartaJugada.nombre;
         jugador.alcanceArma = nuevoAlcance;
-        jugador.cartaArma = cartaJugada;
         
+        // --- ASIGNAMOS LOS VALORES NUEVOS ---
+        jugador.danoExtraArmaBang = danoExtraBang;
+        jugador.alcanceMinimoArma = alcanceMin;
+        
+        jugador.cartaArma = cartaJugada;
         jugador.mano.splice(indiceCarta, 1);
         
-        console.log(`🔫 ${jugador.nombre} se equipó una ${cartaJugada.nombre} (Alcance: ${nuevoAlcance}).`);
         sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         const numero: number = Math.floor(Math.random() * 3);
-        const sfx: string = "equiparArma" + numero
-        sala.broadcast("sfx", sfx)
-        return true
+        sala.broadcast("sfx", "equiparArma" + numero);
+        return true;
     }
 }
 
@@ -143,6 +146,10 @@ export class EfectoTiratachuela implements IEfectoCarta {
             jugadorQueJuega.mano.splice(indiceCarta, 1);
             sala.agregarAlDescarte(cartaJugada);
             sala.state.atacanteActual = client.sessionId;
+
+            // --- LA CORRECCIÓN ACÁ ---
+            sala.causaDePeligro = "TIRATACHUELA"; // Le avisamos a la cola qué es
+            sala.state.danoPendiente = 1;         // Arreglamos el bug del Super Bang
             
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
@@ -256,6 +263,7 @@ export class EfectoTiendaJuju implements IEfectoCarta {
         // 3. Consumir la carta e iniciar la tienda
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
+        sala.broadcast("sfx", "sfxJujuTienda");
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
         
         // Llamamos a la función unificada
@@ -422,7 +430,7 @@ export class EfectoDesequipar implements IEfectoCarta {
                 let cartaPerdida = null;
 
                 // Desequipamos la opción ganadora
-                if (elegida === "arma") { cartaPerdida = victima.cartaArma; victima.cartaArma = null; victima.nombreArma = "Colt .45"; victima.alcanceArma = 1; } 
+                if (elegida === "arma") { cartaPerdida = victima.cartaArma; victima.cartaArma = null; victima.nombreArma = "Colt .45"; victima.alcanceArma = 1; victima.danoExtraArmaBang = 0; victima.alcanceMinimoArma = 0;} 
                 else if (elegida === "mustang") { cartaPerdida = victima.cartaMustang; victima.cartaMustang = null; victima.tieneMustang = false; victima.tieneMustangPro = false; } 
                 else if (elegida === "mira") { cartaPerdida = victima.cartaMira; victima.cartaMira = null; victima.tieneMira = false; victima.tieneMiraPro = false; } 
                 else if (elegida === "barril") { cartaPerdida = victima.cartaBarril; victima.cartaBarril = null; victima.tieneBarril = false; victima.tieneBarrilPro = false; }
@@ -502,7 +510,7 @@ export class EfectoDescartar implements IEfectoCarta {
                     let elegida = opciones[Math.floor(Math.random() * opciones.length)];
                     let cartaPerdida = null;
 
-                    if (elegida === "arma") { cartaPerdida = jugador.cartaArma; jugador.cartaArma = null; jugador.nombreArma = "Colt .45"; jugador.alcanceArma = 1; } 
+                    if (elegida === "arma") { cartaPerdida = jugador.cartaArma; jugador.cartaArma = null; jugador.nombreArma = "Colt .45"; jugador.alcanceArma = 1; jugador.danoExtraArmaBang = 0; jugador.alcanceMinimoArma = 0;} 
                     else if (elegida === "mustang") { cartaPerdida = jugador.cartaMustang; jugador.cartaMustang = null; jugador.tieneMustang = false; jugador.tieneMustangPro = false; } 
                     else if (elegida === "mira") { cartaPerdida = jugador.cartaMira; jugador.cartaMira = null; jugador.tieneMira = false; jugador.tieneMiraPro = false; } 
                     else if (elegida === "barril") { cartaPerdida = jugador.cartaBarril; jugador.cartaBarril = null; jugador.tieneBarril = false; jugador.tieneBarrilPro = false; }

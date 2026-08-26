@@ -61,6 +61,8 @@ export class Jugador extends Schema {
     @type("number") vidasEscudo: number = 0;
     @type("boolean") tieneBarrilPasiva: boolean = false;
     turnosEscudos: number[] = []; // Memoria secreta del servidor
+    @type("number") danoExtraArmaBang: number = 0;
+    @type("number") alcanceMinimoArma: number = 0;
 
     // ----------------------------------------
     // roles especificos

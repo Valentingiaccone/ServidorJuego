@@ -10,6 +10,7 @@ export class MyRoom extends Room {
     state = new MyRoomState();
 
     colaDePeligro: string[] = [];
+    causaDePeligro: string = "";
     colaIndios: string[] = [];
     colaTienda: string[] = [];
     ruletaInterna: any[] = []; // <-- NUEVO
@@ -206,6 +207,8 @@ export class MyRoom extends Room {
                         if (asesino.cartaArma) this.agregarAlDescarte(asesino.cartaArma);
                         asesino.nombreArma = "Colt .45";
                         asesino.alcanceArma = 1;
+                        asesino.danoExtraArmaBang = 0; // RESET
+                        asesino.alcanceMinimoArma = 0; // RESET
                         asesino.cartaArma = null;
 
                         if (asesino.cartaMustang) { this.agregarAlDescarte(asesino.cartaMustang); asesino.tieneMustang = false; asesino.tieneMustangPro = false; asesino.cartaMustang = null; }
@@ -255,6 +258,8 @@ export class MyRoom extends Room {
 
             victima.nombreArma = "Colt .45";
             victima.alcanceArma = 1;
+            victima.danoExtraArmaBang = 0; // RESET
+            victima.alcanceMinimoArma = 0; // RESET
 
             let idVictima = "";
             this.state.jugadores.forEach((j, id) => {
@@ -630,7 +635,7 @@ export class MyRoom extends Room {
                     this.state.mazo.push(nuevaCarta);
                 });
 
-                let cantidadDeCartasExtension = 7
+                let cantidadDeCartasExtension = 9
                 
                 let poolRaras = CatalogoCartasEspeciales.obtenerPoolExtensiones();
                 
@@ -869,6 +874,8 @@ export class MyRoom extends Room {
                 victima.cartaArma = null;
                 victima.nombreArma = "Colt .45";
                 victima.alcanceArma = 1;
+                victima.danoExtraArmaBang = 0; // RESET
+                victima.alcanceMinimoArma = 0; // RESET
             } else if (datos.zonaObjetivo === "mustang" && victima.cartaMustang) {
                 cartaAfectada = victima.cartaMustang;
                 victima.cartaMustang = null;
@@ -953,6 +960,8 @@ export class MyRoom extends Room {
                 victima.cartaArma = null;
                 victima.nombreArma = "Colt .45";
                 victima.alcanceArma = 1;
+                victima.danoExtraArmaBang = 0; // RESET
+                victima.alcanceMinimoArma = 0; // RESET
             } else if (datos.zona === "mustang" && victima.cartaMustang) {
                 cartaAfectada = victima.cartaMustang;
                 victima.cartaMustang = null;
@@ -1284,6 +1293,14 @@ export class MyRoom extends Room {
                 let n = vivos.length;
                 let diferencia = Math.abs(idxAtacante - idxVictima);
                 let distancia = Math.min(diferencia, n - diferencia);
+                let distanciaFisica = Math.min(diferencia, n - diferencia);
+
+                // --- NUEVO: REGLA DE ALCANCE MÍNIMO (Mortero) ---
+                let minArma = atacante.alcanceMinimoArma || 0;
+                if (distanciaFisica < minArma) {
+                    client.send("alerta_personal", `El arma está diseñada para largo alcance. No podés dispararle a alguien tan cerca.`);
+                    return;
+                }
 
                 let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
                 let cartaUsada = (indiceCarta !== -1) ? atacante.mano[indiceCarta] : null;
@@ -1326,9 +1343,15 @@ export class MyRoom extends Room {
                     this.state.jugadorEnPeligro = datosDelDisparo.objetivoId;
                     this.state.atacanteActual = client.sessionId;
                     
-                    // --- NUEVO: MEMORIZAMOS EL DAÑO Y RESETEAMOS EL BARRIL ---
-                    this.state.danoPendiente = (cartaUsada.efecto === "dano_2") ? 2 : 1;
-                    this.state.usosBarril = 0; 
+                    // --- NUEVO: MEMORIZAMOS EL DAÑO Y LA CAUSA ---
+                    let danoBase = (cartaUsada.efecto === "dano_2") ? 2 : 1;
+                    
+                    // ¡EL FRENO DE BALANCE! Solo sumamos el daño extra del arma si es un BANG normal
+                    let bonusDano = (cartaUsada.efecto === "dano_1") ? (atacante.danoExtraArmaBang || 0) : 0;
+                    
+                    this.state.danoPendiente = danoBase + bonusDano; 
+                    this.causaDePeligro = "BANG";
+                    this.state.usosBarril = 0;
                     
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
                     this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada, descripcionCatalan: cartaUsada.descripcionEnCatalan});
@@ -1477,11 +1500,19 @@ export class MyRoom extends Room {
                 }
                 else {
                     recibioBalazo = true;
-                    this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
+                    
+                    // Mensaje dinámico según la causa
+                    if (this.causaDePeligro === "TIRATACHUELA") {
+                        this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} no pudo esquivar el Tiratachuela de ${atacante?.nombre}!`);
+                    } else {
+                        this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
+                    }
+                    
                     const numero: number = Math.floor(Math.random() * 3);
                     this.broadcast("sfx", "bang" + numero);
 
-                    Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, "BANG");
+                    // Pasamos la causa real (this.causaDePeligro) en vez de "BANG" en duro
+                    Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, this.causaDePeligro);
                     
                     if (victima.vidas <= 0) {
                         sobrevivioAlAtaque = false;

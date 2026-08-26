@@ -150,6 +150,32 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearEscopetasReaper(): Carta {
+        let clon = new Carta();
+        clon.id = `arma_reaper_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Escopetas de Reaper";
+        clon.descripcion = "Alcance: 1. Tus BANG! comunes infligen el doble de daño.";
+        clon.descripcionEnCatalan = "Abast: 1. Els teus BANG! comuns infligeixen el doble de dany.";
+        clon.tipoDeUso = "equipamiento";
+        // Formato: equipar_alcance_danoExtra_alcanceMinimo
+        clon.efecto = `equipar_arma_1_1_0`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearMortero(): Carta {
+        let clon = new Carta();
+        clon.id = `arma_mortero_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Mortero";
+        clon.descripcion = "Alcance Infinito. No puede disparar a vecinos bajo ninguna circunstancia";
+        clon.descripcionEnCatalan = "Abast Infinit. No pot disparar veïns sota cap circumstància";
+        clon.tipoDeUso = "equipamiento";
+        // Formato: equipar_alcance_danoExtra_alcanceMinimo
+        clon.efecto = `equipar_arma_999_0_2`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
@@ -160,6 +186,8 @@ export class CatalogoCartasEspeciales {
             { id: "rayo", copias: 1},
             { id: "superBang", copias: 1},
             { id: "clon", copias: 2 },
+            { id: "escopetasReaper", copias: 1 },
+            { id: "mortero", copias: 1 },
         ];
     }
 
@@ -173,6 +201,8 @@ export class CatalogoCartasEspeciales {
             case "rayo": return this.crearRayo();
             case "superBang": return this.crearSuperBang();
             case "clon": return this.crearClon();
+            case "escopetasReaper": return this.crearEscopetasReaper();
+            case "mortero": return this.crearMortero();
 
             default: return null;
         }
