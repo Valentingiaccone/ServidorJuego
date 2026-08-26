@@ -132,8 +132,8 @@ export class Mandy implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteMandy", false];
     sfxDefault = "sfxMandy"
 
-    modificarDistancia(_sala: any, _observador: any, _objetivo: any, distanciaBase: number): number {
-        return Math.max(0, distanciaBase - 2);
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.modificarAlcance += 2
     }
 }
 
@@ -412,6 +412,10 @@ export class Lesly implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLesly", false];
     sfxDefault = "sfxLesly"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.leslySapa = true
+    }
 }
 
 export class Domino implements IPersonaje {
@@ -628,6 +632,10 @@ export class Leon implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLeon", true];
     sfxDefault = "sfxLeon"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.ocultarEstadisticas = true
+    }
 }
 
 export class Kazuma implements IPersonaje {
@@ -935,8 +943,8 @@ export class Mortis implements IPersonaje {
 
 export class Maya implements IPersonaje {
     nombre = "Maya";
-    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos. Para pasar el turno debe tener su salud -1 cartas en mano. (seguramente no funcione con mandy, jetpack cat, domino, lesly, flowery, leon, Haley).";
-    habilidadEnCatalan = "Canalització:\nMentre estigui viva, utilitza les habilitats dels morts. Per passar el torn, ha de tenir la seva salut -1 cartes a la mà. (seguramente no funcione con mandy, jetpack cat, domino, lesly, flowery, leon, Haley).";
+    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos. Para pasar el turno debe tener su salud -1 cartas en mano. (seguramente no funcione con domino, flowery, Haley).";
+    habilidadEnCatalan = "Canalització:\nMentre estigui viva, utilitza les habilitats dels morts. Per passar el torn, ha de tenir la seva salut -1 cartes a la mà. (seguramente no funcione con domino, flowery, Haley).";
     vidasBase = 4;
 
     // =================================================================
@@ -1250,8 +1258,8 @@ export class RaymundoEscudos implements IPersonaje {
 
 export class Cubo implements IPersonaje {
     nombre = "Cubo";
-    habilidad = "Geometry dash:\nCuando jugás una carta, cambias a un modo aleatorio, CUBO: coloca en un punto de tipo EXITO en las ruletas , una moneda, si sale roba 2 cartas, NAVE: si tiene 3 cartas o menos, aumenta su distancia a la que lo ven en 1, BALL: descartar una carta en tu turno te da otra (una vez por turno), UFO: te salva de la muerte (1 uso), WAVE: usar Fallo conjura otro Fallo y no cambia tu modo, ROBOT: al recibir daño, si tiene 3 cartas o menos, roba una carta, ARAÑA: baja la probabilidad de los demas de salir de prision, y aumenta para vos, SWING COPTER: si tenes 4 cartas o mas en tu mano, te protege de tu siguiente golpe por una ronda.";
-    habilidadEnCatalan = "Geometry dash:\nQuan jugues una carta, canvies a un mode aleatori. CUB: col·loca en un punt de tipus ÈXIT de les ruletes una moneda; si surt, roba 2 cartes. NAU: si té 3 cartes o menys, augmenta en 1 la distància a la qual el veuen. BALL: descartar una carta durant el teu torn et permet robar-ne una altra (un cop per torn). OVNI: et salva de la mort (1 ús). ONA: fer servir FALLADA conjura una altra FALLADA i no canvia el teu mode. ROBOT: en rebre dany, si té 3 cartes o menys, roba una carta. ARANYA: redueix la probabilitat que els altres surtin de la presó i augmenta la teva. HELICÒPTER SWING: si tens 4 cartes o més a la mà, et protegeix del teu següent cop durant una ronda.";
+    habilidad = "Geometry dash:\nCuando jugás una carta, cambias a un modo aleatorio, CUBO: coloca en un punto de tipo EXITO en las ruletas , una moneda, si sale roba 2 cartas, NAVE: aumenta su distancia a la que lo ven en 1, BALL: descartar una carta en tu turno te da otra (una vez por turno), UFO: te salva de la muerte (1 uso), WAVE: usar Fallo conjura otro Fallo y no cambia tu modo, ROBOT: al recibir daño, si tiene 3 cartas o menos, roba una carta, ARAÑA: baja la probabilidad de los demas de salir de prision, y aumenta para vos, SWING COPTER: si tenes 4 cartas o mas en tu mano, te protege de tu siguiente golpe por una ronda.";
+    habilidadEnCatalan = "Geometry dash:\nQuan jugues una carta, canvies a un mode aleatori. CUB: col·loca en un punt de tipus ÈXIT de les ruletes una moneda; si surt, roba 2 cartes. NAU: augmenta en 1 la distància a la qual el veuen. BALL: descartar una carta durant el teu torn et permet robar-ne una altra (un cop per torn). OVNI: et salva de la mort (1 ús). ONA: fer servir FALLADA conjura una altra FALLADA i no canvia el teu mode. ROBOT: en rebre dany, si té 3 cartes o menys, roba una carta. ARANYA: redueix la probabilitat que els altres surtin de la presó i augmenta la teva. HELICÒPTER SWING: si tens 4 cartes o més a la mà, et protegeix del teu següent cop durant una ronda.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteCubo", false]; 
     sfxDefault = "sfxCubo";

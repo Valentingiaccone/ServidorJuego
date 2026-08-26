@@ -63,7 +63,8 @@ export class Jugador extends Schema {
     turnosEscudos: number[] = []; // Memoria secreta del servidor
     @type("number") danoExtraArmaBang: number = 0;
     @type("number") alcanceMinimoArma: number = 0;
-    @type("number") modificarDistancia: number = 0;
+    @type("number") modificarDistancia: number = 0; // distancia que los demas te ven a vos
+    @type("number") modificarAlcance: number = 0; // alcance que tenes
 
     // ----------------------------------------
     // roles especificos
@@ -82,6 +83,8 @@ export class Jugador extends Schema {
     @type("number") usosBallEsteTurno: number = 0;
     @type("number") usosUfo: number = 0;
     @type("boolean") swingCopterPuedeProteger: boolean = false
+    @type("boolean") leslySapa: boolean = false
+    @type("boolean") ocultarEstadisticas: boolean = false
 }
 
 export class MyRoomState extends Schema {

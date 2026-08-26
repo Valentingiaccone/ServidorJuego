@@ -1309,6 +1309,10 @@ export class MyRoom extends Room {
                     if (victima.tieneMustangPro) distancia += 2;
                     else if (victima.tieneMustang) distancia += 1;
 
+                    if (victima.modificarAlcance){
+                        distancia -= victima.modificarAlcance // lo puse negativo ya que con mas alcance, la distancia al objetivo se reduce
+                    }
+
                     if (victima.modificarDistancia){
                         distancia += victima.modificarDistancia
                     }
