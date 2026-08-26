@@ -28,6 +28,8 @@ export interface IPersonaje {
 
     modificarSuerteRuletaNormal?(sala: any, jugador: any): number | { cambio: number, fichas: string[] }
 
+    modificarSuerteLocalPrision?(sala: any, jugador: any): number | { cambio: number, fichas: string[] }
+
     modificarSuerteRuletaDinamita?(sala: any, jugador: any): number | { cambio: number, fichas: string[] }
 
     modificarRepartirCarta?(sala: any, jugador: any, causa: string): number
@@ -173,7 +175,6 @@ export class Darryl implements IPersonaje {
 }
 
 export class JetpackCat implements IPersonaje {
-    // maya bug
     nombre = "Jetpack Cat";
     habilidad = "Gato en las alturas:\nLos demás jugadores lo consideran a distancia +1.";
     habilidadEnCatalan: string = "Gat a les altures:\nEls altres jugadors el consideren a distància +1."
@@ -181,12 +182,8 @@ export class JetpackCat implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteJetpackCat", false];
     sfxDefault= "sfxJetpackCat"
 
-    modificarDistancia(sala: any, observador: any, objetivo: any, distanciaBase: number): number {
-        // Si alguien lo está mirando a él para atacarlo, le sumamos 1 a la distancia
-        if (objetivo.personaje === this.nombre) {
-            return distanciaBase + 1;
-        }
-        return distanciaBase;
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.modificarDistancia++
     }
 }
 
@@ -1091,6 +1088,26 @@ export class Maya implements IPersonaje {
         return totalCambio;
     }
 
+    modificarSuerteLocalPrision(sala: any, jugador: any): number | { cambio: number, fichas: string[] } {
+        let totalCambio: number = 0;
+        let totalFichas: string[] = [];
+
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.modificarSuerteLocalPrision) {
+                let resultado = pasiva.modificarSuerteLocalPrision(sala, jugador);
+                if (typeof resultado === "number") {
+                    totalCambio += resultado;
+                } else if (resultado && typeof resultado === "object") {
+                    if (resultado.cambio !== undefined) totalCambio += resultado.cambio;
+                    if (resultado.fichas) totalFichas.push(...resultado.fichas);
+                }
+            }
+        });
+
+        if (totalFichas.length > 0) return { cambio: totalCambio, fichas: totalFichas };
+        return totalCambio;
+    }
+
     modificarSuerteRuletaDinamita(sala: any, jugador: any): number | { cambio: number, fichas: string[] } {
         let totalCambio: number = 0;
         let totalFichas: string[] = [];
@@ -1231,42 +1248,195 @@ export class RaymundoEscudos implements IPersonaje {
     }
 }
 
+export class Cubo implements IPersonaje {
+    nombre = "Cubo";
+    habilidad = "Geometry dash:\nCuando jugás una carta, cambias a un modo aleatorio, CUBO: coloca en un punto de tipo EXITO en las ruletas , una moneda, si sale roba 2 cartas, NAVE: si tiene 3 cartas o menos, aumenta su distancia a la que lo ven en 1, BALL: descartar una carta en tu turno te da otra (una vez por turno), UFO: te salva de la muerte (1 uso), WAVE: usar Fallo conjura otro Fallo y no cambia tu modo, ROBOT: al recibir daño, si tiene 3 cartas o menos, roba una carta, ARAÑA: baja la probabilidad de los demas de salir de prision, y aumenta para vos, SWING COPTER: si tenes 4 cartas o mas en tu mano, te protege de tu siguiente golpe por una ronda.";
+    habilidadEnCatalan = "Geometry dash:\nQuan jugues una carta, canvies a un mode aleatori. CUB: col·loca en un punt de tipus ÈXIT de les ruletes una moneda; si surt, roba 2 cartes. NAU: si té 3 cartes o menys, augmenta en 1 la distància a la qual el veuen. BALL: descartar una carta durant el teu torn et permet robar-ne una altra (un cop per torn). OVNI: et salva de la mort (1 ús). ONA: fer servir FALLADA conjura una altra FALLADA i no canvia el teu mode. ROBOT: en rebre dany, si té 3 cartes o menys, roba una carta. ARANYA: redueix la probabilitat que els altres surtin de la presó i augmenta la teva. HELICÒPTER SWING: si tens 4 cartes o més a la mà, et protegeix del teu següent cop durant una ronda.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteCubo", false]; 
+    sfxDefault = "sfxCubo";
+
+    private cambiarDeModo(sala: any, jugador: any){
+        const modoAnterior: string = jugador.geometryDashModo
+        const array = ["Cubo", "Nave", "Ball", "Ufo", "Wave", "Robot", "Swing copter", "Araña"]
+        const variable: string = jugador.geometryDashModo
+        const index = array.indexOf(variable)
+        if (index !== -1) {
+            array.splice(index, 1)
+        }
+
+        const nuevoModo = array[Math.floor(Math.random() * array.length)]
+        jugador.geometryDashModo = nuevoModo
+        if (nuevoModo == "Ufo"){
+            if (jugador.usosUfo < 1){
+                jugador.spriteAvatarOpcional = nuevoModo
+            } else {
+                jugador.spriteAvatarOpcional = "Ufo roto"
+            }
+        } else if (nuevoModo == "Swing copter"){
+            if (jugador.swingCopterPuedeProteger){
+                jugador.spriteAvatarOpcional = "Swing copter escudo"
+            } else {
+                jugador.spriteAvatarOpcional = "Swing copter"
+            }
+        } else {
+            jugador.spriteAvatarOpcional = nuevoModo
+        }
+
+        if (modoAnterior == "Nave" && nuevoModo != "Nave"){
+            jugador.modificarDistancia--
+        }
+        if (modoAnterior != "Nave" && nuevoModo == "Nave"){
+            jugador.modificarDistancia++
+        }
+
+        sala.broadcast("notificacion_turno", `⏹️ ${jugador.personaje} cambió al modo ${nuevoModo}`)
+    }
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.geometryDashModo = "Cubo"
+        jugador.swingCopterPuedeProteger = true // pensé en algo situacional a que si maya obtiene su poder, juega una carta fallo, cambia a swing copter, con esta linea la estaria protegiendo
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (jugador.geometryDashModo == "Wave" && cartaJugada.nombre == "¡Fallo!"){
+            let carta = CatalogoCartasEspeciales.crearFallo()
+            carta.esConjurada = true
+            jugador.mano.push(carta)
+        } else {
+            this.cambiarDeModo(sala, jugador)
+        }
+    }
+
+    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (victima.vidas <= 0 && victima.geometryDashModo == "Ufo" && victima.usosUfo < 1){
+            victima.usosUfo++
+            victima.vidas += danoCuerpo
+            if (victima.vidas > victima.vidasMaximas){
+                victima.vidas = victima.vidasMaximas
+            }
+            victima.spriteAvatarOpcional = "Ufo roto"
+
+            sala.broadcast("notificacion_turno", `⏹️ El Ufo salva de la muerte a ${victima.personaje} (${victima.usosUfo}/1)`)
+        } else if (victima.geometryDashModo == "Swing copter" && victima.swingCopterPuedeProteger && victima.mano.length >= 4){
+            victima.swingCopterPuedeProteger = false
+            victima.vidas += victima.danoCuerpo
+            if (victima.vidas > victima.vidasMaximas){
+                victima.vidas = victima.vidasMaximas
+            }
+            victima.spriteAvatarOpcional = "Swing copter"
+            sala.broadcast("notificacion_turno", `⏹️ El Swing copter lo protege del golpe`)
+        } else if (victima.vidas > 0 && victima.geometryDashModo == "Robot" && victima.mano.length <= 3){
+            sala.repartirCartas(victima, 1, "pasiva")
+            sala.broadcast("notificacion_turno", `⏹️ ${victima.personaje} roba una carta por su modo Robot`)
+        }
+    }
+
+    modificarSuerteLocalPrision(sala: any, jugador: any): number | { cambio: number; fichas: string[]; } {
+        if (jugador.geometryDashModo == "Araña"){
+            return 6
+        }
+    }
+
+    private aplicarMoneda(jugadorQueTira: any, miJugador: any) {
+        return { cambio: 0, fichas: ["exitoCubo"] }; 
+    }
+
+    modificarSuerteGlobalBarril(sala: any, jugadorQueTira: any, miJugador: any) { 
+        if (miJugador.geometryDashModo != "Cubo"){
+            return 0
+        }
+        return this.aplicarMoneda(jugadorQueTira, miJugador); 
+    }
+
+    modificarSuerteGlobalPrision(sala: any, jugadorQueTira: any, miJugador: any) { 
+        if (miJugador !== jugadorQueTira && miJugador.geometryDashModo == "Araña"){
+            return -4
+        }
+        if (miJugador.geometryDashModo != "Cubo"){
+            return 0
+        }
+        return this.aplicarMoneda(jugadorQueTira, miJugador); 
+    }
+
+    modificarSuerteGlobalDinamita(sala: any, jugadorQueTira: any, miJugador: any) { 
+        if (miJugador.geometryDashModo != "Cubo"){
+            return 0
+        }
+        return this.aplicarMoneda(jugadorQueTira, miJugador); 
+    }
+
+    modificarSuerteGlobalPapapum(sala: any, jugadorQueTira: any, miJugador: any) { 
+        if (miJugador.geometryDashModo != "Cubo"){
+            return 0
+        }
+        return this.aplicarMoneda(jugadorQueTira, miJugador); 
+    }
+
+    onFichaEspecialSeleccionada(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string) {
+        if (fichaVisual === "exitoCubo") {
+            sala.repartirCartas(duenoDeLaFicha, 2, "pasiva");
+            sala.broadcast("notificacion_turno", `⏹️ ${victimaQueTiro.personaje} agarra la moneda asi que ${duenoDeLaFicha.personaje} roba 2 cartas.`);
+        }
+    }
+
+    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
+        if (motivo !== "VOLUNTARIO" || jugador.geometryDashModo != "Ball") return;
+        
+        if (jugador.usosBallEsteTurno < 1) {
+            jugador.usosBallEsteTurno++;
+            
+            sala.repartirCartas(jugador, 1, "pasiva");
+            sala.broadcast("notificacion_turno", `⏹️ ${jugador.personaje} descartó una carta y su pasiva le otorgó 1 carta nueva (${jugador.usosBallEsteTurno}/1).`);
+        }
+    }
+
+    onPasarTurno(_sala: any, jugador: any) {
+        jugador.usosBallEsteTurno = 0; 
+        jugador.swingCopterPuedeProteger = true
+        if (jugador.geometryDashModo == "Swing copter"){
+            jugador.spriteAvatarOpcional = "Swing copter escudo"
+        }
+    }
+}
+
 
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy());
-        this.registrar(new Berry());
-        this.registrar(new Maton());
-        this.registrar(new Mandy());
-        this.registrar(new Tralalero());
-        this.registrar(new Darryl());
-        this.registrar(new JetpackCat());
-        this.registrar(new KayFaraday());
-        this.registrar(new Chester());
-        this.registrar(new Frank());
-        this.registrar(new Pam());
-        this.registrar(new Trucy());
-        this.registrar(new Luigi());
-        this.registrar(new Mario());
-        this.registrar(new Lesly());
-        this.registrar(new Mikotoba());
-        this.registrar(new Domino());
-        this.registrar(new Tilink());
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos());
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        this.registrar(new Tralalero())
+        this.registrar(new Darryl())
+        this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        this.registrar(new Cubo())
     }
 
     private registrar(p: IPersonaje) {

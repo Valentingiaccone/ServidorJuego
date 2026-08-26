@@ -63,6 +63,7 @@ export class Jugador extends Schema {
     turnosEscudos: number[] = []; // Memoria secreta del servidor
     @type("number") danoExtraArmaBang: number = 0;
     @type("number") alcanceMinimoArma: number = 0;
+    @type("number") modificarDistancia: number = 0;
 
     // ----------------------------------------
     // roles especificos
@@ -77,6 +78,10 @@ export class Jugador extends Schema {
     @type("number") robinDescartes: number = 0;
     @type("boolean") mikotobaEstaGordo: boolean = false
     @type("boolean") transformarCuraEnEscudo: boolean = false
+    @type("string") geometryDashModo: string = ""
+    @type("number") usosBallEsteTurno: number = 0;
+    @type("number") usosUfo: number = 0;
+    @type("boolean") swingCopterPuedeProteger: boolean = false
 }
 
 export class MyRoomState extends Schema {

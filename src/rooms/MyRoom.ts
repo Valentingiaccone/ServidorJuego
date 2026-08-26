@@ -415,14 +415,7 @@ export class MyRoom extends Room {
                 }
 
                 for (let c = 0; c < 8; c++) { // originalmente 12
-                    const nuevaCarta = new Carta();
-                    nuevaCarta.id = `fallo_${c}`;
-                    nuevaCarta.nombre = "¡Fallo!";
-                    nuevaCarta.descripcion = "Esquiva un BANG!.";
-                    nuevaCarta.descripcionEnCatalan = "Esquiva un BANG!."
-                    nuevaCarta.tipoDeUso = "oculto"; 
-                    nuevaCarta.efecto = "esquivar"; 
-                    this.state.mazo.push(nuevaCarta);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearFallo())
                 }
 
                 for (let i = 0; i < 4; i++){
@@ -1315,6 +1308,10 @@ export class MyRoom extends Room {
 
                     if (victima.tieneMustangPro) distancia += 2;
                     else if (victima.tieneMustang) distancia += 1;
+
+                    if (victima.modificarDistancia){
+                        distancia += victima.modificarDistancia
+                    }
                 }
 
                 // --- HOOK MODIFICAR DISTANCIA (ATACANTE) ---
@@ -1868,6 +1865,10 @@ export class MyRoom extends Room {
 
             //Suerte Local
             let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
+            // tarea para el que lea esto: cambiar la suerte ruleta normal por barril y colocarle a chester la habilidad esta de prision
+            if (motivo == "Prision" && personajeVictima && personajeVictima.modificarSuerteLocalPrision){
+                procesarSuerte(personajeVictima.modificarSuerteLocalPrision(this, personajeVictima), idJugador)
+            }
             if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
                 procesarSuerte(personajeVictima.modificarSuerteRuletaNormal(this, personajeVictima), idJugador);
             } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {

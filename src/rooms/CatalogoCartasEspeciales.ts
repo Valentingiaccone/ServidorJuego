@@ -176,6 +176,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearFallo(): Carta {
+        let clon = new Carta();
+        clon.id = `fallo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "¡Fallo!";
+        clon.descripcion = "Esquiva un BANG!.";
+        clon.descripcionEnCatalan = "Esquiva un BANG!.";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "esquivar";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
