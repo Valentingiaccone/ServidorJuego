@@ -1522,7 +1522,7 @@ export class MyRoom extends Room {
 
             if (sobrevivioAlAtaque) {
 
-                if (recibioBalazo && atacante && atacante.tienePapa) {
+                if (recibioBalazo && atacante && atacante.tienePapa && this.causaDePeligro == "BANG") {
                     victima.tienePapa = true;
                     victima.cartaPapa = atacante.cartaPapa;
                     atacante.tienePapa = false;
