@@ -1424,8 +1424,8 @@ export class Cubo implements IPersonaje {
 
 export class VonKarma implements IPersonaje {
     nombre = "Von Karma";
-    habilidad = "Falsificación de evidencia:\nPodés perder 1 de vida para robar 3 cartas.";
-    habilidadEnCatalan = "Falsificació d'evidència:\nPots perdre 1 de vida per robar 3 cartes.";
+    habilidad = "Falsificación de evidencia:\nPodés perder 1 de vida para robar 2 cartas.";
+    habilidadEnCatalan = "Falsificació d'evidència:\nPots perdre 1 de vida per robar 2 cartes.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
@@ -1447,9 +1447,9 @@ export class VonKarma implements IPersonaje {
                 return;
             }
             
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} falsificó evidencia! Pierde 1 vida y roba 3 cartas.`);
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} falsificó evidencia! Pierde 1 vida y roba 2 cartas.`);
             
-            Utilidades.procesarDano(sala, jugador, jugador, 1, "FALSIFICACION", true);
+            Utilidades.procesarDano(sala, jugador, jugador, 2, "FALSIFICACION", true);
 
             if (jugador.estaVivo) {
                 sala.repartirCartas(jugador, 3, "pasiva");
