@@ -958,7 +958,7 @@ export class Maya implements IPersonaje {
 
         // 3. Recorremos a los muertos y les robamos la pasiva
         sala.state.jugadores.forEach((j: any) => {
-            if (!j.estaVivo && !j.estaDesconectado) { // De yapa evitamos desconectados
+            if (!j.estaVivo) {
                 let pasiva = sala.gestorPersonajes.obtener(j.personaje);
                 if (pasiva) {
                     callback(pasiva); // Ejecutamos la línea específica de cada poder
@@ -1024,9 +1024,10 @@ export class Maya implements IPersonaje {
             if (pasiva.onMuereOtroPersonaje) pasiva.onMuereOtroPersonaje(sala, miJugador, miJugador);
         });
 
-        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
-            if (pasiva.onIniciarPartida) pasiva.onIniciarPartida(sala, miJugador);
-        });
+        let pasiva: any = sala.gestorPersonajes.obtener(victimaMuerta.personaje)
+        if (pasiva && pasiva.onIniciarPartida){
+            pasiva.onIniciarPartida(sala, miJugador)
+        }
     }
 
     onRecibirCuracion(sala: any, jugador: any): void {
