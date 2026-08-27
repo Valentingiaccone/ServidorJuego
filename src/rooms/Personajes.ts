@@ -1435,6 +1435,7 @@ export class VonKarma implements IPersonaje {
         boton.id = "vonKarma_falsificar";
         boton.textoBoton = "Falsificar Evidencia";
         boton.tooltip = "Pierde 1 HP, roba 3 cartas";
+        boton.spriteBoton = "botonVonKarma"
         jugador.habilidadesActivas.push(boton);
     }
 

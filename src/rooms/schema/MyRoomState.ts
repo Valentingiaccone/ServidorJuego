@@ -14,6 +14,7 @@ export class Carta extends Schema {
 export class HabilidadActiva extends Schema {
     @type("string") id: string = "";
     @type("string") textoBoton: string = "";
+    @type("string") spriteBoton: string = "";
     @type("string") tooltip: string = "";
 }
 
