@@ -1020,11 +1020,11 @@ export class Maya implements IPersonaje {
     }
 
     onMuereOtroPersonaje(sala: any, victimaMuerta: any, miJugador: any): void {
-        this.ejecutarCanalizacion(sala, victimaMuerta, (pasiva) => {
-            if (pasiva.onMuereOtroPersonaje) pasiva.onMuereOtroPersonaje(sala, victimaMuerta, miJugador);
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
+            if (pasiva.onMuereOtroPersonaje) pasiva.onMuereOtroPersonaje(sala, miJugador, miJugador);
         });
 
-        this.ejecutarCanalizacion(sala, victimaMuerta, (pasiva) => {
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
             if (pasiva.onIniciarPartida) pasiva.onIniciarPartida(sala, miJugador);
         });
     }
