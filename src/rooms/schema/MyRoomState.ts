@@ -11,6 +11,12 @@ export class Carta extends Schema {
     // ---------------------------------------------
 }
 
+export class HabilidadActiva extends Schema {
+    @type("string") id: string = "";
+    @type("string") textoBoton: string = "";
+    @type("string") tooltip: string = "";
+}
+
 export class OpcionPersonaje extends Schema {
     @type("string") nombre: string = "";
     @type("string") habilidad: string = "";
@@ -65,6 +71,7 @@ export class Jugador extends Schema {
     @type("number") alcanceMinimoArma: number = 0;
     @type("number") modificarDistancia: number = 0; // distancia que los demas te ven a vos
     @type("number") modificarAlcance: number = 0; // alcance que tenes
+    @type([HabilidadActiva]) habilidadesActivas = new ArraySchema<HabilidadActiva>();
 
     // ----------------------------------------
     // roles especificos

@@ -1,5 +1,5 @@
 import { Room, Client } from "colyseus";
-import { Carta, Jugador, MyRoomState, OpcionPersonaje } from "./schema/MyRoomState.js";
+import { Carta, HabilidadActiva, Jugador, MyRoomState, OpcionPersonaje } from "./schema/MyRoomState.js";
 import { DespachadorDeCartas } from "./EfectosCartas.js";
 import { GestorPersonajes } from "./Personajes.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
@@ -1583,6 +1583,19 @@ export class MyRoom extends Room {
 
                 this.broadcast("notificacion_turno", `🛍️ ${jugador.nombre} agarró una carta.`);
                 this.avanzarColaTienda();
+            }
+        });
+
+        this.onMessage("usar_habilidad_activa", (client, idHabilidad) => {
+            if (this.state.estadoJuego === "Jugando" && this.state.turnoActual === client.sessionId && !this.juegoPausado()) {
+                let jugador = this.state.jugadores.get(client.sessionId);
+                
+                if (jugador && jugador.estaVivo) {
+                    let pasiva = this.gestorPersonajes.obtener(jugador.personaje);
+                    if (pasiva && pasiva.ejecutarHabilidadActiva) {
+                        pasiva.ejecutarHabilidadActiva(this, jugador, client, idHabilidad);
+                    }
+                }
             }
         });
     }

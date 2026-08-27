@@ -1,7 +1,7 @@
 // Personajes.ts
 
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
-import { Carta } from "./schema/MyRoomState.js";
+import { Carta, HabilidadActiva } from "./schema/MyRoomState.js";
 import { Utilidades } from "./Utilidades.js";
 
 // 1. EL CONTRATO ENRIQUECIDO: Ahora pasamos TODO el contexto de la mesa
@@ -57,6 +57,8 @@ export interface IPersonaje {
     onIniciarPartida?(sala: any, jugador: any): void
 
     onFichaEspecialSeleccionada?(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void;
+
+    ejecutarHabilidadActiva?(sala: any, jugador: any, client: any, idHabilidad: string): void;
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -970,6 +972,17 @@ export class Maya implements IPersonaje {
     // =================================================================
 
 
+    // --- HOOKS DE BOTONES ---
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.ejecutarHabilidadActiva) {
+                pasiva.ejecutarHabilidadActiva(sala, jugador, client, idHabilidad);
+            }
+        });
+    }
+
+
     // --- HOOKS DE ACCIÓN ---
 
     onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
@@ -1408,6 +1421,41 @@ export class Cubo implements IPersonaje {
     }
 }
 
+export class VonKarma implements IPersonaje {
+    nombre = "Von Karma";
+    habilidad = "Falsificación de evidencia:\nPodés perder 1 de vida para robar 3 cartas.";
+    habilidadEnCatalan = "Falsificació d'evidència:\nPots perdre 1 de vida per robar 3 cartes.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
+    sfxDefault = "sfxMensaje";
+
+    onIniciarPartida(sala: any, jugador: any) {
+        let boton = new HabilidadActiva();
+        boton.id = "vonKarma_falsificar";
+        boton.textoBoton = "Falsificar Evidencia";
+        boton.tooltip = "Pierde 1 HP, roba 3 cartas";
+        jugador.habilidadesActivas.push(boton);
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string) {
+        if (idHabilidad === "vonKarma_falsificar") {
+            
+            if (jugador.vidas <= 1) {
+                client.send("alerta_personal", "Necesitás más de 1 vida para falsificar evidencia, o morirías en el intento.");
+                return;
+            }
+            
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} falsificó evidencia! Pierde 1 vida y roba 3 cartas.`);
+            
+            Utilidades.procesarDano(sala, jugador, jugador, 1, "FALSIFICACION", true);
+
+            if (jugador.estaVivo) {
+                sala.repartirCartas(jugador, 3, "pasiva");
+            }
+        }
+    }
+}
+
 
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
@@ -1418,7 +1466,7 @@ export class GestorPersonajes {
         // this.registrar(new Berry())
         // this.registrar(new Maton())
         // this.registrar(new Mandy())
-        this.registrar(new Tralalero())
+        // this.registrar(new Tralalero())
         this.registrar(new Darryl())
         this.registrar(new JetpackCat())
         // this.registrar(new KayFaraday())
@@ -1441,10 +1489,11 @@ export class GestorPersonajes {
         // this.registrar(new Haley())
         // this.registrar(new Maggey())
         // this.registrar(new Mortis())
-        // this.registrar(new Maya())
+        this.registrar(new Maya())
         // this.registrar(new Geraldo())
         // this.registrar(new RaymundoEscudos())
         this.registrar(new Cubo())
+        this.registrar(new VonKarma())
     }
 
     private registrar(p: IPersonaje) {
