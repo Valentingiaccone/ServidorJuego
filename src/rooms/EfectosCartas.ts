@@ -393,7 +393,6 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
 export class EfectoDesequipar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
         
-        // 1. Extraemos el objetivo usando el sistema universal
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
 
@@ -402,62 +401,27 @@ export class EfectoDesequipar implements IEfectoCarta {
             return false;
         }
 
-        // 2. Extraemos la cantidad (por ej: "desequipar_1" -> cantidad = 1)
         let cantidad = 1; 
         if (parametros.length >= 3 && !isNaN(parseInt(parametros[1]))) {
             cantidad = parseInt(parametros[1]);
         }
 
-        let desequipoAlgo = false;
-        let cartasVoladas: string[] = []; // Para guardarnos los nombres y armar un lindo mensaje
+        let cartasVoladas: string[] = [];
 
-        // 3. Bucle según la cantidad solicitada
         for (let i = 0; i < cantidad; i++) {
-            let opciones: string[] = [];
+            let cartaDestruida = Utilidades.descartarEquipamientoAleatorio(sala, victima, client);
             
-            // Chequeamos qué tiene equipado EN ESTE MOMENTO
-            if (victima.cartaArma) opciones.push("arma");
-            if (victima.cartaMustang) opciones.push("mustang");
-            if (victima.cartaMira) opciones.push("mira");
-            if (victima.cartaBarril) opciones.push("barril");
-            if (victima.cartaPrision) opciones.push("prision");
-            if (victima.cartaDinamita) opciones.push("dinamita");
-            if (victima.cartaPapa) opciones.push("papa");
-
-            if (opciones.length > 0) {
-                // Elegimos una opción al azar
-                let elegida = opciones[Math.floor(Math.random() * opciones.length)];
-                let cartaPerdida = null;
-
-                // Desequipamos la opción ganadora
-                if (elegida === "arma") { cartaPerdida = victima.cartaArma; victima.cartaArma = null; victima.nombreArma = "Colt .45"; victima.alcanceArma = 1; victima.danoExtraArmaBang = 0; victima.alcanceMinimoArma = 0;} 
-                else if (elegida === "mustang") { cartaPerdida = victima.cartaMustang; victima.cartaMustang = null; victima.tieneMustang = false; victima.tieneMustangPro = false; } 
-                else if (elegida === "mira") { cartaPerdida = victima.cartaMira; victima.cartaMira = null; victima.tieneMira = false; victima.tieneMiraPro = false; } 
-                else if (elegida === "barril") { cartaPerdida = victima.cartaBarril; victima.cartaBarril = null; victima.tieneBarril = false; victima.tieneBarrilPro = false; }
-                else if (elegida === "prision") { cartaPerdida = victima.cartaPrision; victima.cartaPrision = null; victima.estaEnPrision = false; }
-                else if (elegida === "dinamita") { cartaPerdida = victima.cartaDinamita; victima.cartaDinamita = null; victima.tieneDinamita = false; }
-                else if (elegida === "papa") { cartaPerdida = victima.cartaPapa; victima.cartaPapa = null; victima.tienePapa = false; }
-
-                if (cartaPerdida) {
-                    desequipoAlgo = true;
-                    cartasVoladas.push(cartaPerdida.nombre);
-                    
-                    // Va DIRECTO al descarte en vez de la mano, procesando posibles maldiciones
-                    sala.agregarAlDescarte(cartaPerdida, victima, client);
-                }
+            if (cartaDestruida) {
+                cartasVoladas.push(cartaDestruida.nombre);
             } else {
-                // Si la lista de opciones está vacía, cortamos el bucle porque ya no tiene nada más
-                break; 
+                break;
             }
         }
 
-        // 4. Si después de todo no se pudo quitar nada, se cancela la jugada
-        if (!desequipoAlgo) {
+        if (cartasVoladas.length === 0) {
             client.send("alerta_personal", `${victima.nombre} no tiene ningún equipamiento para quitarle.`);
             return false;
         }
-
-        // --- SI LLEGÓ HASTA ACÁ, LA JUGADA FUE EXITOSA ---
 
         let nombresCartas = cartasVoladas.join(" y ");
         sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.nombre} lanzó ${cartaJugada.nombre}! ${victima.nombre} perdió ${nombresCartas}, directo al descarte.`);
@@ -497,39 +461,17 @@ export class EfectoDescartar implements IEfectoCarta {
         } 
         else if (tipoMaldicion === "comilon") {
             for (let i = 0; i < cantidad; i++) {
-                let opciones: string[] = [];
-                if (jugador.cartaArma) opciones.push("arma");
-                if (jugador.cartaMustang) opciones.push("mustang");
-                if (jugador.cartaMira) opciones.push("mira");
-                if (jugador.cartaBarril) opciones.push("barril");
-                if (jugador.cartaPrision) opciones.push("prision");
-                if (jugador.cartaDinamita) opciones.push("dinamita");
-                if (jugador.cartaPapa) opciones.push("papa");
+                
+                let cartaDevorada = Utilidades.descartarEquipamientoAleatorio(sala, jugador, client);
 
-                if (opciones.length > 0) {
-                    let elegida = opciones[Math.floor(Math.random() * opciones.length)];
-                    let cartaPerdida = null;
-
-                    if (elegida === "arma") { cartaPerdida = jugador.cartaArma; jugador.cartaArma = null; jugador.nombreArma = "Colt .45"; jugador.alcanceArma = 1; jugador.danoExtraArmaBang = 0; jugador.alcanceMinimoArma = 0;} 
-                    else if (elegida === "mustang") { cartaPerdida = jugador.cartaMustang; jugador.cartaMustang = null; jugador.tieneMustang = false; jugador.tieneMustangPro = false; } 
-                    else if (elegida === "mira") { cartaPerdida = jugador.cartaMira; jugador.cartaMira = null; jugador.tieneMira = false; jugador.tieneMiraPro = false; } 
-                    else if (elegida === "barril") { cartaPerdida = jugador.cartaBarril; jugador.cartaBarril = null; jugador.tieneBarril = false; jugador.tieneBarrilPro = false; }
-                    else if (elegida === "prision") { cartaPerdida = jugador.cartaPrision; jugador.cartaPrision = null; jugador.estaEnPrision = false; }
-                    else if (elegida === "dinamita") { cartaPerdida = jugador.cartaDinamita; jugador.cartaDinamita = null; jugador.tieneDinamita = false; }
-                    else if (elegida === "papa") { cartaPerdida = jugador.cartaPapa; jugador.cartaPapa = null; jugador.tienePapa = false; }
-
-                    if (cartaPerdida) {
-                        sala.broadcast("notificacion_turno", `👾 ¡Una maldición devoró un equipamiento (${cartaPerdida.nombre}) de ${jugador.nombre}!`);
-                        
-                        // Si el equipamiento que se comió TAMBIÉN es maldito, esto dispara la cadena automáticamente
-                        sala.agregarAlDescarte(cartaPerdida, jugador, client);
-                    }
+                if (cartaDevorada) {
+                    sala.broadcast("notificacion_turno", `👾 ¡Una maldición devoró un equipamiento (${cartaDevorada.nombre}) de ${jugador.nombre}!`);
                 } else {
                     sala.broadcast("notificacion_turno", `👾 Una maldición intentó actuar, pero ${jugador.nombre} ya no tenía equipamiento.`);
                     break; 
                 }
             }
-        } 
+        }
         else if (tipoMaldicion === "maldita") {
             for (let i = 0; i < cantidad; i++) {
                 if (jugador.mano.length > 0) {

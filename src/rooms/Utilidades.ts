@@ -96,4 +96,43 @@ export class Utilidades {
             }
         }
     }
+
+    public static descartarEquipamientoAleatorio(sala: any, jugador: any, client: any): any | null {
+        let opciones: string[] = [];
+        
+        if (jugador.cartaArma) opciones.push("arma");
+        if (jugador.cartaMustang) opciones.push("mustang");
+        if (jugador.cartaMira) opciones.push("mira");
+        if (jugador.cartaBarril) opciones.push("barril");
+        if (jugador.cartaPrision) opciones.push("prision");
+        if (jugador.cartaDinamita) opciones.push("dinamita");
+        if (jugador.cartaPapa) opciones.push("papa");
+
+        if (opciones.length === 0) return null;
+
+        let elegida = opciones[Math.floor(Math.random() * opciones.length)];
+        let cartaPerdida = null;
+
+        if (elegida === "arma") { 
+            cartaPerdida = jugador.cartaArma; 
+            jugador.cartaArma = null; 
+            jugador.nombreArma = "Colt .45"; 
+            jugador.alcanceArma = 1; 
+            jugador.danoExtraArmaBang = 0; 
+            jugador.alcanceMinimoArma = 0;
+        } 
+        else if (elegida === "mustang") { cartaPerdida = jugador.cartaMustang; jugador.cartaMustang = null; jugador.tieneMustang = false; jugador.tieneMustangPro = false; } 
+        else if (elegida === "mira") { cartaPerdida = jugador.cartaMira; jugador.cartaMira = null; jugador.tieneMira = false; jugador.tieneMiraPro = false; } 
+        else if (elegida === "barril") { cartaPerdida = jugador.cartaBarril; jugador.cartaBarril = null; jugador.tieneBarril = false; jugador.tieneBarrilPro = false; }
+        else if (elegida === "prision") { cartaPerdida = jugador.cartaPrision; jugador.cartaPrision = null; jugador.estaEnPrision = false; }
+        else if (elegida === "dinamita") { cartaPerdida = jugador.cartaDinamita; jugador.cartaDinamita = null; jugador.tieneDinamita = false; }
+        else if (elegida === "papa") { cartaPerdida = jugador.cartaPapa; jugador.cartaPapa = null; jugador.tienePapa = false; }
+
+        if (cartaPerdida) {
+            sala.agregarAlDescarte(cartaPerdida, jugador, client);
+            return cartaPerdida;
+        }
+
+        return null; // no eliminó ningun equipamiento
+    }
 }

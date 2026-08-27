@@ -256,7 +256,7 @@ export class CatalogoCartasEspeciales {
     }
 
     public static crearCartaFantasmaAleatoria(): Carta {
-        let opciones = ["dano", "curar", "robar", "descartar"];
+        let opciones = ["dano", "curar", "robar", "descartar", "comilon"];
         let elegida = opciones[Math.floor(Math.random() * opciones.length)];
         
         let clon = new Carta();
@@ -284,6 +284,11 @@ export class CatalogoCartasEspeciales {
             clon.descripcion = "Agrega 4 espacios de descarte en la ruleta de un jugador vivo.";
             clon.descripcionEnCatalan = "Afegeix 4 espais de descart a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_descartar_4";
+        } else if (elegida === "comilon") {
+            clon.nombre = "Fantasma comilon";
+            clon.descripcion = "Agrega 3 espacios de eliminacion de equipamiento en la ruleta de un jugador vivo.";
+            clon.descripcionEnCatalan = "Afegeix 3 espais d eliminació d equipament a la ruleta d un jugador viu.";
+            clon.efecto = "embrujar_comilon_3";
         }
         return clon;
     }

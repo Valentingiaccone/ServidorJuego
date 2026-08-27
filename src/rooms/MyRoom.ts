@@ -1057,6 +1057,7 @@ export class MyRoom extends Room {
                 else if (fueExitoStr === "robar") { textoVisual = "¡ROBO!"; colorVerde = true; }
                 else if (fueExitoStr === "dano") { textoVisual = "¡DAÑO!"; colorVerde = false; }
                 else if (fueExitoStr === "descartar") { textoVisual = "¡DESCARTE!"; colorVerde = false; }
+                else if (fueExitoStr === "comilon") { textoVisual = "¡COMILON!"; colorVerde = false; }
             }
 
             this.broadcast("resultado_ruleta", { 
@@ -1203,7 +1204,6 @@ export class MyRoom extends Room {
                             this.broadcast("notificacion_turno", `👻 ¡El embrujo hirió a ${victima?.nombre}! Pierde 1 vida.`);
                             Utilidades.procesarDano(this, victima, null, 1, "EMBRUJO", true);
                         } else if (fueExitoStr === "curar") {
-                            // ¡Usamos el escáner y el médico!
                             if (victima && Utilidades.puedeRecibirCuracion(this, victima)) {
                                 Utilidades.aplicarCuracion(this, victima, 1, "EMBRUJO");
                                 this.broadcast("notificacion_turno", `👻 ¡El embrujo sanó a ${victima?.nombre}!`);
@@ -1220,6 +1220,13 @@ export class MyRoom extends Room {
                                 this.broadcast("notificacion_turno", `👻 ¡El embrujo descartó una carta de ${victima.nombre}!`);
                             } else {
                                 this.broadcast("notificacion_turno", `👻 El embrujo falló, la mano de ${victima?.nombre} estaba vacía.`);
+                            }
+                        } else if (fueExitoStr === "comilon") {
+                            let cartaDevorada = Utilidades.descartarEquipamientoAleatorio(this, victima, client);
+                            if (cartaDevorada) {
+                                this.broadcast("notificacion_turno", `👻 ¡El embrujo devoró un equipamiento ${cartaDevorada.nombre} de ${victima.nombre}!`);
+                            } else {
+                                this.broadcast("notificacion_turno", `👻 El embrujo falló, ${victima?.nombre} no tenía ningún equipamiento.`);
                             }
                         } else {
                             this.broadcast("notificacion_turno", `💨 ¡${victima?.nombre} tuvo suerte y se salvó del embrujo!`);
