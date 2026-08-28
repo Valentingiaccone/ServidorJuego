@@ -1446,10 +1446,10 @@ export class VonKarma implements IPersonaje {
             
             sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} falsificó evidencia! Pierde 1 vida y roba 2 cartas.`);
             
-            Utilidades.procesarDano(sala, jugador, jugador, 2, "FALSIFICACION", true);
+            Utilidades.procesarDano(sala, jugador, jugador, 1, "FALSIFICACION", true);
 
             if (jugador.estaVivo) {
-                sala.repartirCartas(jugador, 3, "pasiva");
+                sala.repartirCartas(jugador, 2, "pasiva");
             }
         }
     }
