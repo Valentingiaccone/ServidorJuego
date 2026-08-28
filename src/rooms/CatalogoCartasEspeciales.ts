@@ -142,8 +142,8 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `clon_card_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         clon.nombre = "Clon";
-        clon.descripcion = "Clona una carta de tu mano aleatoria.";
-        clon.descripcionEnCatalan = "Clona una carta aleatòria de la teva mà.";
+        clon.descripcion = "Clona una carta no clonada de tu mano aleatoria.";
+        clon.descripcionEnCatalan = "Clona una carta no clonada aleatòria de la teva mà.";
         clon.tipoDeUso = "instantanea";
         clon.efecto = "clonarMano";
         clon.esConjurada = false;

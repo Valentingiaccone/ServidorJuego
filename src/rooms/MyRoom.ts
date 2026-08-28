@@ -1126,7 +1126,6 @@ export class MyRoom extends Room implements IMyRoom{
                             const numero: number = Math.floor(Math.random() * 3);
                             const sfx: string = "explosion" + numero;
                             this.broadcast("sfx", sfx);
-                            if (victima) victima.vidas -= 3;
                             
                             if (victima && victima.cartaDinamita) descartarEquipamientoSeguro(victima.cartaDinamita);
                             if (victima) victima.tieneDinamita = false;
@@ -1155,7 +1154,6 @@ export class MyRoom extends Room implements IMyRoom{
                             this.broadcast("notificacion_turno", `💥 ¡PAPA PAPA PAPAPUM, BOOOM! Salió Rojo. El Papapum explotó encima de ${victima?.nombre}.`);
                             const numero = Math.floor(Math.random() * 3);
                             this.broadcast("sfx", "explosion" + numero);
-                            if (victima) victima.vidas -= 2;
                             
                             if (victima && victima.cartaPapa) descartarEquipamientoSeguro(victima.cartaPapa);
                             if (victima) victima.tienePapa = false;
