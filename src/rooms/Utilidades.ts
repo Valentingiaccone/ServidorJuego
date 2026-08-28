@@ -1,6 +1,8 @@
+import { Jugador } from "./schema/MyRoomState.js";
+
 export class Utilidades {
 
-    public static procesarDano(sala: any, victima: any, atacante: any, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
+    public static procesarDano(sala: any, victima: Jugador, atacante: Jugador, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
         
         if (!victima || !victima.estaVivo) return; 
 

@@ -93,6 +93,7 @@ export class Jugador extends Schema {
     @type("boolean") swingCopterPuedeProteger: boolean = false
     @type("boolean") leslySapa: boolean = false
     @type("boolean") ocultarEstadisticas: boolean = false
+    @type("number") descartesBerry: number = 0;
 }
 
 export class MyRoomState extends Schema {

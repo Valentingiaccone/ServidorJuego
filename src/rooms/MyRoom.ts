@@ -4,8 +4,9 @@ import { DespachadorDeCartas } from "./EfectosCartas.js";
 import { GestorPersonajes } from "./Personajes.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { Utilidades } from "./Utilidades.js";
+import { IMyRoom } from "./IMyRoom.js";
 
-export class MyRoom extends Room {
+export class MyRoom extends Room implements IMyRoom{
     maxClients = 15;
     state = new MyRoomState();
 
@@ -1670,7 +1671,7 @@ export class MyRoom extends Room {
         }
     }
 
-    repartirCartas(jugador: any, cantidad: number, causa: string) {
+    repartirCartas(jugador: Jugador, cantidad: number, causa: string) {
         let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
         if (pasivaJugadorActual && pasivaJugadorActual.modificarRepartirCarta) {
             cantidad += pasivaJugadorActual.modificarRepartirCarta(this, jugador, causa)
@@ -1977,7 +1978,7 @@ export class MyRoom extends Room {
                 this.state.jugadorDesenfundando !== "");
     }
 
-    agregarAlDescarte(cartaDescartada: Carta, jugador: any = null, client: any = null): void {
+    agregarAlDescarte(cartaDescartada: Carta, jugador: Jugador = null, client: any = null): void {
         if (!cartaDescartada.esConjurada){
             this.state.descarte.push(cartaDescartada);
         }
@@ -1986,5 +1987,13 @@ export class MyRoom extends Room {
             let partesEfecto = cartaDescartada.efecto.split("_");
             this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, client, jugador, cartaDescartada, -1, partesEfecto, this.gestorPersonajes);
         }
+    }
+
+    agregarRegistro(mensaje: string): void {
+        this.broadcast("notificacion_turno", mensaje)
+    }
+
+    reproducirSfx(sfx: string): void {
+        this.broadcast("sfx", sfx)
     }
 }

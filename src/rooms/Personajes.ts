@@ -1,7 +1,8 @@
 // Personajes.ts
 
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
-import { Carta, HabilidadActiva } from "./schema/MyRoomState.js";
+import { IMyRoom } from "./IMyRoom.js";
+import { Carta, HabilidadActiva, Jugador } from "./schema/MyRoomState.js";
 import { Utilidades } from "./Utilidades.js";
 
 // 1. EL CONTRATO ENRIQUECIDO: Ahora pasamos TODO el contexto de la mesa
@@ -10,17 +11,14 @@ export interface IPersonaje {
     habilidad: string;
     habilidadEnCatalan: string;
     vidasBase: number;
-    // Tupla opcional: [Archivo de sonido, silenciar música]
     sfxMuerte?: [string, boolean, number?];
     sfxDefault?: string;
-    // actualizacion WALENCIA l
-    // Hooks con esteroides (Ganchos a eventos del juego)
-    // causa puede ser: "BANG", "INDIOS", "TIRATACHUELA"
-    onRecibirDano?(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void;
 
-    onDescartarCarta?(sala: any, jugador: any, cartaDescartada: any, motivo: string): void;
+    onRecibirDano?(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void;
+
+    onDescartarCarta?(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void;
     
-    onPasarTurno?(sala: any, jugador: any): void;
+    onPasarTurno?(sala: IMyRoom, jugador: Jugador): void;
     
     puedeDispararBang?(sala: any, atacante: any, victima: any): boolean;
     
@@ -72,10 +70,10 @@ export class ColeCasiddy implements IPersonaje {
     sfxDefault= "sfxCasiddy"
 
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
         if (victima.vidas > 0) {
             sala.repartirCartas(victima, cantidad, "pasiva");
-            sala.broadcast("notificacion_turno", `🤠 ${victima.personaje} robó ${cantidad} carta tras recibir daño por ${causa}.`);
+            sala.agregarRegistro(`🤠 ${victima.personaje} robó ${cantidad} carta tras recibir daño por ${causa}.`);
         }
     }
 }
@@ -88,13 +86,12 @@ export class Berry implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteBerry", false];
     sfxDefault = "sfxBerry"
 
-    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string) {
         if (motivo !== "VOLUNTARIO") return;
-        if (!jugador.contadorDescartes) jugador.contadorDescartes = 0;
         
-        jugador.contadorDescartes++;
-        if (jugador.contadorDescartes >= 2) {
-            jugador.contadorDescartes = 0;
+        jugador.descartesBerry++;
+        if (jugador.descartesBerry >= 2) {
+            jugador.descartesBerry = 0;
             sala.repartirCartas(jugador, 1, "pasiva");
             let texto: string = `🍓 ${jugador.personaje} roba una carta`;
             
@@ -103,12 +100,12 @@ export class Berry implements IPersonaje {
                 texto += ` y recibe curación`;
             }
             texto += ` por su pasiva.`;
-            sala.broadcast("notificacion_turno", texto);
+            sala.agregarRegistro(texto);
         }
     }
 
-    onPasarTurno(_sala: any, jugador: any) {
-        jugador.contadorDescartes = 0; 
+    onPasarTurno(sala: IMyRoom, jugador: Jugador) {
+        jugador.descartesBerry = 0; 
     }
 }
 
@@ -147,7 +144,7 @@ export class Tralalero implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteTralalero", true];
     sfxDefault= "sfxTralalero"
 
-    onPasarTurno(sala: any, jugador: any) {
+    onPasarTurno(sala: IMyRoom, jugador: Jugador) {
         if (jugador.mano.length === 0) {
             let seCuro = false;
             if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
@@ -157,7 +154,7 @@ export class Tralalero implements IPersonaje {
 
             sala.repartirCartas(jugador, 2, "pasiva");
             let extra = seCuro ? "recuperó salud/escudo y " : "";
-            sala.broadcast("notificacion_turno", `🎵 ${jugador.personaje} ${extra}robó 2 cartas gracias a su pasiva.`);
+            sala.agregarRegistro(`🎵 ${jugador.personaje} ${extra}robó 2 cartas gracias a su pasiva.`);
         }
     }
 }
@@ -196,13 +193,13 @@ export class KayFaraday implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteKay", true];
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
         if (atacante && atacante.mano.length > 0 && danoCuerpo > 0) {
             let indiceAleatorio = Math.floor(Math.random() * atacante.mano.length);
             let cartaRobada = atacante.mano.splice(indiceAleatorio, 1)[0];
             victima.mano.push(cartaRobada);
             
-            sala.broadcast("notificacion_turno", `🎭 ¡Kay Faraday perdió vida pero le robó una carta ${cartaRobada.nombre} a ${atacante.nombre}!`);
+            sala.agregarRegistro(`🎭 ¡Kay Faraday perdió vida pero le robó una carta ${cartaRobada.nombre} a ${atacante.nombre}!`);
         }
     }
 }
@@ -375,14 +372,14 @@ export class Mikotoba implements IPersonaje {
         }
     }
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
         this.actualizarNombre(victima, sala)
         if (victima.mikotobaEstaGordo){
             return
         } else {
             if (victima.vidas > 0) {
                 sala.repartirCartas(victima, 1, "pasiva");
-                sala.broadcast("notificacion_turno", `${victima.personaje} robó 1 carta tras recibir daño por ${causa}.`);
+                sala.agregarRegistro(`${victima.personaje} robó 1 carta tras recibir daño por ${causa}.`);
             }
         }
     }
@@ -429,7 +426,7 @@ export class Domino implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteDominub", false];
     sfxDefault = "sfxNitromeme"
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         const numero: number = Math.floor(Math.random() * 3);
         if (numero === 0){
             const dominoCurativo = new Carta();
@@ -474,7 +471,7 @@ export class Tilink implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteTilink", false];
     sfxDefault= "sfxTilink"
 
-    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string) {
         // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
         if (motivo !== "VOLUNTARIO") return;
         
@@ -489,7 +486,7 @@ export class Tilink implements IPersonaje {
         }
         
         // 3. Verificamos que la carta descartada inicialmente sea original
-        if (!_cartaDescartada.esConjurada) {
+        if (!cartaDescartada.esConjurada) {
             
             // 4. Filtramos la mano para quedarnos solo con las cartas que NO son clones
             let cartasOriginalesEnMano = jugador.mano.filter((c: any) => !c.esConjurada);
@@ -506,7 +503,7 @@ export class Tilink implements IPersonaje {
                 let indiceEnMano = jugador.mano.findIndex((c: any) => c.id === cartaAClonar.id);
                 if (indiceEnMano !== -1) {
                     jugador.mano.splice(indiceEnMano, 1);
-                    sala.agregarAlDescarte(cartaAClonar, jugador); 
+                    sala.agregarAlDescarte(cartaAClonar, jugador, null); 
                 }
                 
                 // Creamos EXACTAMENTE 2 CLONES para reemplazarla
@@ -531,13 +528,13 @@ export class Tilink implements IPersonaje {
                 jugador.clonesCreadosEsteTurno++;
                 
                 // Actualizamos la notificación para que la mesa entienda el sacrificio
-                sala.broadcast("notificacion_turno", `🪞 ¡${jugador.personaje} sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/2)`);
-                sala.broadcast("sfx", "tilinkPasiva")
+                sala.agregarRegistro(`🪞 ¡${jugador.personaje} sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/2)`);
+                sala.reproducirSfx("tilinkPasiva")
             }
         }
     }
 
-    onPasarTurno(sala: any, jugador: any) {
+    onPasarTurno(sala: IMyRoom, jugador: Jugador) {
         jugador.clonesCreadosEsteTurno = 0;
     }
 
@@ -648,7 +645,7 @@ export class Kazuma implements IPersonaje {
     sfxMuerte: [string, boolean] = ["kazumaMuere", true];
     sfxDefault = "sfxKazuma"
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
         if (victima.rol === "Sheriff" && victima.vidas > 0) {
             // 50% de probabilidad
             if (Math.random() < 0.5) {
@@ -662,7 +659,7 @@ export class Kazuma implements IPersonaje {
                 kamura.esConjurada = true;
                 
                 victima.mano.push(kamura);
-                sala.broadcast("notificacion_turno", `🗡️ ¡${victima.personaje} ha conjurado su espada Karuma!`);
+                sala.agregarRegistro(`🗡️ ¡${victima.personaje} ha conjurado su espada Karuma!`);
             }
         }
     }
@@ -676,7 +673,7 @@ export class Leah implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
     sfxDefault = "sfxStardew"
 
-    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string) {
         if (motivo !== "VOLUNTARIO") return;
 
         if (!jugador.usosArtesanaEsteTurno) {
@@ -687,11 +684,11 @@ export class Leah implements IPersonaje {
             jugador.usosArtesanaEsteTurno++;
             
             sala.repartirCartas(jugador, 1, "pasiva");
-            sala.broadcast("notificacion_turno", `🛠️ ${jugador.personaje} descartó una carta y su pasiva de Artesana le otorgó 1 carta nueva (${jugador.usosArtesanaEsteTurno}/2).`);
+            sala.agregarRegistro(`🛠️ ${jugador.personaje} descartó una carta y su pasiva de Artesana le otorgó 1 carta nueva (${jugador.usosArtesanaEsteTurno}/2).`);
         }
     }
 
-    onPasarTurno(_sala: any, jugador: any) {
+    onPasarTurno(sala: IMyRoom, jugador: Jugador) {
         jugador.usosArtesanaEsteTurno = 0; 
     }
 }
@@ -704,7 +701,7 @@ export class Robin implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
     sfxDefault = "sfxStardew"
 
-    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string): void {
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
         if (motivo !== "VOLUNTARIO") return;
 
         jugador.robinDescartes++;
@@ -731,7 +728,7 @@ export class Robin implements IPersonaje {
 
         if (eleccion === "Caballo") {
             let cartaMejorada = CatalogoCartasEspeciales.crearCaballoPro();
-            if (jugador.cartaMustang) sala.agregarAlDescarte(jugador.cartaMustang);
+            if (jugador.cartaMustang) sala.agregarAlDescarte(jugador.cartaMustang, jugador, null);
             
             jugador.tieneMustangPro = true;
             jugador.cartaMustang = cartaMejorada;
@@ -739,7 +736,7 @@ export class Robin implements IPersonaje {
         } 
         else if (eleccion === "Mira") {
             let cartaMejorada = CatalogoCartasEspeciales.crearMonoaldeaPro();
-            if (jugador.cartaMira) sala.agregarAlDescarte(jugador.cartaMira);
+            if (jugador.cartaMira) sala.agregarAlDescarte(jugador.cartaMira, jugador, null);
             
             jugador.tieneMiraPro = true;
             jugador.cartaMira = cartaMejorada;
@@ -747,7 +744,7 @@ export class Robin implements IPersonaje {
         } 
         else if (eleccion === "Barril") {
             let cartaMejorada = CatalogoCartasEspeciales.crearBarrilPro();
-            if (jugador.cartaBarril) sala.agregarAlDescarte(jugador.cartaBarril);
+            if (jugador.cartaBarril) sala.agregarAlDescarte(jugador.cartaBarril, jugador, null);
             
             jugador.tieneBarrilPro = true;
             jugador.cartaBarril = cartaMejorada;
@@ -755,7 +752,7 @@ export class Robin implements IPersonaje {
         } 
         else if (eleccion === "Arma") {
             let cartaArmaNueva = CatalogoCartasEspeciales.crearArma(siguienteArma.nombre, siguienteArma.alcance);
-            if (jugador.cartaArma) sala.agregarAlDescarte(jugador.cartaArma); 
+            if (jugador.cartaArma) sala.agregarAlDescarte(jugador.cartaArma, jugador, null); 
 
             jugador.cartaArma = cartaArmaNueva;
             jugador.nombreArma = siguienteArma.nombre;
@@ -763,11 +760,11 @@ export class Robin implements IPersonaje {
             textoMejora = `su arma a ${siguienteArma.nombre}`;
         }
 
-        sala.broadcast("notificacion_turno", `🔨 ¡${jugador.personaje} descartó una carta y mejoró ${textoMejora}!`);
-        sala.broadcast("sfx", "robinMejora"); 
+        sala.agregarRegistro(`🔨 ¡${jugador.personaje} descartó una carta y mejoró ${textoMejora}!`);
+        sala.reproducirSfx("robinMejora"); 
     }
 
-    onPasarTurno(sala: any, jugador: any): void {
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
         jugador.robinDescartes = 0;
     }
 
@@ -803,7 +800,7 @@ export class Luciergana implements IPersonaje {
         jugador.vidasMaximas--
     }
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number){
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number){
         if (danoCuerpo <= 0){
             return
         }
@@ -816,10 +813,10 @@ export class Luciergana implements IPersonaje {
                 victima.vidas = victima.vidasMaximas
             }
             if (atacante && atacante !== victima){
-                sala.broadcast("notificacion_turno", `🐝💡 La ${victima.personaje} le refleja ${cantidad} de daño a ${atacante.nombre}`)
+                sala.agregarRegistro(`🐝💡 La ${victima.personaje} le refleja ${cantidad} de daño a ${atacante.nombre}`)
                 Utilidades.procesarDano(sala, atacante, victima, danoCuerpo, "LUCIERGANA");
             } else {
-                sala.broadcast("notificacion_turno", `🐝💡 La ${victima.personaje} absorbe ${cantidad} de daño`)
+                sala.agregarRegistro(`🐝💡 La ${victima.personaje} absorbe ${cantidad} de daño`)
             }
         } else {
             victima.lucierganaPrendida = true
@@ -827,7 +824,7 @@ export class Luciergana implements IPersonaje {
         }
     }
 
-    onPasarTurno(sala: any, jugador: any): void {
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
         if (jugador.lucierganaPrendida){
             jugador.lucierganaPrendida = false
             jugador.spriteAvatarOpcional = ""
@@ -913,7 +910,7 @@ export class Mortis implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteMortis", true];
     sfxDefault = "sfxMortis"
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         if (victima.vidas > 0){
             for (let i = 0; i < 2; i++){
             let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria()
@@ -922,7 +919,7 @@ export class Mortis implements IPersonaje {
             }
         }
 
-            sala.broadcast("notificacion_turno", `🪏 ${victima.personaje} conjura 2 cartas fantasmales por su pasiva.`)
+            sala.agregarRegistro(`🪏 ${victima.personaje} conjura 2 cartas fantasmales por su pasiva.`)
         }
     }
 
@@ -985,7 +982,7 @@ export class Maya implements IPersonaje {
 
     // --- HOOKS DE ACCIÓN ---
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         this.ejecutarCanalizacion(sala, victima, (pasiva) => {
             if (pasiva.onRecibirDano) pasiva.onRecibirDano(sala, victima, atacante, causa, cantidad, danoCuerpo, danoEscudo);
         });
@@ -997,7 +994,7 @@ export class Maya implements IPersonaje {
         });
     }
     
-    onPasarTurno(sala: any, jugador: any): void {
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.onPasarTurno) pasiva.onPasarTurno(sala, jugador);
         });
@@ -1330,7 +1327,7 @@ export class Cubo implements IPersonaje {
         }
     }
 
-    onRecibirDano(sala: any, victima: any, atacante: any, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         if (victima.vidas <= 0 && victima.geometryDashModo == "Ufo" && victima.usosUfo < 1){
             victima.usosUfo++
             victima.vidas += danoCuerpo
@@ -1339,18 +1336,18 @@ export class Cubo implements IPersonaje {
             }
             victima.spriteAvatarOpcional = "Ufo roto"
 
-            sala.broadcast("notificacion_turno", `⏹️ El Ufo salva de la muerte a ${victima.personaje} (${victima.usosUfo}/1)`)
+            sala.agregarRegistro(`⏹️ El Ufo salva de la muerte a ${victima.personaje} (${victima.usosUfo}/1)`)
         } else if (victima.geometryDashModo == "Swing copter" && victima.swingCopterPuedeProteger && victima.mano.length >= 4){
             victima.swingCopterPuedeProteger = false
-            victima.vidas += victima.danoCuerpo
+            victima.vidas += danoCuerpo
             if (victima.vidas > victima.vidasMaximas){
                 victima.vidas = victima.vidasMaximas
             }
             victima.spriteAvatarOpcional = "Swing copter"
-            sala.broadcast("notificacion_turno", `⏹️ El Swing copter lo protege del golpe`)
+            sala.agregarRegistro(`⏹️ El Swing copter lo protege del golpe`)
         } else if (victima.vidas > 0 && victima.geometryDashModo == "Robot" && victima.mano.length <= 3){
             sala.repartirCartas(victima, 1, "pasiva")
-            sala.broadcast("notificacion_turno", `⏹️ ${victima.personaje} roba una carta por su modo Robot`)
+            sala.agregarRegistro(`⏹️ ${victima.personaje} roba una carta por su modo Robot`)
         }
     }
 
@@ -1402,18 +1399,18 @@ export class Cubo implements IPersonaje {
         }
     }
 
-    onDescartarCarta(sala: any, jugador: any, _cartaDescartada: any, motivo: string) {
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string) {
         if (motivo !== "VOLUNTARIO" || jugador.geometryDashModo != "Ball") return;
         
         if (jugador.usosBallEsteTurno < 1) {
             jugador.usosBallEsteTurno++;
             
             sala.repartirCartas(jugador, 1, "pasiva");
-            sala.broadcast("notificacion_turno", `⏹️ ${jugador.personaje} descartó una carta y su pasiva le otorgó 1 carta nueva (${jugador.usosBallEsteTurno}/1).`);
+            sala.agregarRegistro(`⏹️ ${jugador.personaje} descartó una carta y su pasiva le otorgó 1 carta nueva (${jugador.usosBallEsteTurno}/1).`);
         }
     }
 
-    onPasarTurno(_sala: any, jugador: any) {
+    onPasarTurno(sala: IMyRoom, jugador: Jugador) {
         jugador.usosBallEsteTurno = 0; 
         jugador.swingCopterPuedeProteger = true
         if (jugador.geometryDashModo == "Swing copter"){
@@ -1464,36 +1461,36 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy())
-        // this.registrar(new Berry())
-        // this.registrar(new Maton())
-        // this.registrar(new Mandy())
-        // this.registrar(new Tralalero())
+        this.registrar(new ColeCasiddy())
+        this.registrar(new Berry())
+        this.registrar(new Maton())
+        this.registrar(new Mandy())
+        this.registrar(new Tralalero())
         this.registrar(new Darryl())
         this.registrar(new JetpackCat())
-        // this.registrar(new KayFaraday())
-        // this.registrar(new Chester())
-        // this.registrar(new Frank())
-        // this.registrar(new Pam())
-        // this.registrar(new Trucy())
-        // this.registrar(new Luigi())
-        // this.registrar(new Mario())
-        // this.registrar(new Lesly())
-        // this.registrar(new Mikotoba())
-        // this.registrar(new Domino())
-        // this.registrar(new Tilink())
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
-        // this.registrar(new Haley())
-        // this.registrar(new Maggey())
-        // this.registrar(new Mortis())
+        this.registrar(new KayFaraday())
+        this.registrar(new Chester())
+        this.registrar(new Frank())
+        this.registrar(new Pam())
+        this.registrar(new Trucy())
+        this.registrar(new Luigi())
+        this.registrar(new Mario())
+        this.registrar(new Lesly())
+        this.registrar(new Mikotoba())
+        this.registrar(new Domino())
+        this.registrar(new Tilink())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
+        this.registrar(new Haley())
+        this.registrar(new Maggey())
+        this.registrar(new Mortis())
         this.registrar(new Maya())
-        // this.registrar(new Geraldo())
-        // this.registrar(new RaymundoEscudos())
+        this.registrar(new Geraldo())
+        this.registrar(new RaymundoEscudos())
         this.registrar(new Cubo())
         this.registrar(new VonKarma())
     }
