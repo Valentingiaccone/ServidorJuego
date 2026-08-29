@@ -57,6 +57,8 @@ export interface IPersonaje {
     onFichaEspecialSeleccionada?(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void;
 
     ejecutarHabilidadActiva?(sala: any, jugador: any, client: any, idHabilidad: string): void;
+
+    onHacerDano?(sala: IMyRoom, miJugador: Jugador, victima: Jugador, causa: string): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -116,6 +118,10 @@ export class Maton implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMaton", false];
     sfxDefault= "sfxMaton"
+    
+    onIniciarPartida(sala: any, jugador: any): void {
+        Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
+    }
 
     puedeDispararBang(_sala: any, _atacante: any, _victima: any): boolean {
         return true; 
@@ -1238,8 +1244,8 @@ export class Geraldo implements IPersonaje {
 
 export class RaymundoEscudos implements IPersonaje {
     nombre = "Raymundo Escudos";
-    habilidad = "Mejor Abogado:\nNo puedes recuperar tu salud base. Toda curación que recibas se convierte en un Escudo Permanente y robás una carta.";
-    habilidadEnCatalan = "Millor Advocat:\nNo pots recuperar la teva salut base. Tota curació que rebis es converteix en un Escut Permanent i robes una carta.";
+    habilidad = "Mejor Abogado:\nNo puedes recuperar tu salud base. Toda curación que recibas se convierte en un Escudo Permanente y robás una carta. Comenzás con -1 vida y vida maxima pero con 1 escudo.";
+    habilidadEnCatalan = "Millor Advocat:\nNo pots recuperar la teva salut base. Tota curació que rebis es converteix en un Escut Permanent i robes una carta. Comences amb -1 de vida i de vida màxima, però amb 1 escut.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteRaymundo", true]; 
     sfxDefault = "sfxRaymundo"; 
@@ -1455,44 +1461,117 @@ export class VonKarma implements IPersonaje {
     }
 }
 
+export class Mercy implements IPersonaje {
+    nombre = "Mercy";
+    habilidad = "Los heroes nunca mueren:\nDurante tu turno, podes intercambiar entre que tus Bang! hagan daño o curen, los demas no saben si el Bang! hará daño o curará.";
+    habilidadEnCatalan = "Els herois mai moren:\nDurant el teu torn, pots escollir si els teus Bang! fan mal o curen, els altres no saben si el Bang! farà mal o curarà.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
+    sfxDefault = "sfxMensaje";
+
+    onIniciarPartida(sala: any, jugador: any) {
+        let boton = new HabilidadActiva();
+        boton.id = "mercy_intercambio";
+        boton.textoBoton = "Intercambiar modo";
+        boton.tooltip = "Intercambia entre modo cura y modo daño";
+        boton.spriteBoton = "botonMercyDaño"
+        jugador.habilidadesActivas.push(boton);
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string) {
+        if (idHabilidad === "mercy_intercambio") {
+            if (jugador.vidas > 0){
+                jugador.mercyActivada = !jugador.mercyActivada
+
+                let botonMercy = jugador.habilidadesActivas.find((hab: any) => hab.id === "mercy_intercambio");
+
+                if (botonMercy) {
+                    if (jugador.mercyActivada) {
+                        botonMercy.spriteBoton = "botonMercyCuracion";
+                    } else {
+                        botonMercy.spriteBoton = "botonMercyDaño";
+                    }
+                }
+                
+                let modoActual = jugador.mercyActivada ? "CURACIÓN" : "DAÑO";
+                client.send("alerta_personal", `Ahora estás en modo: ${modoActual}`);
+            }
+        }
+    }
+}
+
+export class Chispitas implements IPersonaje {
+    nombre = "Chispitas";
+    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas, se carga, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga.";
+    habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega..";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
+    sfxDefault = "sfxMensaje";
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.chispitasBandera = true
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (jugador.chispitasCargado && cartaJugada.nombre.includes("Bang")){
+            return
+        }
+        jugador.chispitasBandera = false
+    }
+
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
+        jugador.chispitasBandera = false
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (jugador.chispitasBandera){
+            jugador.chispitasCargado = true
+        }
+
+        jugador.chispitasBandera = true
+    }
+}
+
 
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
         this.registrar(new Maya())
-        this.registrar(new Geraldo())
+        // this.registrar(new Geraldo())
         this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        this.registrar(new Mercy())
+        this.registrar(new Chispitas())
     }
 
     private registrar(p: IPersonaje) {

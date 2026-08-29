@@ -6,6 +6,17 @@ export class Utilidades {
         
         if (!victima || !victima.estaVivo) return; 
 
+        if (causa == "BANG"){
+            if (atacante.chispitasCargado){
+                atacante.chispitasCargado = false
+                cantidad = Infinity
+            }
+            if (atacante.mercyActivada){
+                this.aplicarCuracion(sala, victima, cantidad, causa) 
+                return              
+            }
+        }
+
         let danoRestante = cantidad;
         let cantidadDanoEscudo = 0;
 

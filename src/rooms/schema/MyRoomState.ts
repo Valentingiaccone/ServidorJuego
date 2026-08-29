@@ -94,6 +94,9 @@ export class Jugador extends Schema {
     @type("boolean") leslySapa: boolean = false
     @type("boolean") ocultarEstadisticas: boolean = false
     @type("number") descartesBerry: number = 0;
+    @type("boolean") mercyActivada: boolean = false
+    @type("boolean") chispitasBandera: boolean = false
+    @type("boolean") chispitasCargado: boolean = false
 }
 
 export class MyRoomState extends Schema {

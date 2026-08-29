@@ -1518,7 +1518,6 @@ export class MyRoom extends Room implements IMyRoom{
                     const numero: number = Math.floor(Math.random() * 3);
                     this.broadcast("sfx", "bang" + numero);
 
-                    // Pasamos la causa real (this.causaDePeligro) en vez de "BANG" en duro
                     Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, this.causaDePeligro);
                     
                     if (victima.vidas <= 0) {
