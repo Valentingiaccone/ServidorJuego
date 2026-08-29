@@ -118,7 +118,7 @@ export class Maton implements IPersonaje {
     sfxDefault= "sfxMaton"
     
     onIniciarPartida(sala: any, jugador: any): void {
-        Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
+       // Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
     }
 
     puedeDispararBang(_sala: any, _atacante: any, _victima: any): boolean {
@@ -1316,9 +1316,9 @@ export class Cubo implements IPersonaje {
         sala.broadcast("notificacion_turno", `⏹️ ${jugador.personaje} cambió al modo ${nuevoModo}`)
     }
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.geometryDashModo = "Cubo"
-        jugador.swingCopterPuedeProteger = true // pensé en algo situacional a que si maya obtiene su poder, juega una carta fallo, cambia a swing copter, con esta linea la estaria protegiendo
+        jugador.boolean.set("swingCopterPuedeProteger", true) // pensé en algo situacional a que si maya obtiene su poder, juega una carta fallo, cambia a swing copter, con esta linea la estaria protegiendo
     }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
@@ -1341,8 +1341,8 @@ export class Cubo implements IPersonaje {
             victima.spriteAvatarOpcional = "Ufo roto"
 
             sala.agregarRegistro(`⏹️ El Ufo salva de la muerte a ${victima.personaje} (${victima.usosUfo}/1)`)
-        } else if (victima.geometryDashModo == "Swing copter" && victima.swingCopterPuedeProteger && victima.mano.length >= 4){
-            victima.swingCopterPuedeProteger = false
+        } else if (victima.geometryDashModo == "Swing copter" && victima.boolean.get("swingCopterPuedeProteger") && victima.mano.length >= 4){
+            victima.boolean.set("swingCopterPuedeProteger", false)
             victima.vidas += danoCuerpo
             if (victima.vidas > victima.vidasMaximas){
                 victima.vidas = victima.vidasMaximas
@@ -1416,7 +1416,7 @@ export class Cubo implements IPersonaje {
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador) {
         jugador.usosBallEsteTurno = 0; 
-        jugador.swingCopterPuedeProteger = true
+        jugador.boolean.set("swingCopterPuedeProteger", true)
         if (jugador.geometryDashModo == "Swing copter"){
             jugador.spriteAvatarOpcional = "Swing copter escudo"
         }
@@ -1474,24 +1474,27 @@ export class Mercy implements IPersonaje {
         boton.tooltip = "Intercambia entre modo cura y modo daño";
         boton.spriteBoton = "botonMercyDaño"
         jugador.habilidadesActivas.push(boton);
+
+        jugador.boolean.set("mercyActivada", false)
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string) {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string) {
         if (idHabilidad === "mercy_intercambio") {
             if (jugador.vidas > 0){
-                jugador.mercyActivada = !jugador.mercyActivada
+                const bandera: boolean = jugador.boolean.get("mercyActivada")
+                jugador.boolean.set("mercyActivada", !bandera)
 
                 let botonMercy = jugador.habilidadesActivas.find((hab: any) => hab.id === "mercy_intercambio");
 
                 if (botonMercy) {
-                    if (jugador.mercyActivada) {
+                    if (jugador.boolean.get("mercyActivada")) {
                         botonMercy.spriteBoton = "botonMercyCuracion";
                     } else {
                         botonMercy.spriteBoton = "botonMercyDaño";
                     }
                 }
                 
-                let modoActual = jugador.mercyActivada ? "CURACIÓN" : "DAÑO";
+                let modoActual = jugador.boolean.get("mercyActivada") ? "CURACIÓN" : "DAÑO";
                 client.send("alerta_personal", `Ahora estás en modo: ${modoActual}`);
             }
         }
@@ -1507,28 +1510,34 @@ export class Chispitas implements IPersonaje {
     sfxDefault = "sfxMensaje";
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.chispitasBandera = true
+        jugador.boolean.set("chispitasBandera", true)
+        jugador.boolean.set("chispitasCargado", false)
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
-        if (jugador.chispitasCargado && cartaJugada.nombre.includes("BANG")){
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
+        if (jugador.boolean.get("chispitasCargado") && cartaJugada.nombre.includes("BANG")){
             return
         }
-        jugador.chispitasBandera = false
-        jugador.chispitasCargado = false;
+        jugador.boolean.set("chispitasBandera", false)
+        jugador.boolean.set("chispitasCargado", false)
+        jugador.spriteAvatarOpcional = ""
     }
 
     onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
-        jugador.chispitasBandera = false
-        jugador.chispitasCargado = false;
+        jugador.boolean.set("chispitasBandera", false)
+        jugador.boolean.set("chispitasCargado", false)
+        jugador.spriteAvatarOpcional = ""
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
-        if (jugador.chispitasBandera){
-            jugador.chispitasCargado = true
+        if (jugador.boolean.get("chispitasBandera")){
+            // se carga
+            jugador.spriteAvatarOpcional = "Chispitas cargado"
+            jugador.boolean.set("chispitasCargado", true)
+            jugador.vidasEscudo++
         }
 
-        jugador.chispitasBandera = true
+        jugador.boolean.set("chispitasBandera", true)
     }
 }
 
@@ -1538,38 +1547,38 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy())
-        // this.registrar(new Berry())
-        // this.registrar(new Maton())
-        // this.registrar(new Mandy())
-        // this.registrar(new Tralalero())
-        // this.registrar(new Darryl())
-        // this.registrar(new JetpackCat())
-        // this.registrar(new KayFaraday())
-        // this.registrar(new Chester())
-        // this.registrar(new Frank())
-        // this.registrar(new Pam())
-        // this.registrar(new Trucy())
-        // this.registrar(new Luigi())
-        // this.registrar(new Mario())
-        // this.registrar(new Lesly())
-        // this.registrar(new Mikotoba())
-        // this.registrar(new Domino())
-        // this.registrar(new Tilink())
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
-        // this.registrar(new Haley())
-        // this.registrar(new Maggey())
-        // this.registrar(new Mortis())
+        this.registrar(new ColeCasiddy())
+        this.registrar(new Berry())
+        this.registrar(new Maton())
+        this.registrar(new Mandy())
+        this.registrar(new Tralalero())
+        this.registrar(new Darryl())
+        this.registrar(new JetpackCat())
+        this.registrar(new KayFaraday())
+        this.registrar(new Chester())
+        this.registrar(new Frank())
+        this.registrar(new Pam())
+        this.registrar(new Trucy())
+        this.registrar(new Luigi())
+        this.registrar(new Mario())
+        this.registrar(new Lesly())
+        this.registrar(new Mikotoba())
+        this.registrar(new Domino())
+        this.registrar(new Tilink())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
+        this.registrar(new Haley())
+        this.registrar(new Maggey())
+        this.registrar(new Mortis())
         this.registrar(new Maya())
-        // this.registrar(new Geraldo())
+        this.registrar(new Geraldo())
         this.registrar(new RaymundoEscudos())
-        // this.registrar(new Cubo())
-        // this.registrar(new VonKarma())
+        this.registrar(new Cubo())
+        this.registrar(new VonKarma())
         this.registrar(new Mercy())
         this.registrar(new Chispitas())
     }

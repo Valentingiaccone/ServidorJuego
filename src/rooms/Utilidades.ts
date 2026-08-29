@@ -7,11 +7,11 @@ export class Utilidades {
         if (!victima || !victima.estaVivo) return; 
 
         if (causa == "BANG"){
-            if (atacante.chispitasCargado){
-                atacante.chispitasCargado = false
-                cantidad = Infinity
+            if (atacante.boolean.get("chispitasCargado")){
+                atacante.boolean.set("chispitasCargado", false)
+                cantidad = 999
             }
-            if (atacante.mercyActivada){
+            if (atacante.boolean.get("mercyActivada")){
                 this.aplicarCuracion(sala, victima, cantidad, causa) 
                 return              
             }
@@ -47,11 +47,13 @@ export class Utilidades {
 
         if (!jugador.turnosEscudos) jugador.turnosEscudos = [];
 
-        jugador.vidasEscudo += cantidad;
-
         for (let i = 0; i < cantidad; i++) {
-            jugador.turnosEscudos.push(duracion);
+            if (jugador.turnosEscudos.length < 10){
+                jugador.turnosEscudos.push(duracion);
+            }
         }
+
+        jugador.vidasEscudo = jugador.turnosEscudos.length
 
         // --- EL AVISO A LAS PASIVAS ---
         let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);

@@ -90,13 +90,12 @@ export class Jugador extends Schema {
     @type("string") geometryDashModo: string = ""
     @type("number") usosBallEsteTurno: number = 0;
     @type("number") usosUfo: number = 0;
-    @type("boolean") swingCopterPuedeProteger: boolean = false
     @type("boolean") leslySapa: boolean = false
     @type("boolean") ocultarEstadisticas: boolean = false
     @type("number") descartesBerry: number = 0;
-    @type("boolean") mercyActivada: boolean = false
-    @type("boolean") chispitasBandera: boolean = false
-    @type("boolean") chispitasCargado: boolean = false
+    @type({ map: "number" }) number = new MapSchema<number>();
+    @type({ map: "boolean" }) boolean = new MapSchema<boolean>();
+    @type({ map: "string" }) string = new MapSchema<string>();
 }
 
 export class MyRoomState extends Schema {
