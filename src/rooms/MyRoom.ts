@@ -155,7 +155,7 @@ export class MyRoom extends Room implements IMyRoom{
                 this.agregarAlDescarte(botiquin);
                 
                 // ¡Llamamos a nuestro médico centralizado!
-                Utilidades.aplicarCuracion(this, victima, 1, "BOTIQUIN");
+                Utilidades.aplicarCuracion(this, victima, 1, "BOTIQUIN", false);
                 
                 this.broadcast("notificacion_turno", `🩹 ¡${victima.nombre} usó un ${botiquin.nombre} automáticamente para evitar la muerte!`);
                 
@@ -1205,7 +1205,7 @@ export class MyRoom extends Room implements IMyRoom{
                             Utilidades.procesarDano(this, victima, null, 1, "EMBRUJO", true);
                         } else if (fueExitoStr === "curar") {
                             if (victima && Utilidades.puedeRecibirCuracion(this, victima)) {
-                                Utilidades.aplicarCuracion(this, victima, 1, "EMBRUJO");
+                                Utilidades.aplicarCuracion(this, victima, 1, "EMBRUJO", true);
                                 this.broadcast("notificacion_turno", `👻 ¡El embrujo sanó a ${victima?.nombre}!`);
                             } else {
                                 this.broadcast("notificacion_turno", `👻 El embrujo intentó sanar a ${victima?.nombre}, pero ya estaba al máximo.`);

@@ -96,7 +96,7 @@ export class Berry implements IPersonaje {
             let texto: string = `🍓 ${jugador.personaje} roba una carta`;
             
             if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
-                Utilidades.aplicarCuracion(sala, jugador, 1, "PASIVA");
+                Utilidades.aplicarCuracion(sala, jugador, 1, "PASIVA", false);
                 texto += ` y recibe curación`;
             }
             texto += ` por su pasiva.`;
@@ -152,7 +152,7 @@ export class Tralalero implements IPersonaje {
         if (jugador.mano.length === 0) {
             let seCuro = false;
             if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
-                Utilidades.aplicarCuracion(sala, jugador, 1, "PASIVA");
+                Utilidades.aplicarCuracion(sala, jugador, 1, "PASIVA", false);
                 seCuro = true;
             }
 
@@ -296,7 +296,7 @@ export class Luigi implements IPersonaje {
 
         let seCuro = false;
         if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
-            Utilidades.aplicarCuracion(sala, jugador, 2, "PASIVA");
+            Utilidades.aplicarCuracion(sala, jugador, 2, "PASIVA", false);
             seCuro = true;
         }
 

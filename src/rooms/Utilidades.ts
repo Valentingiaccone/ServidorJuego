@@ -12,7 +12,7 @@ export class Utilidades {
                 cantidad = 999
             }
             if (atacante.boolean.get("mercyActivada")){
-                this.aplicarCuracion(sala, victima, cantidad, causa) 
+                this.aplicarCuracion(sala, victima, cantidad, causa, false) 
                 return              
             }
         }
@@ -80,7 +80,7 @@ export class Utilidades {
         return jugador.vidas < jugador.vidasMaximas;
     }
 
-    public static aplicarCuracion(sala: any, jugador: any, cantidadBase: number, causa: string): void {
+    public static aplicarCuracion(sala: any, jugador: any, cantidadBase: number, causa: string, forzarCuracion: boolean): void {
         if (!jugador || !jugador.estaVivo) return;
 
         let cantidadFinal = cantidadBase;
@@ -95,10 +95,10 @@ export class Utilidades {
             if (j.estaVivo) totalVivos++;
         });
 
-        if (jugador.transformarCuraEnEscudo) {
+        if (jugador.transformarCuraEnEscudo && !forzarCuracion) {
             Utilidades.agregarEscudos(sala, jugador, cantidadFinal, Infinity, "CURACION");
             
-        } else if (totalVivos === 2) {
+        } else if (totalVivos === 2 && !forzarCuracion) {
             Utilidades.agregarEscudos(sala, jugador, cantidadFinal, 1, "CURACION");
             sala.broadcast("notificacion_turno", `🛡️ ¡En duelo a muerte, la curación de ${jugador.nombre} se transforma en Escudo Temporal!`);
             

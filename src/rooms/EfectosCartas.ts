@@ -12,7 +12,7 @@ export interface IEfectoCarta {
 export class EfectoCurar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
         if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
-            Utilidades.aplicarCuracion(sala, jugador, 1, "BOTIQUIN");
+            Utilidades.aplicarCuracion(sala, jugador, 1, "BOTIQUIN", false);
 
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
             sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
@@ -47,8 +47,8 @@ export class EfectoCurarDuo implements IEfectoCarta {
             return false;
         }
 
-        Utilidades.aplicarCuracion(sala, jugadorQueJuega, 1, "CURADUO");
-        Utilidades.aplicarCuracion(sala, victima, 1, "CURADUO");
+        Utilidades.aplicarCuracion(sala, jugadorQueJuega, 1, "CURADUO", false);
+        Utilidades.aplicarCuracion(sala, victima, 1, "CURADUO", false);
 
         sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.nombre} compartieron curación!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
@@ -118,7 +118,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
 
         sala.state.jugadores.forEach((j: any) => {
             if (Utilidades.puedeRecibirCuracion(sala, j)){
-                Utilidades.aplicarCuracion(sala, j, 1, "CURARTODOS");
+                Utilidades.aplicarCuracion(sala, j, 1, "CURARTODOS", false);
             } 
         });
 
