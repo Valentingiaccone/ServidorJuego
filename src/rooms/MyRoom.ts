@@ -338,15 +338,15 @@ export class MyRoom extends Room implements IMyRoom{
                 const totalJugadores = this.state.jugadores.size;
                 console.log(`🔥 ¡El Anfitrión dio la orden! Inicia la partida con ${totalJugadores} jugadores.`);
 
-                let arrayJugadores = Array.from(this.state.jugadores.entries());
+                // let arrayJugadores = Array.from(this.state.jugadores.entries());
                 
-                arrayJugadores.sort(() => Math.random() - 0.5); 
+                // arrayJugadores.sort(() => Math.random() - 0.5); 
                 
-                this.state.jugadores.clear(); 
+                // this.state.jugadores.clear(); 
                 
-                arrayJugadores.forEach(([id, jug]) => {
-                    this.state.jugadores.set(id, jug); 
-                });
+                // arrayJugadores.forEach(([id, jug]) => {
+                //     this.state.jugadores.set(id, jug); 
+                // });
 
                 this.broadcast("musica", "seleccionDePersonaje")
                 
