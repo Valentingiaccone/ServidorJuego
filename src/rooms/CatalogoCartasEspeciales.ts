@@ -58,8 +58,8 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `anderlandis_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         clon.nombre = "Anderlandis"; 
-        clon.descripcion = "Elegí un jugador y ambos recuperan 1 de vida (No funciona cuando quedan 2 vivos).";
-        clon.descripcionEnCatalan = "Tria un jugador, ambdós recuperen 1 de vida (No funciona quan només queden 2 jugadors vius).";
+        clon.descripcion = "Elegí un jugador y ambos recuperan 1 de vida.";
+        clon.descripcionEnCatalan = "Tria un jugador, ambdós recuperen 1 de vida.";
         clon.tipoDeUso = "objetivoUniversal"; 
         clon.efecto = "curarDuo";
         clon.esConjurada = false;

@@ -1,3 +1,4 @@
+import { MapSchema } from "@colyseus/schema"
 import { Carta, Jugador } from "./schema/MyRoomState.js"
 
 export interface IMyRoom {
@@ -10,4 +11,6 @@ export interface IMyRoom {
     agregarAlDescarte(carta: Carta, jugador: Jugador, client: any): void
 
     reproducirSfx(sfx: string): void
+
+    getJugadores(): MapSchema<Jugador>
 }

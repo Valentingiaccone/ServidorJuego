@@ -5,6 +5,7 @@ import { GestorPersonajes } from "./Personajes.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { Utilidades } from "./Utilidades.js";
 import { IMyRoom } from "./IMyRoom.js";
+import { MapSchema } from "@colyseus/schema";
 
 export class MyRoom extends Room implements IMyRoom{
     maxClients = 15;
@@ -1315,8 +1316,8 @@ export class MyRoom extends Room implements IMyRoom{
                     if (victima.tieneMustangPro) distancia += 2;
                     else if (victima.tieneMustang) distancia += 1;
 
-                    if (victima.modificarAlcance){
-                        distancia -= victima.modificarAlcance // lo puse negativo ya que con mas alcance, la distancia al objetivo se reduce
+                    if (atacante.modificarAlcance){
+                        distancia -= atacante.modificarAlcance // lo puse negativo ya que con mas alcance, la distancia al objetivo se reduce
                     }
 
                     if (victima.modificarDistancia){
@@ -1889,12 +1890,12 @@ export class MyRoom extends Room implements IMyRoom{
             let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
             // tarea para el que lea esto: cambiar la suerte ruleta normal por barril y colocarle a chester la habilidad esta de prision
             if (motivo == "Prision" && personajeVictima && personajeVictima.modificarSuerteLocalPrision){
-                procesarSuerte(personajeVictima.modificarSuerteLocalPrision(this, personajeVictima), idJugador)
+                procesarSuerte(personajeVictima.modificarSuerteLocalPrision(this, victima), idJugador)
             }
             if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
-                procesarSuerte(personajeVictima.modificarSuerteRuletaNormal(this, personajeVictima), idJugador);
+                procesarSuerte(personajeVictima.modificarSuerteRuletaNormal(this, victima), idJugador);
             } else if ((motivo === "Dinamita" || motivo === "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaDinamita) {
-                procesarSuerte(personajeVictima.modificarSuerteRuletaDinamita(this, personajeVictima), idJugador);
+                procesarSuerte(personajeVictima.modificarSuerteRuletaDinamita(this, victima), idJugador);
             }
 
             //Suerte Global
@@ -1992,5 +1993,9 @@ export class MyRoom extends Room implements IMyRoom{
 
     reproducirSfx(sfx: string): void {
         this.broadcast("sfx", sfx)
+    }
+
+    getJugadores(): MapSchema<Jugador> {
+        return this.state.jugadores
     }
 }

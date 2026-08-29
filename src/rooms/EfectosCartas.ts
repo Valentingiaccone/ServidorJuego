@@ -613,6 +613,11 @@ export class EfectoEmbrujar implements IEfectoCarta {
 
         jugadorQueJuega.yaJugoFantasma = true;
         jugadorQueJuega.mano.splice(indiceCarta, 1);
+
+        // mejorar esta pavada y hacerla funcion
+        jugadorQueJuega.mano.clear();
+        jugadorQueJuega.yaJugoFantasma = false;
+        sala.avanzarAlSiguienteTurno(client.sessionId);
         
         // ¡Mensaje 100% anónimo!
         sala.broadcast("notificacion_turno", `👻 ¡Un espíritu maligno ha lanzado un embrujo en secreto!`);

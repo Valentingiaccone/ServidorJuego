@@ -20,15 +20,15 @@ export interface IPersonaje {
     
     onPasarTurno?(sala: IMyRoom, jugador: Jugador): void;
     
-    puedeDispararBang?(sala: any, atacante: any, victima: any): boolean;
+    puedeDispararBang?(sala: IMyRoom, atacante: Jugador, victima: Jugador): boolean;
     
     modificarDistancia?(sala: any, observador: any, objetivo: any, distanciaBase: number): number;
 
-    modificarSuerteRuletaNormal?(sala: any, jugador: any): number | { cambio: number, fichas: string[] }
+    modificarSuerteRuletaNormal?(sala: IMyRoom, jugador: Jugador): number | { cambio: number, fichas: string[] }
 
-    modificarSuerteLocalPrision?(sala: any, jugador: any): number | { cambio: number, fichas: string[] }
+    modificarSuerteLocalPrision?(sala: IMyRoom, jugador: Jugador): number | { cambio: number, fichas: string[] }
 
-    modificarSuerteRuletaDinamita?(sala: any, jugador: any): number | { cambio: number, fichas: string[] }
+    modificarSuerteRuletaDinamita?(sala: IMyRoom, jugador: Jugador): number | { cambio: number, fichas: string[] }
 
     modificarRepartirCarta?(sala: any, jugador: any, causa: string): number
 
@@ -118,10 +118,10 @@ export class Maton implements IPersonaje {
     sfxDefault= "sfxMaton"
     
     onIniciarPartida(sala: any, jugador: any): void {
-       // Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
+        Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
     }
 
-    puedeDispararBang(_sala: any, _atacante: any, _victima: any): boolean {
+    puedeDispararBang(sala: IMyRoom, atacante: Jugador, victima: Jugador): boolean {
         return true; 
     }
 }
@@ -216,11 +216,11 @@ export class Chester implements IPersonaje {
     sfxMuerte: [string, boolean, number] = ["muerteChester", false, 0.25];
     sfxDefault= "sfxChester"
 
-    modificarSuerteRuletaNormal(sala: any, jugador: any): number {
+    modificarSuerteRuletaNormal(sala: IMyRoom, jugador: Jugador): number {
         return 4
     }
 
-    modificarSuerteRuletaDinamita(sala: any, jugador: any): number {
+    modificarSuerteRuletaDinamita(sala: IMyRoom, jugador: Jugador): number {
         return 1
     }
 }
@@ -844,12 +844,10 @@ export class Haley implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
     sfxDefault = "sfxStardew"
 
-    // Función auxiliar secreta de Haley para escanear la mesa
-    private esElDeMenosCartas(sala: any, yo: any, victima: any): boolean {
+    private esElDeMenosCartas(sala: IMyRoom, yo: Jugador, victima: Jugador): boolean {
         let minCartas = 999;
         
-        // 1. Buscamos el número mínimo de cartas entre los vivos (excluyéndola a ella)
-        sala.state.jugadores.forEach((j: any) => {
+        sala.getJugadores().forEach((j: any) => {
             if (j.estaVivo && j !== yo) {
                 if (j.mano.length < minCartas) {
                     minCartas = j.mano.length;
@@ -857,12 +855,10 @@ export class Haley implements IPersonaje {
             }
         });
 
-        // 2. Si la víctima a la que intenta atacar tiene ese número mínimo, autorizamos
         return victima.mano.length === minCartas;
     }
 
-    puedeDispararBang(sala: any, atacante: any, victima: any): boolean {
-        // Si la víctima es la que menos cartas tiene, ignora la regla de "1 Bang por turno"
+    puedeDispararBang(sala: IMyRoom, atacante: Jugador, victima: Jugador): boolean {
         return this.esElDeMenosCartas(sala, atacante, victima);
     }
 
@@ -1004,7 +1000,7 @@ export class Maya implements IPersonaje {
         });
     }
     
-    puedeDispararBang(sala: any, atacante: any, victima: any): boolean {
+    puedeDispararBang(sala: IMyRoom, atacante: Jugador, victima: Jugador): boolean {
         let puede: boolean = false;
         this.ejecutarCanalizacion(sala, atacante, (pasiva) => {
             if (pasiva.puedeDispararBang && pasiva.puedeDispararBang(sala, atacante, victima)) puede = true;
@@ -1091,7 +1087,7 @@ export class Maya implements IPersonaje {
 
     // --- HOOKS COMPLEJOS DE RULETA (Objetos/Tuplas) ---
 
-    modificarSuerteRuletaNormal(sala: any, jugador: any): number | { cambio: number, fichas: string[] } {
+    modificarSuerteRuletaNormal(sala: IMyRoom, jugador: Jugador): number | { cambio: number, fichas: string[] } {
         let totalCambio: number = 0;
         let totalFichas: string[] = [];
 
@@ -1111,7 +1107,7 @@ export class Maya implements IPersonaje {
         return totalCambio;
     }
 
-    modificarSuerteLocalPrision(sala: any, jugador: any): number | { cambio: number, fichas: string[] } {
+    modificarSuerteLocalPrision(sala: IMyRoom, jugador: Jugador): number | { cambio: number, fichas: string[] } {
         let totalCambio: number = 0;
         let totalFichas: string[] = [];
 
@@ -1131,7 +1127,7 @@ export class Maya implements IPersonaje {
         return totalCambio;
     }
 
-    modificarSuerteRuletaDinamita(sala: any, jugador: any): number | { cambio: number, fichas: string[] } {
+    modificarSuerteRuletaDinamita(sala: IMyRoom, jugador: Jugador): number | { cambio: number, fichas: string[] } {
         let totalCambio: number = 0;
         let totalFichas: string[] = [];
 
@@ -1230,12 +1226,12 @@ export class Maya implements IPersonaje {
 
 export class Geraldo implements IPersonaje {
     nombre = "Geraldo";
-    habilidad = "Almacenamiento:\nPuede almacenar 3 cartas extras en su mano.";
-    habilidadEnCatalan = "Emmagatzematge:\nPot emmagatzemar 3 cartes addicionals a la seva mà.";
+    habilidad = "Almacenamiento:\nPuede almacenar 5 cartas extras en su mano.";
+    habilidadEnCatalan = "Emmagatzematge:\nPot emmagatzemar 5 cartes addicionals a la seva mà.";
     vidasBase = 4;
 
     modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
-        return 3
+        return 5
     }
 
 }
@@ -1264,9 +1260,9 @@ export class RaymundoEscudos implements IPersonaje {
 
         // 2. Lanzamos el mensaje personalizado según de dónde vino el escudo
         if (causa === "CURACION") {
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó la curación en un Escudo Infinito!`);
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó la curación en un Escudo Infinito y robó una carta!`);
         } else {
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó su Escudo temporal en un Escudo Infinito!`);
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó su Escudo temporal en un Escudo Infinito y robó una carta!`);
         }
     }
 }
@@ -1355,7 +1351,7 @@ export class Cubo implements IPersonaje {
         }
     }
 
-    modificarSuerteLocalPrision(sala: any, jugador: any): number | { cambio: number; fichas: string[]; } {
+    modificarSuerteLocalPrision(sala: IMyRoom, jugador: Jugador): number | { cambio: number; fichas: string[]; } {
         if (jugador.geometryDashModo == "Araña"){
             return 6
         }
@@ -1503,8 +1499,8 @@ export class Mercy implements IPersonaje {
 
 export class Chispitas implements IPersonaje {
     nombre = "Chispitas";
-    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas, se carga, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga.";
-    habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega..";
+    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas, se carga y gana 1 escudo, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga.";
+    habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega i guanya 1 escut. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega..";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
@@ -1521,12 +1517,20 @@ export class Chispitas implements IPersonaje {
         jugador.boolean.set("chispitasBandera", false)
         jugador.boolean.set("chispitasCargado", false)
         jugador.spriteAvatarOpcional = ""
+
+        if (jugador.boolean.get("chispitasCargado")){
+            sala.agregarRegistro(`⚡ ${jugador.personaje} se descarga ya que jugó una carta`)
+        }
     }
 
     onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
         jugador.boolean.set("chispitasBandera", false)
         jugador.boolean.set("chispitasCargado", false)
         jugador.spriteAvatarOpcional = ""
+
+        if (jugador.boolean.get("chispitasCargado")){
+            sala.agregarRegistro(`⚡ ${jugador.personaje} se descarga ya que descartó una carta`)
+        }
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
@@ -1535,6 +1539,7 @@ export class Chispitas implements IPersonaje {
             jugador.spriteAvatarOpcional = "Chispitas cargado"
             jugador.boolean.set("chispitasCargado", true)
             jugador.vidasEscudo++
+            sala.agregarRegistro(`⚡ ¡${jugador.personaje} se carga para preparar un ataque letal y gana un escudo!`)
         }
 
         jugador.boolean.set("chispitasBandera", true)
