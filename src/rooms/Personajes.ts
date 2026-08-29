@@ -57,8 +57,6 @@ export interface IPersonaje {
     onFichaEspecialSeleccionada?(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void;
 
     ejecutarHabilidadActiva?(sala: any, jugador: any, client: any, idHabilidad: string): void;
-
-    onHacerDano?(sala: IMyRoom, miJugador: Jugador, victima: Jugador, causa: string): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -1024,7 +1022,7 @@ export class Maya implements IPersonaje {
 
     onMuereOtroPersonaje(sala: any, victimaMuerta: any, miJugador: any): void {
         this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
-            if (pasiva.onMuereOtroPersonaje) pasiva.onMuereOtroPersonaje(sala, miJugador, miJugador);
+            if (pasiva.onMuereOtroPersonaje) pasiva.onMuereOtroPersonaje(sala, victimaMuerta, miJugador);
         });
 
         let pasiva: any = sala.gestorPersonajes.obtener(victimaMuerta.personaje)
@@ -1513,14 +1511,16 @@ export class Chispitas implements IPersonaje {
     }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
-        if (jugador.chispitasCargado && cartaJugada.nombre.includes("Bang")){
+        if (jugador.chispitasCargado && cartaJugada.nombre.includes("BANG")){
             return
         }
         jugador.chispitasBandera = false
+        jugador.chispitasCargado = false;
     }
 
     onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
         jugador.chispitasBandera = false
+        jugador.chispitasCargado = false;
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {

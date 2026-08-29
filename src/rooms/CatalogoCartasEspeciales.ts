@@ -129,7 +129,7 @@ export class CatalogoCartasEspeciales {
     public static crearSuperBang(): Carta {
         let clon = new Carta();
         clon.id = `superBang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        clon.nombre = "Super Bang!";
+        clon.nombre = "SUPER BANG!";
         clon.descripcion = "Quita 2 vidas a un jugador a tu alcance.";
         clon.descripcionEnCatalan = "Treu 2 vidas a un jugador al teu abast.";
         clon.tipoDeUso = "objetivo";
