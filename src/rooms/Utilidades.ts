@@ -39,6 +39,8 @@ export class Utilidades {
             pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
         }
 
+        sala.broadcast("animacionJugador", {jugador: victima.personaje, animacion: "recibirDano"})
+
         sala.evaluarMuerte(victima, atacante, ignoraEscudo);
     }
 
@@ -109,6 +111,8 @@ export class Utilidades {
             if (pasiva && pasiva.onRecibirCuracion) {
                 pasiva.onRecibirCuracion(sala, jugador);
             }
+
+            sala.broadcast("animacionJugador", {jugador: jugador.personaje, animacion: "recibirCuracion"})
         }
     }
 
