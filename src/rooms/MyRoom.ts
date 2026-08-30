@@ -339,15 +339,15 @@ export class MyRoom extends Room implements IMyRoom{
                 const totalJugadores = this.state.jugadores.size;
                 console.log(`🔥 ¡El Anfitrión dio la orden! Inicia la partida con ${totalJugadores} jugadores.`);
 
-                // let arrayJugadores = Array.from(this.state.jugadores.entries());
+                let arrayJugadores = Array.from(this.state.jugadores.entries());
                 
-                // arrayJugadores.sort(() => Math.random() - 0.5); 
+                arrayJugadores.sort(() => Math.random() - 0.5); 
                 
-                // this.state.jugadores.clear(); 
+                this.state.jugadores.clear(); 
                 
-                // arrayJugadores.forEach(([id, jug]) => {
-                //     this.state.jugadores.set(id, jug); 
-                // });
+                arrayJugadores.forEach(([id, jug]) => {
+                    this.state.jugadores.set(id, jug); 
+                });
 
                 this.broadcast("musica", "seleccionDePersonaje")
                 
@@ -630,7 +630,7 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.mazo.push(nuevaCarta);
                 });
 
-                let cantidadDeCartasExtension = 9
+                let cantidadDeCartasExtension = 8
                 
                 let poolRaras = CatalogoCartasEspeciales.obtenerPoolExtensiones();
                 
@@ -1230,6 +1230,11 @@ export class MyRoom extends Room implements IMyRoom{
                             }
                         } else {
                             this.broadcast("notificacion_turno", `💨 ¡${victima?.nombre} tuvo suerte y se salvó del embrujo!`);
+                        }
+
+                        let pasiva = this.gestorPersonajes.obtener(victima.personaje)
+                        if (pasiva && pasiva.onSacarEmbrujoEnRuleta){
+                            pasiva.onSacarEmbrujoEnRuleta(this, victima, fueExitoStr)
                         }
 
                         // El flujo natural: Si sigue vivo después del embrujo, evaluamos la dinamita

@@ -8,6 +8,7 @@ export class Carta extends Schema {
     @type("string") tipoDeUso: string = ""; // Ej: "instantanea", "objetivo", "reaccion"
     @type("string") efecto: string = "";    // Ej: "curar_1", "dano_1"
     @type("boolean") esConjurada: boolean = false;
+    @type("string") tipoEmbrujo: string = ""; // bueno o malo
     // ---------------------------------------------
 }
 

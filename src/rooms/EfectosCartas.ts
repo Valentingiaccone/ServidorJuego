@@ -597,16 +597,24 @@ export class EfectoEmbrujar implements IEfectoCarta {
             return false;
         }
 
-        let tipo = parametros[1]; // "dano", "curar", etc.
-        let cantidad = parseInt(parametros[2]); // 2 o 4
+        let tipo = parametros[1];
+        let cantidad = parseInt(parametros[2]);
 
-        // Seguridad: Controlamos que la ruleta tenga espacio (máximo 16)
+        let pasiva = sala.gestorPersonajes.obtener(jugadorQueJuega.personaje)
+        if (pasiva && pasiva.modificarPuntosAlEmbrujar){
+            cantidad += pasiva.modificarPuntosAlEmbrujar(sala, jugadorQueJuega, victima, tipo, cantidad)
+        }
+
         if (victima.embrujos.length + cantidad > 16) {
             client.send("alerta_personal", `La ruleta de ${victima.nombre} ya está demasiado embrujada, no cabe este maleficio.`);
             return false;
         }
 
-        // Inyectamos los puntos de embrujo
+        if (victima.boolean.get("dahliaSheriff") && cartaJugada.tipoEmbrujo == "malo"){
+            client.send("alerta_personal", `No podés embrujar de forma negativa a ${victima.nombre} ya que tiene una pasiva que lo protege.`)
+            return false
+        }
+
         for (let i = 0; i < cantidad; i++) {
             victima.embrujos.push(tipo);
         }

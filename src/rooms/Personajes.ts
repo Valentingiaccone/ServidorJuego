@@ -57,6 +57,10 @@ export interface IPersonaje {
     onFichaEspecialSeleccionada?(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void;
 
     ejecutarHabilidadActiva?(sala: any, jugador: any, client: any, idHabilidad: string): void;
+
+    modificarPuntosAlEmbrujar?(sala: any, miJugador: Jugador, victima: Jugador, embrujo: string, puntos: number): number
+
+    onSacarEmbrujoEnRuleta?(sala: any, miJugador: Jugador, tipo: string): void
 }
 
 // 2. LAS CLASES DE PERSONAJES
@@ -1084,6 +1088,15 @@ export class Maya implements IPersonaje {
         return modificacion - 1; // El -1 original de Maya se aplica al final
     }
 
+    modificarPuntosAlEmbrujar(sala: any, miJugador: Jugador, victima: Jugador, embrujo: string, puntos: number): number {
+        let modificacion: number = 0
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
+            if (pasiva.modificarPuntosAlEmbrujar) modificacion += pasiva.modificarPuntosAlEmbrujar(sala, miJugador, victima, embrujo, puntos)
+        })
+
+        return modificacion
+    }
+
 
     // --- HOOKS COMPLEJOS DE RULETA (Objetos/Tuplas) ---
 
@@ -1500,7 +1513,7 @@ export class Mercy implements IPersonaje {
 export class Chispitas implements IPersonaje {
     nombre = "Chispitas";
     habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas, se carga y gana 1 escudo, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga.";
-    habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega i guanya 1 escut. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega..";
+    habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega i guanya 1 escut. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
@@ -1546,6 +1559,38 @@ export class Chispitas implements IPersonaje {
     }
 }
 
+export class Dahlia implements IPersonaje {
+    nombre = "Dahlia";
+    habilidad = "Hermanas gemelas:\nAl morir, sus embrujos colocan un 150% mas de puntos, pero si es SHERIFF no le afectan los embrujos negativos y potencia los positivos.";
+    habilidadEnCatalan = "Germanes bessones:\nEn morir, els seus encanteris atorguen un 150% més de punts, però si és XÈRIF, els encanteris negatius no l afecten i potencia els positius.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
+    sfxDefault = "sfxMensaje";
+
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
+        if (jugador.rol == "Sheriff"){
+            jugador.boolean.set("dahliaSheriff", true)
+            jugador.spriteAvatarOpcional = "Dahlia Sheriff"
+        }
+    }
+
+    modificarPuntosAlEmbrujar(sala: any, miJugador: Jugador, victima: Jugador, embrujo: string, puntos: number): number {
+        return puntos * 1.5
+    }
+
+    onSacarEmbrujoEnRuleta(sala: any, miJugador: Jugador, tipo: string): void {
+        if (miJugador.boolean.get("dahliaSheriff")){
+            if (tipo == "robar"){
+                sala.repartirCartas(miJugador, 1, "pasiva")
+                sala.agregarRegistro(`🔮 ${miJugador.personaje} roba una carta extra por su pasiva.`)
+            } else if (tipo == "curar"){
+                Utilidades.aplicarCuracion(sala, miJugador, 1, "embrujo", true)
+                sala.agregarRegistro(`🔮 ${miJugador.personaje} se curá 1 de vida extra por su pasiva.`)
+            }
+        }
+    }
+}
+
 
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
@@ -1586,6 +1631,7 @@ export class GestorPersonajes {
         this.registrar(new VonKarma())
         this.registrar(new Mercy())
         this.registrar(new Chispitas())
+        this.registrar(new Dahlia())
     }
 
     private registrar(p: IPersonaje) {
