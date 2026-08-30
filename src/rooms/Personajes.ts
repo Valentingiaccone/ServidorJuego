@@ -115,8 +115,8 @@ export class Berry implements IPersonaje {
 
 export class Maton implements IPersonaje {
     nombre = "Maton";
-    habilidad = "Seisei koi kiki:\nPuede jugar cualquier cantidad de BANG! durante su turno.";
-    habilidadEnCatalan: string = "Seisei koi kiki:\nPot jugar qualsevol quantitat de BANG! durant el seu torn."
+    habilidad = "Seisei koi kiki:\nPuede jugar cualquier cantidad de BANG! durante su turno, empieza con 1 escudo.";
+    habilidadEnCatalan: string = "Seisei koi kiki:\nPot jugar qualsevol quantitat de BANG! durant el seu torn, comença amb 1 escut."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMaton", false];
     sfxDefault= "sfxMaton"
@@ -1262,20 +1262,16 @@ export class RaymundoEscudos implements IPersonaje {
     }
 
     onRecibirEscudo(sala: any, jugador: any, cantidad: number, causa: string) {
-        // 1. Transformamos TODOS sus escudos actuales a duración infinita
         if (jugador.turnosEscudos) {
             for (let i = 0; i < jugador.turnosEscudos.length; i++) {
                 jugador.turnosEscudos[i] = Infinity;
             }
         }
 
-        sala.repartirCartas(jugador, 1, "pasiva");
-
-        // 2. Lanzamos el mensaje personalizado según de dónde vino el escudo
         if (causa === "CURACION") {
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó la curación en un Escudo Infinito y robó una carta!`);
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó la curación en un Escudo Infinito!`);
         } else {
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó su Escudo temporal en un Escudo Infinito y robó una carta!`);
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó su Escudo temporal en un Escudo Infinito!`);
         }
     }
 }
@@ -1512,8 +1508,8 @@ export class Mercy implements IPersonaje {
 
 export class Chispitas implements IPersonaje {
     nombre = "Chispitas";
-    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas, se carga y gana 1 escudo, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga.";
-    habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega i guanya 1 escut. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega.";
+    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas, se carga y gana 1 escudo, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga, puede almacenar 1 carta extra a su vida.";
+    habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega i guanya 1 escut. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega, pot emmagatzemar 1 carta extra a la seva vida.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
@@ -1521,6 +1517,10 @@ export class Chispitas implements IPersonaje {
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.boolean.set("chispitasBandera", true)
         jugador.boolean.set("chispitasCargado", false)
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return 1
     }
 
     onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {

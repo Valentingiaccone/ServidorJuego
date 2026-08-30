@@ -86,6 +86,8 @@ export class MyRoom extends Room implements IMyRoom{
     }
 
     actualizarMusicaAutomatica(){
+        if (this.state.estadoJuego === "Terminado") return
+
         let totalVivos = 0;
         let todosVivos: boolean = true
 
