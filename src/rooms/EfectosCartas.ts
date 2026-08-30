@@ -558,6 +558,7 @@ export class EfectoRayo implements IEfectoCarta {
 
         sala.broadcast("notificacion_turno", `⚡ ¡${jugadorQueJuega.nombre} invocó un Rayo sobre los jugadores con más salud!`);
         sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan });
+        sala.broadcast("sfx", "rayo")
 
         // 4. Aplicamos el daño
         victimasIds.forEach(id => {
