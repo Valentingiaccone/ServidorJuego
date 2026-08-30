@@ -442,7 +442,6 @@ export class EfectoDescartar implements IEfectoCarta {
 
         if (tipoMaldicion === "venenoso") {
             sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y el veneno le quita ${cantidad} vida (Daño directo)!`);
-            // Pasamos "true" al final para indicar que es daño directo e ignora escudos
             Utilidades.procesarDano(sala, jugador, null, cantidad, "MALDICION", true);
         }
         else if (tipoMaldicion === "reductor") {
@@ -480,13 +479,7 @@ export class EfectoDescartar implements IEfectoCarta {
                     
                     sala.broadcast("notificacion_turno", `👻 ¡Una maldición obligó a ${jugador.nombre} a descartar ${cartaExtra.nombre}!`);
                     
-                    let pasivaVictima = gestorPersonajes.obtener(jugador.personaje);
-                    if (pasivaVictima && pasivaVictima.onDescartarCarta) {
-                        pasivaVictima.onDescartarCarta(sala, jugador, cartaExtra, "MALDICION");
-                    }
-
-                    // Si la carta extraída de la mano TAMBIÉN es maldita, se genera el efecto dominó automáticamente
-                    sala.agregarAlDescarte(cartaExtra, jugador, client);
+                    sala.descartarCarta(cartaExtra, jugador, "VOLUNTARIO")
                 } else {
                     sala.broadcast("notificacion_turno", `👻 Una maldición intentó actuar, pero la mano de ${jugador.nombre} ya estaba vacía.`);
                     break;

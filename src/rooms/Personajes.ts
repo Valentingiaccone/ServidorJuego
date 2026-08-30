@@ -30,9 +30,9 @@ export interface IPersonaje {
 
     modificarSuerteRuletaDinamita?(sala: IMyRoom, jugador: Jugador): number | { cambio: number, fichas: string[] }
 
-    modificarRepartirCarta?(sala: any, jugador: any, causa: string): number
+    modificarRepartirCarta?(sala: IMyRoom, jugador: Jugador, causa: string): number
 
-    modificarCuraBotiquin?(sala: any, jugador: any): number
+    modificarCuraBotiquin?(sala: IMyRoom, jugador: Jugador): number
 
     modificarCartasEnManoAlPasarTurno?(sala: any, jugador: any): number
 
@@ -250,7 +250,7 @@ export class Trucy implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTrucy", false];
 
-    modificarRepartirCarta(sala: any, jugador: any, causa: string): number {
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
         return 1
     }
 
@@ -261,14 +261,18 @@ export class Trucy implements IPersonaje {
 
 export class Pam implements IPersonaje {
     nombre = "Pam";
-    habilidad = "Beso materno:\nCuando usa un botiquin se cura 2 en vez de 1.";
-    habilidadEnCatalan: string = "Beso matern:\nQuan utilitza un botiquí, es cura 2 en comptes d'1."
+    habilidad = "Beso materno:\nCuando usa un botiquin se cura 3 en vez de 1 y si sobrepasa su salud maxima lo transforma en escudo temporal.";
+    habilidadEnCatalan: string = "Beso matern:\nQuan utilitza una farmaciola, es cura 3 en lloc d 1, i si supera la seva salut màxima, l excés es transforma en escut temporal."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muertePam", false];
     sfxDefault = "sfxPam"
 
-    modificarCuraBotiquin(sala: any, jugador: any): number {
-        return 1
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.boolean.set("botiquinExcedenteAEscudo", true)
+    }
+
+    modificarCuraBotiquin(sala: IMyRoom, jugador: Jugador): number {
+        return 2
     }
 }
 
@@ -360,7 +364,7 @@ export class Mikotoba implements IPersonaje {
         this.actualizarNombre(jugador, null)
     }
 
-    modificarRepartirCarta(sala: any, jugador: any, causa: string): number {
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
         if (causa !== "turno"){
             return 0
         }
@@ -372,7 +376,7 @@ export class Mikotoba implements IPersonaje {
         }
     }
 
-    modificarCuraBotiquin(sala: any, jugador: any): number {
+    modificarCuraBotiquin(sala: IMyRoom, jugador: Jugador): number {
         if (jugador.mikotobaEstaGordo){
             return 0
         } else {
@@ -1064,7 +1068,7 @@ export class Maya implements IPersonaje {
 
     // --- HOOKS DE NÚMEROS Y VARIABLES ---
 
-    modificarRepartirCarta(sala: any, jugador: any, causa: string): number {
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
         let modificacion: number = 0;
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.modificarRepartirCarta) modificacion += pasiva.modificarRepartirCarta(sala, jugador, causa);
@@ -1072,7 +1076,7 @@ export class Maya implements IPersonaje {
         return modificacion;
     }
 
-    modificarCuraBotiquin(sala: any, jugador: any): number {
+    modificarCuraBotiquin(sala: IMyRoom, jugador: Jugador): number {
         let modificacion: number = 0;
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.modificarCuraBotiquin) modificacion += pasiva.modificarCuraBotiquin(sala, jugador);
@@ -1251,8 +1255,8 @@ export class Geraldo implements IPersonaje {
 
 export class RaymundoEscudos implements IPersonaje {
     nombre = "Raymundo Escudos";
-    habilidad = "Mejor Abogado:\nNo puedes recuperar tu salud base. Toda curación que recibas se convierte en un Escudo Permanente y robás una carta. Comenzás con -1 vida y vida maxima pero con 1 escudo.";
-    habilidadEnCatalan = "Millor Advocat:\nNo pots recuperar la teva salut base. Tota curació que rebis es converteix en un Escut Permanent i robes una carta. Comences amb -1 de vida i de vida màxima, però amb 1 escut.";
+    habilidad = "Mejor Abogado:\nNo puedes recuperar tu salud base. Toda curación que recibas se convierte en un Escudo Permanente.";
+    habilidadEnCatalan = "Millor Advocat:\nNo pots recuperar la teva salut base. Tota curació que rebis es converteix en un Escut Permanent.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteRaymundo", true]; 
     sfxDefault = "sfxRaymundo"; 
@@ -1607,7 +1611,7 @@ export class GestorPersonajes {
         this.registrar(new KayFaraday())
         this.registrar(new Chester())
         this.registrar(new Frank())
-        this.registrar(new Pam())
+         this.registrar(new Pam())
         this.registrar(new Trucy())
         this.registrar(new Luigi())
         this.registrar(new Mario())

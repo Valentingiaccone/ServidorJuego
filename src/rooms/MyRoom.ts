@@ -1218,7 +1218,7 @@ export class MyRoom extends Room implements IMyRoom{
                         } else if (fueExitoStr === "descartar") {
                             if (victima && victima.mano.length > 0) {
                                 let c = victima.mano.splice(Math.floor(Math.random() * victima.mano.length), 1)[0];
-                                this.agregarAlDescarte(c);
+                                this.descartarCarta(c, victima, "EMBRUJO")
                                 this.broadcast("notificacion_turno", `👻 ¡El embrujo descartó una carta de ${victima.nombre}!`);
                             } else {
                                 this.broadcast("notificacion_turno", `👻 El embrujo falló, la mano de ${victima?.nombre} estaba vacía.`);
@@ -1564,15 +1564,9 @@ export class MyRoom extends Room implements IMyRoom{
                 if (indiceCarta !== -1) {
                     let cartaDescartada = jugador.mano[indiceCarta];
                     jugador.mano.splice(indiceCarta, 1);
-                    this.agregarAlDescarte(cartaDescartada, jugador, client);
+                    this.descartarCarta(cartaDescartada, jugador, "VOLUNTARIO")
 
-                    this.broadcast("notificacion_turno", `🗑️ ${jugador.nombre} descartó una carta.`);
-                    
-                    // --- HOOK DESCARTAR CARTA ---
-                    let pasivaJugador = this.gestorPersonajes.obtener(jugador.personaje);
-                    if (pasivaJugador && pasivaJugador.onDescartarCarta) {
-                        pasivaJugador.onDescartarCarta(this, jugador, cartaDescartada, "VOLUNTARIO");
-                    }
+                    this.agregarRegistro(`🗑️ ${jugador.nombre} descartó una carta.`)
                 }
             }
         });
@@ -1991,6 +1985,15 @@ export class MyRoom extends Room implements IMyRoom{
                 this.state.jugadorEligiendoTienda !== "" ||
                 this.state.jugadorEnDuelo !== "" ||
                 this.state.jugadorDesenfundando !== "");
+    }
+
+    descartarCarta(cartaDescartada: Carta, jugador: Jugador, motivo: string){
+        let pasiva = this.gestorPersonajes.obtener(jugador.personaje)
+        if (pasiva && pasiva.onDescartarCarta){
+            pasiva.onDescartarCarta(this, jugador, cartaDescartada, motivo)
+        }
+
+        this.agregarAlDescarte(cartaDescartada, jugador, null)
     }
 
     agregarAlDescarte(cartaDescartada: Carta, jugador: Jugador = null, client: any = null): void {

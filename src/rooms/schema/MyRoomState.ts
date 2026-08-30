@@ -9,6 +9,7 @@ export class Carta extends Schema {
     @type("string") efecto: string = "";    // Ej: "curar_1", "dano_1"
     @type("boolean") esConjurada: boolean = false;
     @type("string") tipoEmbrujo: string = ""; // bueno o malo
+    @type("number") prioridadBang: number = 0; // 0 no es tipo bang, > 0 mientras mas bajo, mas prioridad tiene para descartes automaticos 
     // ---------------------------------------------
 }
 

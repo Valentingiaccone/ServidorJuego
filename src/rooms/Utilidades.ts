@@ -104,8 +104,13 @@ export class Utilidades {
             
         } else {
             jugador.vidas += cantidadFinal;
+            let excedente = Math.max(0, jugador.vidas - jugador.vidasMaximas);
             if (jugador.vidas > jugador.vidasMaximas) {
                 jugador.vidas = jugador.vidasMaximas;
+            }
+
+            if (jugador.boolean.get("botiquinExcedenteAEscudo")){
+                this.agregarEscudos(sala, jugador, excedente, 1, "PASIVA")
             }
 
             if (pasiva && pasiva.onRecibirCuracion) {
