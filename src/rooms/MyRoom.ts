@@ -1602,6 +1602,11 @@ export class MyRoom extends Room implements IMyRoom{
                 }
             }
         });
+
+        this.onMessage("pin", (client, pin) => {
+            let jugador = this.state.jugadores.get(client.sessionId);
+            this.broadcast("pin", {personaje: jugador.personaje, pin: pin})
+        })
     }
 
     onJoin (client: Client, options: any) {
