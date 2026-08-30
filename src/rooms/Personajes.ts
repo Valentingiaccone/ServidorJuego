@@ -1560,9 +1560,9 @@ export class Chispitas implements IPersonaje {
 }
 
 export class Dahlia implements IPersonaje {
-    nombre = "Dahlia";
-    habilidad = "Hermanas gemelas:\nAl morir, sus embrujos colocan un 150% mas de puntos, pero si es SHERIFF no le afectan los embrujos negativos y potencia los positivos.";
-    habilidadEnCatalan = "Germanes bessones:\nEn morir, els seus encanteris atorguen un 150% més de punts, però si és XÈRIF, els encanteris negatius no l afecten i potencia els positius.";
+    nombre = "Dahlia e Iris";
+    habilidad = "Hermanas gemelas:\nSi no es SHERIFF es Dahlia, al morir, sus embrujos colocan un 150% mas de puntos, pero si es SHERIFF es Iris, no le afectan los embrujos negativos y potencia los positivos.";
+    habilidadEnCatalan = "Germanes bessones:\nSi no és XÈRIF, és Dahlia: en morir, els seus encanteris atorguen un 150% més de punts. Però si és XÈRIF, és Iris: no l’afecten els encanteris negatius i potencia els positius.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
