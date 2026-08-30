@@ -1607,6 +1607,11 @@ export class MyRoom extends Room implements IMyRoom{
             let jugador = this.state.jugadores.get(client.sessionId);
             this.broadcast("pin", {personaje: jugador.personaje, pin: pin})
         })
+
+        this.onMessage("accion", (client, accion) => {
+            let jugador = this.state.jugadores.get(client.sessionId);
+            this.broadcast("animacionJugador", {personaje: jugador.personaje, animacion: accion})
+        })
     }
 
     onJoin (client: Client, options: any) {

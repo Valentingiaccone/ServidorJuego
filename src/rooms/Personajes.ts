@@ -1551,7 +1551,7 @@ export class Chispitas implements IPersonaje {
             // se carga
             jugador.spriteAvatarOpcional = "Chispitas cargado"
             jugador.boolean.set("chispitasCargado", true)
-            jugador.vidasEscudo++
+            Utilidades.agregarEscudos(sala, jugador, 1, 1, "CHISPITAS");
             sala.agregarRegistro(`⚡ ¡${jugador.personaje} se carga para preparar un ataque letal y gana un escudo!`)
         }
 
