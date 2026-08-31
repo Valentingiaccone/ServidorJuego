@@ -17,6 +17,7 @@ export class MyRoom extends Room implements IMyRoom{
     colaTienda: string[] = [];
     ruletaInterna: any[] = []; // <-- NUEVO
     
+    
     // Instanciamos nuestros nuevos motores
     despachadorCartas = new DespachadorDeCartas();
     gestorPersonajes = new GestorPersonajes();
@@ -333,6 +334,7 @@ export class MyRoom extends Room implements IMyRoom{
     onCreate (options: any) {
         console.log("La sala se creó correctamente");
         this.setState(new MyRoomState());
+        let escudosIniciales = false; //muca nerda que me hacen crearlo aqui
 
         this.onMessage("iniciar_partida", (client, message) => {
             const jugador = this.state.jugadores.get(client.sessionId);
@@ -363,6 +365,10 @@ export class MyRoom extends Room implements IMyRoom{
                 else if (totalJugadores === 8) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"];
                 else if (totalJugadores === 9) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil"];
                 else if (totalJugadores === 10) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil"];
+
+                if (totalJugadores >= 6){
+                    escudosIniciales = true;
+                } 
 
                 this.state.cantidadForajidos = mazoRoles.filter(rol => rol === "Forajido").length;
                 this.state.cantidadAlguaciles = mazoRoles.filter(rol => rol === "Alguacil").length;
@@ -729,7 +735,16 @@ export class MyRoom extends Room implements IMyRoom{
                     if (pasiva && pasiva.onIniciarPartida) {
                         pasiva.onIniciarPartida(this, j)
                     }
+
+                    //DANDO ESCUDOS A TODOS SI SON MAS DE CHINCH
+                    
+                    if (escudosIniciales && j.rol != "Sheriff"){
+                        Utilidades.agregarEscudos(this, j, 1, 1, "inicio")
+                    } 
+
                 });
+
+
 
                 const numero: number = Math.floor(Math.random() * 2)
 

@@ -1643,7 +1643,7 @@ export class GestorPersonajes {
     constructor() {
         // this.registrar(new ColeCasiddy())
         // this.registrar(new Berry())
-        // this.registrar(new Maton())
+        this.registrar(new Maton())
         // this.registrar(new Mandy())
         // this.registrar(new Tralalero())
         // this.registrar(new Darryl())
