@@ -1840,6 +1840,10 @@ export class MyRoom extends Room implements IMyRoom{
                 }
                 this.broadcast("notificacion_turno", `👻 ¡Es el turno del espíritu de ${jugador.nombre}!`);
             } else {
+                let pasiva = this.gestorPersonajes.obtener(jugador.personaje)
+                if (pasiva && pasiva.onIniciarTurno){
+                    pasiva.onIniciarTurno(this, jugador)
+                }
                 this.repartirCartas(jugador, 2, "turno");
                 this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.nombre}!`);
             }

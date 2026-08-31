@@ -61,6 +61,8 @@ export interface IPersonaje {
     modificarPuntosAlEmbrujar?(sala: any, miJugador: Jugador, victima: Jugador, embrujo: string, puntos: number): number
 
     onSacarEmbrujoEnRuleta?(sala: any, miJugador: Jugador, tipo: string): void
+
+    onIniciarTurno?(sala: IMyRoom, miJugador: Jugador): void
 }
 
 export class ColeCasiddy implements IPersonaje {
@@ -1105,6 +1107,12 @@ export class Maya implements IPersonaje {
         })
     }
 
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
+            if (pasiva.onIniciarTurno) pasiva.onIniciarTurno(sala, miJugador)
+        })
+    }
+
 
     // --- HOOKS DE NÚMEROS Y VARIABLES ---
 
@@ -1635,6 +1643,58 @@ export class Dahlia implements IPersonaje {
     }
 }
 
+export class Meg implements IPersonaje {
+    nombre = "Meg";
+    habilidad = "Robot:\nTiene 3 vidas. Empieza en modo ROBOT, al morir sobrevive con 1 vida, 1 escudo y pasa al modo CHIQUITA, en este modo roba una carta extra en su turno y usar un Fallo te da otro Fallo, al pasar el turno se pone modo CONSTRUCTORA, en este modo al inicio del turno vuelve al modo ROBOT.";
+    habilidadEnCatalan = "Robot:\nTé 3 vides. Comença en mode ROBOT. En morir, sobreviu amb 1 vida i 1 escut, i passa al mode XIQUETA. En aquest mode, roba una carta extra durant el seu torn i utilitzar un Fall et dona un altre Fall. En passar el torn, passa al mode CONSTRUCTORA. En aquest mode, a l’inici del torn torna al mode ROBOT.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
+    sfxDefault = "sfxMensaje";
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.vidas--
+        jugador.vidasMaximas--
+        jugador.string.set("modoMeg", "ROBOT")
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (victima.vidas <= 0 && victima.string.get("modoMeg") == "ROBOT"){
+            victima.vidas = 1
+            Utilidades.agregarEscudos(sala, victima, 1, 1, "PASIVA")
+            victima.string.set("modoMeg", "CHIQUITA")
+            victima.spriteAvatarOpcional = "Meg chiquita"
+        }
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (jugador.string.get("modoMeg") == "CHIQUITA" && cartaJugada.nombre == "¡Fallo!"){
+            let carta = CatalogoCartasEspeciales.crearFallo()
+            carta.esConjurada = true
+            jugador.mano.push(carta)
+        }
+    }
+
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
+        if (jugador.string.get("modoMeg") == "CHIQUITA" && causa == "turno"){
+            return 1
+        }
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (jugador.string.get("modoMeg") == "CHIQUITA"){
+            jugador.string.set("modoMeg", "CONSTRUCTORA")
+            jugador.spriteAvatarOpcional = "Meg constructora"
+        }
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (miJugador.string.get("modoMeg") == "CONSTRUCTORA"){
+            miJugador.string.set("modoMeg", "ROBOT")
+            miJugador.spriteAvatarOpcional = ""
+        }
+    }
+}
+
 
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
@@ -1676,6 +1736,7 @@ export class GestorPersonajes {
         this.registrar(new Mercy())
         this.registrar(new Chispitas())
         this.registrar(new Dahlia())
+        this.registrar(new Meg())
     }
 
     private registrar(p: IPersonaje) {
