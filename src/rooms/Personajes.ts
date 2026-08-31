@@ -63,8 +63,6 @@ export interface IPersonaje {
     onSacarEmbrujoEnRuleta?(sala: any, miJugador: Jugador, tipo: string): void
 }
 
-// 2. LAS CLASES DE PERSONAJES
-
 export class ColeCasiddy implements IPersonaje {
     nombre = "Cole Casiddy";
     habilidad = "Recarga en la recámara:\nAl recibir daño, roba tantas cartas como daño haya sufrido.";
@@ -261,8 +259,8 @@ export class Trucy implements IPersonaje {
 
 export class Pam implements IPersonaje {
     nombre = "Pam";
-    habilidad = "Beso materno:\nCuando usa un botiquin se cura 3 en vez de 1 y si sobrepasa su salud maxima lo transforma en escudo temporal.";
-    habilidadEnCatalan: string = "Beso matern:\nQuan utilitza una farmaciola, es cura 3 en lloc d 1, i si supera la seva salut màxima, l excés es transforma en escut temporal."
+    habilidad = "Beso materno:\nCuando usa un botiquin se cura 1 extra y agrega un escudo y si sobrepasa su salud maxima lo transforma en escudo temporal.";
+    habilidadEnCatalan: string = "Beso matern:\nQuan utilitza una farmaciola, es cura 1 punt extra i obté un escut. Si supera la seva salut màxima, l excés es transforma en escut temporal."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muertePam", false];
     sfxDefault = "sfxPam"
@@ -272,7 +270,8 @@ export class Pam implements IPersonaje {
     }
 
     modificarCuraBotiquin(sala: IMyRoom, jugador: Jugador): number {
-        return 2
+        Utilidades.agregarEscudos(sala, jugador, 1, 1, "PASIVA")
+        return 1
     }
 }
 
@@ -418,14 +417,55 @@ export class Mikotoba implements IPersonaje {
 export class Lesly implements IPersonaje {
     // maya bug
     nombre = "Lesly";
-    habilidad = "SAPA:\nComo una buena sapa lesly puede sapear la carta de mas a la izquierda de la mano de cada rival en todo momento.";
-    habilidadEnCatalan: string = "SAPA:\nCom una bona Sapa Lesly, pot sapear la carta de més a l'esquerra de la mà de cada rival en tot moment."
+    habilidad = "SAPA:\nComo una buena sapa lesly puede sapear la carta de mas a la izquierda de la mano de cada rival en todo momento, puede descartar la carta no conjurada de mas de su izquierda para conjurar una carta Valerie Ladrona (roba la carta de la izquierda) (2 por turno).";
+    habilidadEnCatalan: string = "SAPA:\nCom una bona sapa Lesly, pot espiar en tot moment la carta situada més a l’esquerra de la mà de cada rival. Pot descartar la carta no conjurada que té més a l’esquerra per conjurar una carta Valerie Ladrona (roba la carta de l’esquerra) (2 per torn)."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLesly", false];
     sfxDefault = "sfxLesly"
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.leslySapa = true
+        jugador.number.set("leslyUsosHabilidad", 0)
+        let boton = new HabilidadActiva();
+        boton.id = "lesly_panico";
+        boton.textoBoton = "Crear panico";
+        boton.tooltip = "Creas un panico";
+        boton.spriteBoton = "botonLesly"
+        jugador.habilidadesActivas.push(boton);
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (jugador.estaVivo && idHabilidad == "lesly_panico"){
+            if (jugador.number.get("leslyUsosHabilidad") >= 2){
+                client.send("alerta_personal", "Ya usaste 2 veces la habilidad este turno.")
+                return
+            }
+
+            let indiceCartaOriginal = jugador.mano.findIndex((c: any) => !c.esConjurada);
+
+            if (indiceCartaOriginal !== -1) {
+                let cartaEliminada = jugador.mano.splice(indiceCartaOriginal, 1)[0];
+                
+                sala.descartarCarta(cartaEliminada, jugador, "PASIVA");
+
+                let carta: Carta = CatalogoCartasEspeciales.crearValerieLadrona()
+                carta.esConjurada = true
+
+                jugador.mano.push(carta)
+
+                const usos: number = jugador.number.get("leslyUsosHabilidad")
+
+                jugador.number.set("leslyUsosHabilidad", usos + 1)
+
+                sala.agregarRegistro(`🐸 ${jugador.personaje} acaba de conjurar un Panico (${usos + 1}/2)`)
+            } else {
+                client.send("alerta_personal", "No tenés ninguna carta para poder crear un panico.")
+            }
+        }
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        jugador.number.set("leslyUsosHabilidad", 0)
     }
 }
 
@@ -1601,40 +1641,40 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-         this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
         this.registrar(new Lesly())
         this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
+        //this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
         this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
         this.registrar(new Dahlia())
     }
 

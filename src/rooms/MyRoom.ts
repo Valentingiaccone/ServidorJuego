@@ -458,14 +458,7 @@ export class MyRoom extends Room implements IMyRoom{
                     cat.efecto = "forzar_enemigo"; 
                     this.state.mazo.push(cat);
 
-                    const panico = new Carta();
-                    panico.id = `panico_${i}`;
-                    panico.nombre = "¡Pánico!";
-                    panico.descripcion = "Roba una carta de la mano o equipada a un jugador vecino.";
-                    panico.descripcionEnCatalan = "Roba una carta de la mà o equipada d un jugador veïns."
-                    panico.tipoDeUso = "objetivoVecino";
-                    panico.efecto = "robar_enemigo"; 
-                    this.state.mazo.push(panico);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearPanico());
                 }
 
                 for (let i = 0; i < 1; i++) {
@@ -1315,7 +1308,7 @@ export class MyRoom extends Room implements IMyRoom{
                 let alcanceMaximo = atacante.alcanceArma;
 
                 if (cartaUsada && cartaUsada.tipoDeUso === "objetivoVecino") {
-                    alcanceMaximo = 1;
+                    alcanceMaximo = 1
                 } else {
                     if (atacante.tieneMiraPro) distancia -= 2;
                     else if (atacante.tieneMira) distancia -= 1;
@@ -1607,6 +1600,11 @@ export class MyRoom extends Room implements IMyRoom{
         this.onMessage("accion", (client, accion) => {
             let jugador = this.state.jugadores.get(client.sessionId);
             this.broadcast("animacionJugador", {personaje: jugador.personaje, animacion: accion})
+        })
+
+        this.onMessage("enviarChat", (client, mensaje) => {
+            let jugador = this.state.jugadores.get(client.sessionId);
+            this.broadcast("chat", {personaje: jugador.personaje, mensaje: mensaje})
         })
     }
 

@@ -675,6 +675,36 @@ export class EfectoClonarMano implements IEfectoCarta {
     }
 }
 
+export class EfectoValerieLadrona implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
+        
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
+            return false;
+        }
+
+        if (victima.mano.length === 0) {
+            client.send("alerta_personal", `${victima.nombre} no tiene cartas en la mano para robarle.`);
+            return false;
+        }
+
+        let cartaRobada = victima.mano.splice(0, 1)[0];
+        jugadorQueJuega.mano.push(cartaRobada);
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        sala.broadcast("notificacion_turno", `🐸 ¡${jugadorQueJuega.personaje} jugó ${cartaJugada.nombre} y le robó una carta a ${victima.personaje}!`);
+        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.broadcast("sfx", "sfxLesly"); 
+
+        return true; 
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -701,6 +731,7 @@ export class DespachadorDeCartas {
         "embrujar": new EfectoEmbrujar(),
         "equiparEscudo": new EfectoEscudo(),
         "clonarMano": new EfectoClonarMano(),
+        "valerieLadrona": new EfectoValerieLadrona(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

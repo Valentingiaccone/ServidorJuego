@@ -188,6 +188,30 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearPanico(): Carta {
+        let clon = new Carta();
+        clon.id = `panico_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "¡Pánico!";
+        clon.descripcion = "Roba una carta de la mano o equipada a un jugador vecino.";
+        clon.descripcionEnCatalan = "Roba una carta de la mà o equipada d un jugador veïns.";
+        clon.tipoDeUso = "objetivoVecino";
+        clon.efecto = "robar_enemigo";
+        clon.esConjurada = false;
+        return clon
+    }
+
+    public static crearValerieLadrona(): Carta {
+        let clon = new Carta();
+        clon.id = `valerie_ladrona_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Valerie ladrona";
+        clon.descripcion = "Roba la carta de la izquierda de un jugador.";
+        clon.descripcionEnCatalan = "Roba la carta de l esquerra d un jugador.";
+        clon.tipoDeUso = "objetivoUniversal";
+        clon.efecto = "valerieLadrona";
+        clon.esConjurada = false;
+        return clon
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
