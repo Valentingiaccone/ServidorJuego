@@ -1621,7 +1621,7 @@ export class GestorPersonajes {
         this.registrar(new Tilink())
         this.registrar(new Flowery())
         this.registrar(new Leon())
-        this.registrar(new Kazuma())
+        //this.registrar(new Kazuma())
         this.registrar(new Leah())
         this.registrar(new Robin())
         this.registrar(new Luciergana())
