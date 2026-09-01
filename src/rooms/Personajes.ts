@@ -934,7 +934,7 @@ export class Maggey implements IPersonaje {
 
     private aplicarMalaSuerte(jugadorQueTira: any, miJugador: any) {
         if (jugadorQueTira.nombre !== miJugador.nombre && jugadorQueTira.personaje !== miJugador.personaje) {
-            return { cambio: -1, fichas: ["falloMaggey"] }; 
+            return { cambio: -1, fichas: ["falloMaggey","falloMaggey","falloMaggey"] }; 
         }
         return 0; 
     }
@@ -946,7 +946,7 @@ export class Maggey implements IPersonaje {
 
     onFichaEspecialSeleccionada(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string) {
         if (fichaVisual === "falloMaggey") {
-            sala.repartirCartas(duenoDeLaFicha, 1, "pasiva");
+            sala.repartirCartas(duenoDeLaFicha, 2, "pasiva");
             sala.broadcast("notificacion_turno", `🍀 ¡La desgracia ajena alimenta a ${duenoDeLaFicha.personaje}! Roba 1 carta.`);
         }
     }
@@ -1727,16 +1727,16 @@ export class GestorPersonajes {
         // this.registrar(new Luciergana())
         this.registrar(new Haley())
         this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
         this.registrar(new VonKarma())
         this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
     }
 
     private registrar(p: IPersonaje) {

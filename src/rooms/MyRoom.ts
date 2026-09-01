@@ -1939,24 +1939,36 @@ export class MyRoom extends Room implements IMyRoom{
                 }
             });
 
-            //MINIMO 1 ROJO MINIMO 1 VERDE
+            // --- NUEVA LÓGICA DE REEMPLAZO DE FICHAS ---
             
-            let espaciosRestantes = 16 - fichasEspeciales.length;
-            let tieneExitoEspecial = fichasEspeciales.some(f => f.visual.startsWith("exito"));
-            let tieneFalloEspecial = fichasEspeciales.some(f => f.visual.startsWith("fallo"));
+            // 1. MÍNIMO 1 VERDE Y MÍNIMO 1 ROJO SIEMPRE
+            // Aseguramos que los puntos verdes estén estrictamente entre 1 y 15
+            if (puntosVerdes < 1) puntosVerdes = 1;
+            if (puntosVerdes > 15) puntosVerdes = 15;
 
-            let maxVerdesPermitidos = espaciosRestantes;
-            if (!tieneFalloEspecial) maxVerdesPermitidos -= 1; 
-            if (puntosVerdes > maxVerdesPermitidos) puntosVerdes = maxVerdesPermitidos;
-
-            let minVerdesPermitidos = tieneExitoEspecial ? 0 : 1; 
-            if (puntosVerdes < minVerdesPermitidos) puntosVerdes = minVerdesPermitidos;
-
+            // 2. Creamos la ruleta base puramente matemática (solo genéricos)
             let ruletaTemp: any[] = [];
-            fichasEspeciales.forEach(ficha => ruletaTemp.push(ficha));
             for (let i = 0; i < puntosVerdes; i++) ruletaTemp.push({ visual: "exito", ownerId: "" });
             while (ruletaTemp.length < 16) ruletaTemp.push({ visual: "fallo", ownerId: "" });
 
+            // 3. Sustituimos los genéricos por las fichas especiales si corresponde
+            fichasEspeciales.forEach(ficha => {
+                if (ficha.visual.startsWith("exito")) {
+                    // Buscamos el primer "exito" genérico disponible
+                    let indice = ruletaTemp.findIndex(f => f.visual === "exito");
+                    if (indice !== -1) {
+                        ruletaTemp[indice] = ficha; // Lo pisamos
+                    }
+                } else if (ficha.visual.startsWith("fallo")) {
+                    // Buscamos el primer "fallo" genérico disponible
+                    let indice = ruletaTemp.findIndex(f => f.visual === "fallo");
+                    if (indice !== -1) {
+                        ruletaTemp[indice] = ficha; // Lo pisamos
+                    }
+                }
+            });
+
+            // 4. Mezclamos y guardamos el resultado final
             ruletaTemp.sort(() => Math.random() - 0.5);
             this.ruletaInterna = ruletaTemp; 
 
