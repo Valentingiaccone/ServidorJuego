@@ -1695,48 +1695,76 @@ export class Meg implements IPersonaje {
     }
 }
 
+export class Perro implements IPersonaje {
+    nombre = "Perro";
+    habilidad = "La casa del perro:\nAl golpear a alguien o al recibir daño, le coloca un perro en una carta aleatoria del otro jugador, si un jugador descarta una carta con un perro, este recibe 1 de daño.";
+    habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
+    sfxDefault = "sfxMensaje";
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (atacante && atacante.mano.length > 0) {
+            let cartasLibres = atacante.mano.filter((c: any) => c.idDuenoDelPerro === "");
+
+            if (cartasLibres.length > 0) {
+                let indiceAleatorio = Math.floor(Math.random() * cartasLibres.length);
+                let cartaAleatoria = cartasLibres[indiceAleatorio];
+
+                let idDelAtacante = "";
+                sala.getJugadores().forEach((j, sessionId) => {
+                    if (j === atacante) idDelAtacante = sessionId;
+                });
+
+                cartaAleatoria.idDuenoDelPerro = idDelAtacante;
+            }
+        }
+    }
+
+}
 
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy())
-        // this.registrar(new Berry())
-        // this.registrar(new Maton())
-        // this.registrar(new Mandy())
-        // this.registrar(new Tralalero())
-        // this.registrar(new Darryl())
-        // this.registrar(new JetpackCat())
-        // this.registrar(new KayFaraday())
-        // this.registrar(new Chester())
-        // this.registrar(new Frank())
-        // this.registrar(new Pam())
-        // this.registrar(new Trucy())
-        // this.registrar(new Luigi())
-        // this.registrar(new Mario())
-        // this.registrar(new Lesly())
-        // this.registrar(new Mikotoba())
-        // this.registrar(new Domino())
-        // this.registrar(new Tilink())
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
+        this.registrar(new ColeCasiddy())
+        this.registrar(new Berry())
+        this.registrar(new Maton())
+        this.registrar(new Mandy())
+        this.registrar(new Tralalero())
+        this.registrar(new Darryl())
+        this.registrar(new JetpackCat())
+        this.registrar(new KayFaraday())
+        this.registrar(new Chester())
+        this.registrar(new Frank())
+        this.registrar(new Pam())
+        this.registrar(new Trucy())
+        this.registrar(new Luigi())
+        this.registrar(new Mario())
+        this.registrar(new Lesly())
+        this.registrar(new Mikotoba())
+        this.registrar(new Domino())
+        this.registrar(new Tilink())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
         this.registrar(new Haley())
         this.registrar(new Maggey())
-        // this.registrar(new Mortis())
-        // this.registrar(new Maya())
-        // this.registrar(new Geraldo())
-        // this.registrar(new RaymundoEscudos())
-        // this.registrar(new Cubo())
+        this.registrar(new Mortis())
+        this.registrar(new Maya())
+        this.registrar(new Geraldo())
+        this.registrar(new RaymundoEscudos())
+        this.registrar(new Cubo())
         this.registrar(new VonKarma())
         this.registrar(new Mercy())
-        // this.registrar(new Chispitas())
-        // this.registrar(new Dahlia())
-        // this.registrar(new Meg())
+        this.registrar(new Chispitas())
+        this.registrar(new Dahlia())
+        this.registrar(new Meg())
+        this.registrar(new Perro())
     }
 
     private registrar(p: IPersonaje) {

@@ -2022,11 +2022,17 @@ export class MyRoom extends Room implements IMyRoom{
             pasiva.onDescartarCarta(this, jugador, cartaDescartada, motivo)
         }
 
+        if (cartaDescartada.idDuenoDelPerro != ""){
+            const atacante = this.state.jugadores.get(cartaDescartada.idDuenoDelPerro);
+            Utilidades.procesarDano(this, jugador, atacante, 1, "DESCARTE", false)
+        }
+
         this.agregarAlDescarte(cartaDescartada, jugador, null)
     }
 
     agregarAlDescarte(cartaDescartada: Carta, jugador: Jugador = null, client: any = null): void {
         if (!cartaDescartada.esConjurada){
+            cartaDescartada.idDuenoDelPerro = ""
             this.state.descarte.push(cartaDescartada);
         }
 
