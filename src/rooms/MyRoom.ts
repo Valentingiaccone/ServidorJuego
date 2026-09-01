@@ -386,7 +386,7 @@ export class MyRoom extends Room implements IMyRoom{
                     if (j.rol === "Sheriff") this.state.turnoActual = sessionId;
 
                     // Le damos 2 opciones únicas de personaje
-                    for (let k = 0; k < 2; k++) {
+                    for (let k = 0; k < 3; k++) {
                         let p = listaPersonajes[indicePersonaje % listaPersonajes.length];
                         let opcion = new OpcionPersonaje();
                         opcion.nombre = p.nombre;
@@ -1619,7 +1619,7 @@ export class MyRoom extends Room implements IMyRoom{
 
         this.onMessage("enviarChat", (client, mensaje) => {
             let jugador = this.state.jugadores.get(client.sessionId);
-            this.broadcast("chat", {personaje: jugador.personaje, mensaje: mensaje})
+            this.broadcast("chat", {jugador: jugador, mensaje: mensaje})
         })
     }
 
