@@ -1678,6 +1678,8 @@ export class Meg implements IPersonaje {
         if (jugador.string.get("modoMeg") == "CHIQUITA" && causa == "turno"){
             return 1
         }
+
+        return 0
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
