@@ -726,7 +726,14 @@ export class MyRoom extends Room implements IMyRoom{
                 });
                 
                 let sheriff = this.state.jugadores.get(this.state.turnoActual);
-                if (sheriff) this.repartirCartas(sheriff, 2, "turno");
+                
+                if (sheriff) {
+                    let pasiva = this.gestorPersonajes.obtener(sheriff.personaje)
+                    if (pasiva && pasiva.onIniciarTurno){
+                        pasiva.onIniciarTurno(this, sheriff)
+                    }
+                    this.repartirCartas(sheriff, 2, "turno");
+                }
 
                 this.state.estadoJuego = "Jugando";
 
@@ -914,7 +921,7 @@ export class MyRoom extends Room implements IMyRoom{
 
             if (accion === "robar") {
                 atacante.mano.push(cartaAfectada);
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaSabotaje.nombre, descripcion: cartaSabotaje.descripcion, esConjurada: cartaSabotaje.esConjurada, descripcionCatalan: cartaSabotaje.descripcionEnCatalan});
+                this.ejecutarAnimacionCarta(client, cartaSabotaje)
                 this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
                 this.broadcast("sfx", "panico")
 
@@ -937,7 +944,7 @@ export class MyRoom extends Room implements IMyRoom{
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 this.agregarAlDescarte(cartaUsada)
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada, descripcionCatalan: cartaUsada.descripcionEnCatalan});
+                this.ejecutarAnimacionCarta(client, cartaUsada)
 
                 this.state.jugadorDebeDescartar = datos.idObjetivo;
                 this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
@@ -1189,6 +1196,10 @@ export class MyRoom extends Room implements IMyRoom{
                     else if (motivoActual === "Prision") {
                         if (fueExitoStr === "exito") {
                             this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.nombre} escapó de la cárcel.`);
+                            let pasiva = this.gestorPersonajes.obtener(victima.personaje)
+                            if (pasiva && pasiva.onIniciarTurno){
+                                pasiva.onIniciarTurno(this, victima)
+                            }
                             this.repartirCartas(victima, 2, "turno");
                             this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
                         } else {
@@ -1377,7 +1388,7 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.usosBarril = 0;
                     
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-                    this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada, descripcionCatalan: cartaUsada.descripcionEnCatalan});
+                    this.ejecutarAnimacionCarta(client, cartaUsada)
                 
                     let pasiva = this.gestorPersonajes.obtener(atacante.personaje)
                     if (pasiva && pasiva.onJugarCarta){
@@ -1396,7 +1407,7 @@ export class MyRoom extends Room implements IMyRoom{
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 this.agregarAlDescarte(cartaUsada)
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada, descripcionCatalan: cartaUsada.descripcionEnCatalan});
+                this.ejecutarAnimacionCarta(client, cartaUsada)
 
                 // Seteamos quién empieza defendiéndose y quién es el oponente
                 this.state.jugadorEnDuelo = datos.idObjetivo;
@@ -1453,7 +1464,7 @@ export class MyRoom extends Room implements IMyRoom{
                 victima.estaEnPrision = true;
                 victima.cartaPrision = cartaUsada;
                 
-                this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaUsada.nombre, descripcion: cartaUsada.descripcion, esConjurada: cartaUsada.esConjurada, descripcionCatalan: cartaUsada.descripcionEnCatalan});
+                this.ejecutarAnimacionCarta(client, cartaUsada)
                 this.broadcast("notificacion_turno", `⛓️ ¡${atacante.nombre} mandó a la cárcel a ${victima.nombre}!`);
                 this.broadcast("sfx", "prision")
 
@@ -1513,7 +1524,7 @@ export class MyRoom extends Room implements IMyRoom{
                         this.agregarAlDescarte(carta)
                         
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
-                        this.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada, descripcionCatalan: carta.descripcionEnCatalan});
+                        this.ejecutarAnimacionCarta(client, carta)
                     
                         let pasivaJugadorActual = this.gestorPersonajes.obtener(victima.personaje);
                         if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
@@ -2052,5 +2063,9 @@ export class MyRoom extends Room implements IMyRoom{
 
     getJugadores(): MapSchema<Jugador> {
         return this.state.jugadores
+    }
+
+    ejecutarAnimacionCarta(client: any, carta: Carta): void {
+        this.broadcast("animacion_carta", { idJugador: client.sessionId, carta: carta});
     }
 }

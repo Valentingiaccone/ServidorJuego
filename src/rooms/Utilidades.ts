@@ -39,6 +39,11 @@ export class Utilidades {
             pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
         }
 
+        let pasivaAtacante = sala.gestorPersonajes.obtener(atacante.personaje);
+        if (pasivaAtacante && pasivaAtacante.onGolpear) {
+            pasivaAtacante.onGolpear(sala, atacante, victima);
+        }
+
         sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"})
 
         sala.evaluarMuerte(victima, atacante, ignoraEscudo);

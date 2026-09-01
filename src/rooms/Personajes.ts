@@ -63,6 +63,8 @@ export interface IPersonaje {
     onSacarEmbrujoEnRuleta?(sala: any, miJugador: Jugador, tipo: string): void
 
     onIniciarTurno?(sala: IMyRoom, miJugador: Jugador): void
+
+    onGolpear?(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void
 }
 
 export class ColeCasiddy implements IPersonaje {
@@ -1560,7 +1562,7 @@ export class Mercy implements IPersonaje {
 
 export class Chispitas implements IPersonaje {
     nombre = "Chispitas";
-    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas, se carga y gana 1 escudo, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga, puede almacenar 1 carta extra a su vida.";
+    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas, se carga y gana 1 escudo, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga excepto disparar Bangs!, puede almacenar 1 carta extra a su vida.";
     habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega i guanya 1 escut. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega, pot emmagatzemar 1 carta extra a la seva vida.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
@@ -1573,6 +1575,10 @@ export class Chispitas implements IPersonaje {
 
     modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
         return 1
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        miJugador.boolean.set("chispitasBandera", true)
     }
 
     onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
@@ -1713,16 +1719,33 @@ export class Perro implements IPersonaje {
                 let indiceAleatorio = Math.floor(Math.random() * cartasLibres.length);
                 let cartaAleatoria = cartasLibres[indiceAleatorio];
 
-                let idDelAtacante = "";
+                let idDeLaVictima = "";
                 sala.getJugadores().forEach((j, sessionId) => {
-                    if (j === atacante) idDelAtacante = sessionId;
+                    if (j === victima) idDeLaVictima = sessionId;
                 });
 
-                cartaAleatoria.idDuenoDelPerro = idDelAtacante;
+                cartaAleatoria.idDuenoDelPerro = idDeLaVictima;
             }
         }
     }
 
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+        if (jugadorGolpeado && jugadorGolpeado.mano.length > 0) {
+            let cartasLibres = jugadorGolpeado.mano.filter((c: any) => c.idDuenoDelPerro === "");
+
+            if (cartasLibres.length > 0) {
+                let indiceAleatorio = Math.floor(Math.random() * cartasLibres.length);
+                let cartaAleatoria = cartasLibres[indiceAleatorio];
+
+                let idDeMiJugador = "";
+                sala.getJugadores().forEach((j, sessionId) => {
+                    if (j === miJugador) idDeMiJugador = sessionId;
+                });
+
+                cartaAleatoria.idDuenoDelPerro = idDeMiJugador;
+            }
+        }
+    }
 }
 
 // 3. EL GESTOR DE PERSONAJES

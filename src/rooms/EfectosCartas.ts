@@ -15,7 +15,7 @@ export class EfectoCurar implements IEfectoCarta {
             Utilidades.aplicarCuracion(sala, jugador, 1, "BOTIQUIN", false);
 
             sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
             sala.broadcast("sfx", "curacion");
 
             jugador.mano.splice(indiceCarta, 1);
@@ -51,7 +51,7 @@ export class EfectoCurarDuo implements IEfectoCarta {
         Utilidades.aplicarCuracion(sala, victima, 1, "CURADUO", false);
 
         sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.nombre} compartieron curación!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "curacion");
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
@@ -81,7 +81,7 @@ export class EfectoEquipar implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         const numero: number = Math.floor(Math.random() * 3);
         sala.broadcast("sfx", "equiparArma" + numero);
         return true;
@@ -95,7 +95,7 @@ export class EfectoRobar implements IEfectoCarta {
         
         console.log(`🃏 ${jugador.nombre} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
         sala.broadcast("notificacion_turno", `🃏 ${jugador.nombre} jugó ${cartaJugada.nombre}.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         
         jugador.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
@@ -123,7 +123,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
         });
 
         sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre} y curó a todos!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "poco");
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
@@ -152,7 +152,7 @@ export class EfectoTiratachuela implements IEfectoCarta {
             sala.state.danoPendiente = 1;         // Arreglamos el bug del Super Bang
             
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
             sala.broadcast("musica", "tiratachueladaOst")
             
             sala.avanzarColaDePeligro();
@@ -177,7 +177,7 @@ export class EfectoIndios implements IEfectoCarta {
             sala.agregarAlDescarte(cartaJugada);
             
             sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} lanzó un ataque de ¡Indios!`);
-            sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
             sala.broadcast("musica", "indiadaOst")
             sala.state.atacanteActual = client.sessionId;
             sala.avanzarColaIndios();
@@ -222,7 +222,7 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         // 3. Consumir la carta e iniciar la tienda
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         
         sala.avanzarColaTienda();
         return true
@@ -264,7 +264,7 @@ export class EfectoTiendaJuju implements IEfectoCarta {
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
         sala.broadcast("sfx", "sfxJujuTienda");
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         
         // Llamamos a la función unificada
         sala.avanzarColaTienda();
@@ -284,7 +284,7 @@ export class EfectoEquiparMustang implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         return true
     }
 }
@@ -300,7 +300,7 @@ export class EfectoEquiparMira implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🛖 ${jugador.nombre} equipó una Monoaldea.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         return true
     }
 }
@@ -316,7 +316,7 @@ export class EfectoEquiparBarril implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         const numero: number = Math.floor(Math.random() * 3);
         const sfx: string = "barril" + numero
         sala.broadcast("sfx", sfx)
@@ -335,7 +335,7 @@ export class EfectoEquiparMustangPro implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo Pro.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         return true;
     }
 }
@@ -351,7 +351,7 @@ export class EfectoEquiparMiraPro implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Monoaldea Pro.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         return true;
     }
 }
@@ -367,7 +367,7 @@ export class EfectoEquiparBarrilPro implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril Pro.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         const numero: number = Math.floor(Math.random() * 3);
         sala.broadcast("sfx", "barril" + numero);
         return true;
@@ -384,7 +384,7 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🧨 ¡${jugador.nombre} encendió una Dinamita!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "dinamita")
         return true
     }
@@ -425,7 +425,7 @@ export class EfectoDesequipar implements IEfectoCarta {
 
         let nombresCartas = cartasVoladas.join(" y ");
         sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.nombre} lanzó ${cartaJugada.nombre}! ${victima.nombre} perdió ${nombresCartas}, directo al descarte.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
@@ -511,7 +511,7 @@ export class EfectoEquiparPapapum implements IEfectoCarta {
         sala.state.probabilidadPapa = 1; 
 
         sala.broadcast("notificacion_turno", `🥔 ¡${jugador.nombre} activó al Papapum!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: carta.nombre, descripcion: carta.descripcion, esConjurada: carta.esConjurada, descripcionCatalan: carta.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, carta)
 
         jugador.mano.splice(indiceCarta, 1);
         return true;
@@ -550,7 +550,7 @@ export class EfectoRayo implements IEfectoCarta {
         });
 
         sala.broadcast("notificacion_turno", `⚡ ¡${jugadorQueJuega.nombre} invocó un Rayo sobre los jugadores con más salud!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan });
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "rayo")
 
         // 4. Aplicamos el daño
@@ -571,7 +571,7 @@ export class EfectoEscudo implements IEfectoCarta {
         Utilidades.agregarEscudos(sala, jugadorQueJuega, 1, 1, "EFECTOESCUDO");
 
         sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.nombre} usó ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "curacion"); 
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
@@ -623,9 +623,7 @@ export class EfectoEmbrujar implements IEfectoCarta {
             sala.avanzarAlSiguienteTurno(client.sessionId);
         }
         
-        // ¡Mensaje 100% anónimo!
         sala.broadcast("notificacion_turno", `👻 ¡Un espíritu maligno ha lanzado un embrujo en secreto!`);
-        // Nota: NO enviamos animacion_carta para que nadie vea la flecha en la mesa
 
         return true;
     }
@@ -668,7 +666,7 @@ export class EfectoClonarMano implements IEfectoCarta {
         }
 
         sala.broadcast("notificacion_turno", `🪞 ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre}, sacrificó una carta original y fabricó 2 clones!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "tilinkPasiva");
 
         return true;
@@ -698,7 +696,7 @@ export class EfectoValerieLadrona implements IEfectoCarta {
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         sala.broadcast("notificacion_turno", `🐸 ¡${jugadorQueJuega.personaje} jugó ${cartaJugada.nombre} y le robó una carta a ${victima.personaje}!`);
-        sala.broadcast("animacion_carta", { idJugador: client.sessionId, nombre: cartaJugada.nombre, descripcion: cartaJugada.descripcion, esConjurada: cartaJugada.esConjurada, descripcionCatalan: cartaJugada.descripcionEnCatalan});
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "sfxLesly"); 
 
         return true; 
