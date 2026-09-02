@@ -4,16 +4,27 @@ export class Utilidades {
 
     public static procesarDano(sala: any, victima: Jugador, atacante: Jugador, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
         
-        if (!victima || !victima.estaVivo) return; 
+        if (!victima){
+            console.error("ERROR: victima no existe en procesarDano")
+            return
+        }
+        if (!victima.estaVivo){
+            console.log("la victima ya está muerta asi que no se llama procesarDano")
+            return
+        }
 
         if (causa == "BANG"){
-            if (atacante.boolean.get("chispitasCargado")){
-                atacante.boolean.set("chispitasCargado", false)
-                cantidad = 999
-            }
-            if (atacante.boolean.get("mercyActivada")){
-                this.aplicarCuracion(sala, victima, cantidad, causa, false) 
-                return              
+            if (atacante){
+                if (atacante.boolean.get("chispitasCargado")){
+                    atacante.boolean.set("chispitasCargado", false)
+                    cantidad = 999
+                }
+                if (atacante.boolean.get("mercyActivada")){
+                    this.aplicarCuracion(sala, victima, cantidad, causa, false) 
+                    return              
+                }
+            } else {
+                console.error("ERROR: atacante no existe en procesarDano dentro del if del BANG")
             }
         }
 
@@ -50,7 +61,14 @@ export class Utilidades {
     }
 
     public static agregarEscudos(sala: any, jugador: any, cantidad: number, duracion: number, causa: string): void {
-        if (!jugador || !jugador.estaVivo) return;
+        if (!jugador) {
+            console.error("ERROR: jugador no existe en agregar escudos")
+            return;
+        }
+        if (!jugador.estaVivo){
+            console.log("el jugador no está vivo para agregarle escudos")
+            return
+        }
 
         if (!jugador.turnosEscudos) jugador.turnosEscudos = [];
 
@@ -62,7 +80,6 @@ export class Utilidades {
 
         jugador.vidasEscudo = jugador.turnosEscudos.length
 
-        // --- EL AVISO A LAS PASIVAS ---
         let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
         if (pasiva && pasiva.onRecibirEscudo) {
             pasiva.onRecibirEscudo(sala, jugador, cantidad, causa);
@@ -70,23 +87,42 @@ export class Utilidades {
     }
 
     public static puedeRecibirCuracion(sala: any, jugador: any): boolean {
-        if (!jugador || !jugador.estaVivo) return false;
+        if (!jugador){
+            console.error("ERROR: jugador no existe en puedeRecibirCuracion")
+            return false;
+        }
+        if (!jugador.estaVivo){
+            console.log("el jugador no está vivo en puedeRecibirCuracion")
+            return false
+        }
         
         if (jugador.transformarCuraEnEscudo) return true;
 
         let totalVivos = 0;
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) totalVivos++;
+            if (j){
+                if (j.estaVivo) {
+                    totalVivos++;
+                }
+            } else {
+                console.error("ERROR: jugador no existe en el forEach de puedeRecibirCuracion")
+            }
         });
 
-        // para 1vs1
         if (totalVivos === 2) return true;
 
         return jugador.vidas < jugador.vidasMaximas;
     }
 
     public static aplicarCuracion(sala: any, jugador: any, cantidadBase: number, causa: string, forzarCuracion: boolean): void {
-        if (!jugador || !jugador.estaVivo) return;
+        if (!jugador) {
+            console.error("ERROR: jugador no existe en aplicarCuracion")
+            return;
+        }
+        if (!jugador.estaVivo){
+            console.log("el jugador no está vivo para poder curarlo")
+            return
+        }
 
         let cantidadFinal = cantidadBase;
         let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);

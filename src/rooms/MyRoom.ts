@@ -1052,14 +1052,19 @@ export class MyRoom extends Room implements IMyRoom{
                 nombreRealFicha = fueExitoStr;
             } else {
                 fichaElegida = this.ruletaInterna[indiceObjetivo];
-                nombreRealFicha = fichaElegida.visual; 
-                
-                // --- LA TRAMPA PARA WALENCIA ---
-                // Si la ficha empieza con "exito", la disfrazamos de "exito" genérico.
-                if (nombreRealFicha.startsWith("exito")) {
-                    fueExitoStr = "exito"; 
+
+                if (!fichaElegida) {
+                    console.error(`ERROR CRÍTICO (Servidor): fichaElegida indefinida en la ruleta. Indice: ${indiceObjetivo}, Tamaño array: ${this.ruletaInterna.length}`);
+                    fueExitoStr = "fallo"; // Nos adaptamos forzando un fallo genérico para no crashear
+                    nombreRealFicha = "fallo";
                 } else {
-                    fueExitoStr = nombreRealFicha; // Si es un fallo, lo dejamos pasar normal
+                    nombreRealFicha = fichaElegida.visual; 
+                    
+                    if (nombreRealFicha.startsWith("exito")) {
+                        fueExitoStr = "exito"; 
+                    } else {
+                        fueExitoStr = nombreRealFicha; 
+                    }
                 }
             }
             
@@ -2028,14 +2033,30 @@ export class MyRoom extends Room implements IMyRoom{
     }
 
     descartarCarta(cartaDescartada: Carta, jugador: Jugador, motivo: string){
+        if (!jugador) {
+            console.error(`ERROR CRÍTICO (Servidor): 'jugador' es null en descartarCarta. Motivo: ${motivo}`);
+            this.agregarAlDescarte(cartaDescartada, null, null);
+            return;
+        }
+        if (!cartaDescartada) {
+            console.error(`ERROR CRÍTICO (Servidor): 'cartaDescartada' es null. Jugador: ${jugador.nombre}`);
+            return;
+        }
+
         let pasiva = this.gestorPersonajes.obtener(jugador.personaje)
         if (pasiva && pasiva.onDescartarCarta){
             pasiva.onDescartarCarta(this, jugador, cartaDescartada, motivo)
         }
 
-        if (cartaDescartada.idDuenoDelPerro != ""){
+        if (cartaDescartada.idDuenoDelPerro && cartaDescartada.idDuenoDelPerro != ""){
             const atacante = this.state.jugadores.get(cartaDescartada.idDuenoDelPerro);
-            Utilidades.procesarDano(this, jugador, atacante, 1, "DESCARTE", false)
+            
+            if (!atacante) {
+                console.error(`AVISO ADAPTADO: El dueño del perro (${cartaDescartada.idDuenoDelPerro}) ya no existe en la sala.`);
+                Utilidades.procesarDano(this, jugador, null, 1, "DESCARTE", false)
+            } else {
+                Utilidades.procesarDano(this, jugador, atacante, 1, "DESCARTE", false)
+            }
         }
 
         this.agregarAlDescarte(cartaDescartada, jugador, null)
