@@ -39,7 +39,7 @@ export class Utilidades {
             pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
         }
 
-        let pasivaAtacante = sala.gestorPersonajes.obtener(atacante.personaje);
+        let pasivaAtacante = sala.gestorPersonajes.obtener(atacante?.personaje);
         if (pasivaAtacante && pasivaAtacante.onGolpear) {
             pasivaAtacante.onGolpear(sala, atacante, victima);
         }
