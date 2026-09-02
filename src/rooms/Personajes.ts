@@ -1748,6 +1748,38 @@ export class Perro implements IPersonaje {
     }
 }
 
+export class DaveElLoco implements IPersonaje {
+    nombre = "Dave el loco";
+    habilidad = "Plantas:\nCuando roba cartas roba 1 menos pero a cambio te da una planta entre 13 posibles.";
+    habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["daveElLocoMuerte", false];
+    sfxDefault = "daveElLoco6";
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        const numero: number = Math.floor(Math.random() * 7)
+        const sfx: string = "daveElLoco" + numero
+        sala.broadcast("sfx", sfx)
+    }
+
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
+        if (!jugador){
+            console.error("El jugador no existe al robar cartas con dave el loco")
+            return 0
+        }
+
+        const carta: Carta = CatalogoCartasEspeciales.crearCartaPlantaAleatoria()
+        if (carta){
+            carta.esConjurada = true
+            jugador.mano.push(carta)
+        } else {
+            console.error("ERROR: dave el loco al crear una planta dio null")
+        }
+
+        return -1
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -1790,6 +1822,7 @@ export class GestorPersonajes {
         this.registrar(new Dahlia())
         this.registrar(new Meg())
         this.registrar(new Perro())
+        this.registrar(new DaveElLoco())
     }
 
     private registrar(p: IPersonaje) {

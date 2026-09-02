@@ -1,3 +1,4 @@
+import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { Jugador } from "./schema/MyRoomState.js";
 
 export class Utilidades {
@@ -13,11 +14,24 @@ export class Utilidades {
             return
         }
 
+        if (victima.boolean.get("calabaza")){
+            victima.boolean.set("calabaza", false)
+            sala.broadcast("notificacion_turno", `🎃 La Calabaza de ${victima.personaje} lo protege del ataque.`)
+            return
+        }
+
+        if (atacante?.boolean.get("humoseta")){
+            ignoraEscudo = true
+        }
+
         if (causa == "BANG"){
             if (atacante){
                 if (atacante.boolean.get("chispitasCargado")){
                     atacante.boolean.set("chispitasCargado", false)
                     cantidad = 999
+                }
+                if (atacante.boolean.get("plantorcha")){
+                    cantidad += 1
                 }
                 if (atacante.boolean.get("mercyActivada")){
                     this.aplicarCuracion(sala, victima, cantidad, causa, false) 
@@ -172,6 +186,15 @@ export class Utilidades {
         if (jugador.cartaPrision) opciones.push("prision");
         if (jugador.cartaDinamita) opciones.push("dinamita");
         if (jugador.cartaPapa) opciones.push("papa");
+        if (jugador.boolean.get("calabaza")){
+            opciones.push("calabaza")
+        }
+        if (jugador.boolean.get("plantorcha")){
+            opciones.push("plantorcha")
+        }
+        if (jugador.boolean.get("humoseta")){
+            opciones.push("humoseta")
+        }
 
         if (opciones.length === 0) return null;
 
@@ -192,6 +215,19 @@ export class Utilidades {
         else if (elegida === "prision") { cartaPerdida = jugador.cartaPrision; jugador.cartaPrision = null; jugador.estaEnPrision = false; }
         else if (elegida === "dinamita") { cartaPerdida = jugador.cartaDinamita; jugador.cartaDinamita = null; jugador.tieneDinamita = false; }
         else if (elegida === "papa") { cartaPerdida = jugador.cartaPapa; jugador.cartaPapa = null; jugador.tienePapa = false; }
+        else if (elegida === "calabaza"){
+            cartaPerdida = CatalogoCartasEspeciales.crearCalabaza()
+            cartaPerdida.esConjurada = true
+            jugador.boolean.set("calabaza", false)
+        } else if (elegida === "plantorcha"){
+            cartaPerdida = CatalogoCartasEspeciales.crearPlantorcha()
+            cartaPerdida.esConjurada = true
+            jugador.boolean.set("plantorcha", false)
+        } else if (elegida === "humoseta"){
+            cartaPerdida = CatalogoCartasEspeciales.crearHumoseta()
+            cartaPerdida.esConjurada = true
+            jugador.boolean.set("humoseta", false)
+        }
 
         if (cartaPerdida) {
             sala.agregarAlDescarte(cartaPerdida, jugador, client);
@@ -199,5 +235,46 @@ export class Utilidades {
         }
 
         return null; // no eliminó ningun equipamiento
+    }
+
+    public static descartarCartaAleatoriaDeLaMano(jugador: any): any | null {
+        if (!jugador || !jugador.mano || jugador.mano.length === 0) {
+            return null;
+        }
+
+        let indiceAleatorio = Math.floor(Math.random() * jugador.mano.length);
+        
+        let cartaDescartada = jugador.mano.splice(indiceAleatorio, 1)[0];
+
+        return cartaDescartada;
+    }
+
+    public static destruirTodosLosEquipamientos(sala: any, jugador: Jugador): void {
+        if (jugador.cartaArma) sala.agregarAlDescarte(jugador.cartaArma);
+            if (jugador.cartaMustang) sala.agregarAlDescarte(jugador.cartaMustang);
+            jugador.tieneMustang = false;
+            jugador.tieneMustangPro = false
+            jugador.cartaMustang = null;
+            if (jugador.cartaMira) sala.agregarAlDescarte(jugador.cartaMira);
+            jugador.tieneMira = false;
+            jugador.tieneMiraPro = false
+            jugador.cartaMira = null;
+            if (jugador.cartaBarril) sala.agregarAlDescarte(jugador.cartaBarril);
+            jugador.tieneBarril = false;
+            jugador.tieneBarrilPro = false
+            jugador.cartaBarril = null;
+            if (jugador.cartaPrision) sala.agregarAlDescarte(jugador.cartaPrision);
+            jugador.estaEnPrision = false;
+            jugador.cartaPrision = null;
+            if (jugador.cartaDinamita) sala.agregarAlDescarte(jugador.cartaDinamita)
+            jugador.tieneDinamita = false;
+            jugador.cartaDinamita = null;
+            if (jugador.cartaPapa) sala.agregarAlDescarte(jugador.cartaPapa, jugador);
+            jugador.tienePapa = false;
+            jugador.cartaPapa = null;
+            
+            jugador.boolean.set("calabaza", false)
+            jugador.boolean.set("plantorcha", false)
+            jugador.boolean.set("humoseta", false)
     }
 }

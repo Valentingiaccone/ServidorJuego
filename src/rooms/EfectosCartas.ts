@@ -2,7 +2,7 @@
 
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { GestorPersonajes } from "./Personajes.js";
-import { Carta } from "./schema/MyRoomState.js";
+import { Carta, Jugador } from "./schema/MyRoomState.js";
 import { Utilidades } from "./Utilidades.js";
 
 export interface IEfectoCarta {
@@ -703,6 +703,269 @@ export class EfectoValerieLadrona implements IEfectoCarta {
     }
 }
 
+export class EfectoLanzaguisantes implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: Jugador, cartaJugada: Carta, indiceCarta: number, parametros: string[]): boolean { 
+        if (!jugador){
+            console.error("ERROR: jugador es null al equipar lanzaguisantes")
+            return false
+        }
+        if (!cartaJugada){
+            console.error("ERROR: carta jugada es null al equipar lanzaguisantes")
+            return false
+        }
+
+        if (cartaJugada.nombre == "Repetidora"){
+            if (jugador.cartaArma) {
+                sala.agregarAlDescarte(jugador.cartaArma)
+            }
+            
+            jugador.nombreArma = cartaJugada.nombre
+            jugador.alcanceArma = 5
+            
+            jugador.danoExtraArmaBang = 0
+            jugador.alcanceMinimoArma = 0
+            
+            jugador.cartaArma = cartaJugada
+            jugador.mano.splice(indiceCarta, 1)
+            
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`)
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
+            return true
+        } else if (jugador.cartaArma?.nombre == "Repetidora"){
+            sala.broadcast("notificacion_turno", `${jugador.nombre} jugó ${cartaJugada.nombre} pero ya tiene el Lanzaguisantes mejorado.`)
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
+            jugador.mano.splice(indiceCarta, 1)
+
+            return true
+        } else if (jugador.cartaArma?.nombre == "Lanzaguisantes"){
+            if (jugador.cartaArma) {
+                sala.agregarAlDescarte(jugador.cartaArma)
+            }
+
+            const carta: Carta = CatalogoCartasEspeciales.crearRepetidora()
+            carta.esConjurada = true
+            
+            jugador.nombreArma = carta.nombre
+            jugador.alcanceArma = 5
+            
+            jugador.danoExtraArmaBang = 0
+            jugador.alcanceMinimoArma = 0
+            
+            jugador.cartaArma = carta
+            jugador.mano.splice(indiceCarta, 1)
+            
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} mejoró su arma a ${carta.nombre}!`)
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
+            return true
+        } else {
+            if (jugador.cartaArma) {
+                sala.agregarAlDescarte(jugador.cartaArma)
+            }
+            
+            jugador.nombreArma = cartaJugada.nombre
+            jugador.alcanceArma = 3
+            
+            jugador.danoExtraArmaBang = 0
+            jugador.alcanceMinimoArma = 0
+            
+            jugador.cartaArma = cartaJugada
+            jugador.mano.splice(indiceCarta, 1)
+            
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`)
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
+            return true
+        }
+    }
+}
+
+export class EfectoCalabaza implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega){
+            console.error("ERROR: jugador es null en calabaza")
+            return false
+        }
+        if (!cartaJugada){
+            console.error("ERROR: carta jugada es null en calabaza")
+            return false
+        }
+
+        jugadorQueJuega.boolean.set("calabaza", true)
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `🎃 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`)
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+
+        return true
+    }
+}
+
+export class EfectoPlantorcha implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega){
+            console.error("ERROR: jugador es null en plantorcha")
+            return false
+        }
+        if (!cartaJugada){
+            console.error("ERROR: carta jugada es null en plantorcha")
+            return false
+        }
+
+        jugadorQueJuega.boolean.set("plantorcha", true)
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`)
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+
+        return true
+    }
+}
+
+export class EfectoImitadora implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega){
+            console.error("ERROR: el jugador es null en imitadora")
+            return false
+        }
+        if (!cartaJugada){
+            console.error("ERROR: la carta jugada es null en imitadora")
+            return false
+        }
+
+        let cartasPlanta = jugadorQueJuega.mano.filter((c: any, index: number) => c.esPlanta === true && index !== indiceCarta);
+
+        if (cartasPlanta.length === 0) {
+            if (client){
+                client.send("alerta_personal", "Necesitás al menos otra carta planta en tu mano para poder usarla.");
+            } else {
+                console.error("ERROR: client es null en imitadora")
+            }
+
+            return false;
+        }
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        let indiceAleatorio = Math.floor(Math.random() * cartasPlanta.length);
+        let cartaAClonar = cartasPlanta[indiceAleatorio];
+
+        let clon = new Carta();
+        clon.id = `clon_imitadora_${cartaAClonar.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = cartaAClonar.nombre;
+        clon.descripcion = cartaAClonar.descripcion;
+        clon.descripcionEnCatalan = cartaAClonar.descripcionEnCatalan;
+        clon.tipoDeUso = cartaAClonar.tipoDeUso;
+        clon.efecto = cartaAClonar.efecto;
+        
+        clon.esConjurada = true; 
+        clon.esPlanta = true;
+
+        jugadorQueJuega.mano.push(clon);
+
+        sala.broadcast("notificacion_turno", `🌱 ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre} y creó un clon de una planta!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        
+        sala.broadcast("sfx", "tilinkPasiva");
+
+        return true;
+    }
+}
+
+export class EfectoTrebolador implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega){
+            console.error("ERROR: el jugador es null en trebolador")
+            return false
+        }
+        if (!cartaJugada){
+            console.error("ERROR: la carta jugada es null en trebolador")
+            return false
+        }
+
+        let idObjetivo = parametros[parametros.length - 1]
+        if (!idObjetivo){
+            console.error("ERROR: idObjetivo es null en trebolador")
+            return false
+        }
+
+        let victima = sala.state.jugadores.get(idObjetivo)
+        if (!victima){
+            console.error("ERROR: victima es null en trebolador")
+        }
+
+        const carta: Carta = Utilidades.descartarCartaAleatoriaDeLaMano(victima)
+        if (!carta){
+            if (client){
+                client.send("alerta_personal", `No se pudo descartar ninguna carta de ${victima.nombre}`)
+            } else {
+                console.error("ERROR: client es null en trebolador")
+            }
+
+            return false
+        }
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+
+        sala.descartarCarta(carta, victima, "ATAQUE")
+
+        sala.agregarRegistro(`☘️ ${jugadorQueJuega.personaje} jugó un Trebolador y le descartó a ${victima.personaje} un ${carta.nombre}`)
+    
+        return true
+    }
+}
+
+export class EfectoPetaseta implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        let idsJugadores = Array.from(sala.state.jugadores.keys());
+        let indiceInicial = idsJugadores.indexOf(client.sessionId);
+        let ordenMesa: string[] = [];
+        
+        for (let i = 0; i < idsJugadores.length; i++) {
+            let idx = (indiceInicial + i) % idsJugadores.length;
+            ordenMesa.push(idsJugadores[idx] as string);
+        }
+
+        let victimasIds = ordenMesa.filter(id => {
+            let j = sala.state.jugadores.get(id);
+            return j && j.estaVivo;
+        });
+
+        sala.broadcast("notificacion_turno", `🌋 ¡${jugadorQueJuega.nombre} invocó una Petaseta!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+
+        victimasIds.forEach(id => {
+            let victima = sala.state.jugadores.get(id);
+            if (victima && victima.estaVivo) {
+                Utilidades.destruirTodosLosEquipamientos(sala, victima)
+                Utilidades.procesarDano(sala, victima, jugadorQueJuega, 1, "PETASETA", false);
+            }
+        });
+
+        return true;
+    }
+}
+
+export class EfectoHumoseta implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega){
+            console.error("ERROR: jugador es null en humoseta")
+            return false
+        }
+        if (!cartaJugada){
+            console.error("ERROR: carta jugada es null en humoseta")
+            return false
+        }
+
+        jugadorQueJuega.boolean.set("humoseta", true)
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `🫧 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`)
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+
+        return true
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -730,6 +993,13 @@ export class DespachadorDeCartas {
         "equiparEscudo": new EfectoEscudo(),
         "clonarMano": new EfectoClonarMano(),
         "valerieLadrona": new EfectoValerieLadrona(),
+        "lanzaguisantes": new EfectoLanzaguisantes(),
+        "calabaza": new EfectoCalabaza(),
+        "plantorcha": new EfectoPlantorcha(),
+        "imitadora": new EfectoImitadora(),
+        "trebolador": new EfectoTrebolador(),
+        "petaseta": new EfectoPetaseta(),
+        "humoseta": new EfectoHumoseta(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

@@ -11,6 +11,7 @@ export class Carta extends Schema {
     @type("string") tipoEmbrujo: string = ""; // bueno o malo
     @type("number") prioridadBang: number = 0; // 0 no es tipo bang, > 0 mientras mas bajo, mas prioridad tiene para descartes automaticos 
     @type("string") idDuenoDelPerro: string = "";
+    @type("boolean") esPlanta: boolean = false;
     // ---------------------------------------------
 }
 

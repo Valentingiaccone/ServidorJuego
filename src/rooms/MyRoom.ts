@@ -151,7 +151,7 @@ export class MyRoom extends Room implements IMyRoom{
             
             if (victima.transformarCuraEnEscudo) break; 
 
-            let indiceBotiquin = victima.mano.findIndex((c: any) => c.efecto === "curar_1");
+            let indiceBotiquin = victima.mano.findIndex((c: any) => c.nombre === "Botiquín");
             
             if (indiceBotiquin !== -1) {
                 let botiquin = victima.mano.splice(indiceBotiquin, 1)[0];
@@ -236,28 +236,7 @@ export class MyRoom extends Room implements IMyRoom{
             victima.vidasEscudo = 0;
             victima.turnosEscudos = [];
 
-            if (victima.cartaArma) this.agregarAlDescarte(victima.cartaArma);
-            if (victima.cartaMustang) this.agregarAlDescarte(victima.cartaMustang);
-            victima.tieneMustang = false;
-            victima.tieneMustangPro = false
-            victima.cartaMustang = null;
-            if (victima.cartaMira) this.agregarAlDescarte(victima.cartaMira);
-            victima.tieneMira = false;
-            victima.tieneMiraPro = false
-            victima.cartaMira = null;
-            if (victima.cartaBarril) this.agregarAlDescarte(victima.cartaBarril);
-            victima.tieneBarril = false;
-            victima.tieneBarrilPro = false
-            victima.cartaBarril = null;
-            if (victima.cartaPrision) this.agregarAlDescarte(victima.cartaPrision);
-            victima.estaEnPrision = false;
-            victima.cartaPrision = null;
-            if (victima.cartaDinamita) this.agregarAlDescarte(victima.cartaDinamita)
-            victima.tieneDinamita = false;
-            victima.cartaDinamita = null;
-            if (victima.cartaPapa) this.agregarAlDescarte(victima.cartaPapa, victima);
-            victima.tienePapa = false;
-            victima.cartaPapa = null;
+            Utilidades.destruirTodosLosEquipamientos(this, victima)
             
             victima.embrujos.clear()
 
@@ -751,8 +730,6 @@ export class MyRoom extends Room implements IMyRoom{
 
                 });
 
-
-
                 const numero: number = Math.floor(Math.random() * 2)
 
                 if (numero == 0){
@@ -915,6 +892,18 @@ export class MyRoom extends Room implements IMyRoom{
                 cartaAfectada = victima.cartaPapa;
                 victima.cartaPapa = null;
                 victima.tienePapa = false;
+            } else if (datos.zonaObjetivo === "calabaza" && victima.boolean.get("calabaza")) {
+                cartaAfectada = CatalogoCartasEspeciales.crearCalabaza()
+                cartaAfectada.esConjurada = true
+                victima.boolean.set("calabaza", false)
+            } else if (datos.zonaObjetivo === "plantorcha" && victima.boolean.get("plantorcha")) {
+                cartaAfectada = CatalogoCartasEspeciales.crearPlantorcha()
+                cartaAfectada.esConjurada = true
+                victima.boolean.set("plantorcha", false)
+            } else if (datos.zonaObjetivo === "humoseta" && victima.boolean.get("humoseta")) {
+                cartaAfectada = CatalogoCartasEspeciales.crearHumoseta()
+                cartaAfectada.esConjurada = true
+                victima.boolean.set("humoseta", false)
             }
 
             if (!cartaAfectada) return; 
@@ -1001,6 +990,18 @@ export class MyRoom extends Room implements IMyRoom{
                 cartaAfectada = victima.cartaPapa;
                 victima.cartaPapa = null;
                 victima.tienePapa = false;
+            } else if (datos.zona == "calabaza" && victima.boolean.get("calabaza")){
+                cartaAfectada = CatalogoCartasEspeciales.crearCalabaza()
+                cartaAfectada.esConjurada = true
+                victima.boolean.set("calabaza", false)
+            } else if (datos.zona == "plantorcha" && victima.boolean.get("plantorcha")){
+                cartaAfectada = CatalogoCartasEspeciales.crearPlantorcha()
+                cartaAfectada.esConjurada = true
+                victima.boolean.set("plantorcha", false)
+            } else if (datos.zona == "humoseta" && victima.boolean.get("humoseta")){
+                cartaAfectada = CatalogoCartasEspeciales.crearHumoseta()
+                cartaAfectada.esConjurada = true
+                victima.boolean.set("humoseta", false)
             }
 
             if (cartaAfectada) {
@@ -1637,6 +1638,44 @@ export class MyRoom extends Room implements IMyRoom{
             let jugador = this.state.jugadores.get(client.sessionId);
             this.broadcast("chat", {jugador: jugador, mensaje: mensaje})
         })
+
+        this.onMessage("enviarComando", (client, datos) => {
+            let comando = datos.comando;
+            let parametro = datos.parametro;
+
+            if (comando === "kick") {
+                let idObjetivo = "";
+                let nombreJugador = "";
+
+                // 1. Buscamos en la sala quién está usando ese personaje
+                this.state.jugadores.forEach((j: any, sessionId: string) => {
+                    // Pasamos ambos a minúsculas por si el admin escribió "cole casiddy" en vez de "Cole Casiddy"
+                    if (j.personaje && j.personaje.toLowerCase() === parametro.toLowerCase()) {
+                        idObjetivo = sessionId;
+                        nombreJugador = j.nombre;
+                    }
+                });
+
+                if (idObjetivo !== "") {
+                    // 2. Buscamos el cable de conexión real de ese jugador
+                    // 'this.clients' es un array interno de Colyseus con todos los conectados
+                    let clienteAExpulsar = this.clients.find(c => c.sessionId === idObjetivo);
+                    
+                    if (clienteAExpulsar) {
+                        this.broadcast("notificacion_turno", `🔨 ¡El administrador ha expulsado a ${nombreJugador}!`);
+                        
+                        // 3. Le cortamos la conexión a la fuerza. 
+                        // ¡Esto dispara tu "onLeave" instantáneamente!
+                        clienteAExpulsar.leave(); 
+                        
+                    } else {
+                        client.send("alerta_personal", "Ese jugador ya se encuentra desconectado.");
+                    }
+                } else {
+                    client.send("alerta_personal", `No se encontró a nadie usando el personaje: ${parametro}`);
+                }
+            }
+        });
     }
 
     onJoin (client: Client, options: any) {
@@ -2087,6 +2126,15 @@ export class MyRoom extends Room implements IMyRoom{
     }
 
     ejecutarAnimacionCarta(client: any, carta: Carta): void {
+        if (!client){
+            console.error("ERROR: el cliente es null al ejecutar animacion carta")
+            return
+        }
+        if (!carta){
+            console.error("ERROR: la carta es null al ejecutar animacion carta")
+            return
+        }
+
         this.broadcast("animacion_carta", { idJugador: client.sessionId, carta: carta});
     }
 }

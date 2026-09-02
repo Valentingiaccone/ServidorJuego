@@ -99,6 +99,7 @@ export class CatalogoCartasEspeciales {
         clon.tipoDeUso = "equipamiento";
         clon.efecto = "equiparPapapum";
         clon.esConjurada = false;
+        clon.esPlanta = true
         return clon;
     }
 
@@ -320,5 +321,224 @@ export class CatalogoCartasEspeciales {
             clon.tipoEmbrujo = "malo"
         }
         return clon;
+    }
+
+    public static crearCartaPlantaAleatoria(): Carta | null {
+        const numero: number = Math.floor(Math.random() * 13)
+        switch (numero){
+            case 0:
+                return this.crearPapapum()
+            case 1:
+                return this.crearLanzaguisantes()
+            case 2:
+                return this.crearCalabaza()
+            case 3:
+                return this.crearSetaBang()
+            case 4:
+                return this.crearComePiedras()
+            case 5:
+                return this.crearApisonaflorBang()
+            case 6:
+                return this.crearPlantorcha()
+            case 7:
+                return this.crearNuez()
+            case 8:
+                return this.crearMiedicaBang()
+            case 9:
+                return this.crearImitadora()
+            case 10:
+                return this.crearHumoseta()
+            case 11:
+                return this.crearTrebolador()
+            case 12:
+                return this.crearPetaseta()
+            case 13:
+                // funciona mal
+                return this.crearPlantaCarnivora()
+            default: 
+                return null
+        }
+    }
+
+    public static crearLanzaguisantes(): Carta {
+        let clon = new Carta();
+        clon.id = `lanzaguisantes_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Lanzaguisantes";
+        clon.descripcion = "Equipa esta arma para obtener alcance 3 o mejorar a alcance 5 tu lanzaguisantes.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = "lanzaguisantes";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon
+    }
+
+    public static crearRepetidora(): Carta {
+        let clon = new Carta();
+        clon.id = `repetidora_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Repetidora";
+        clon.descripcion = "Equipa esta arma para obtener alcance 5.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = "lanzaguisantes";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon
+    }
+
+    public static crearCalabaza(): Carta {
+        let clon = new Carta();
+        clon.id = `calabaza_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Calabaza";
+        clon.descripcion = "Te protege del siguiente golpe.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = "calabaza";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon
+    }
+
+    public static crearSetaBang(): Carta {
+        let clon = new Carta();
+        clon.id = `seta_bang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Seta BANG!";
+        clon.descripcion = "Quita 1 vida a un vecino.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoVecino";
+        clon.efecto = "dano_1";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon;
+    }
+
+    public static crearComePiedras(): Carta {
+        let clon = new Carta();
+        clon.id = `come_piedras_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        clon.nombre = "Come piedras"; 
+        clon.descripcion = "Elimina un equipamiento aleatorio de un jugador.";
+        clon.descripcionEnCatalan = "Elimina un equipament aleatori d un jugador.";
+        clon.tipoDeUso = "objetivoUniversal"; 
+        clon.efecto = "desequipar_1";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon;
+    }
+
+    public static crearApisonaflorBang(): Carta {
+        let clon = new Carta();
+        clon.id = `apisonaflor_bang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Apisonaflor BANG!";
+        clon.descripcion = "Quita 2 vidas a un vecino.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoVecino";
+        clon.efecto = "dano_2";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon;
+    }
+
+    public static crearPlantorcha(): Carta {
+        let clon = new Carta();
+        clon.id = `plantorcha_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Plantorcha";
+        clon.descripcion = "Si tenes un lanzaguisantes o repetidora equipado, tus BANG! hacen +1 de daño.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = "plantorcha";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon
+    }
+
+    public static crearNuez(): Carta {
+        let clon = new Carta();
+        clon.id = `nuez_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Nuez";
+        clon.descripcion = "+1 Vida.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "curar_1";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon
+    }
+
+    public static crearMiedicaBang(): Carta {
+        let clon = new Carta();
+        clon.id = `miedica_bang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Miedica BANG!";
+        clon.descripcion = "Quita 1 vida a un jugador a tu alcance.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivo";
+        clon.efecto = "dano_1";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon;
+    }
+
+    public static crearImitadora(): Carta {
+        let clon = new Carta();
+        clon.id = `imitadora_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Imitadora";
+        clon.descripcion = "Copia una planta aleatoria de tu mano.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "imitadora";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon;
+    }
+
+    public static crearPlantaCarnivora(): Carta {
+        let clon = new Carta();
+        clon.id = `planta_carnivora_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        clon.nombre = "Planta carnivora"; 
+        clon.descripcion = "Elimina 2 equipamientos aleatorios de un vecino.";
+        clon.descripcionEnCatalan = "Elimina un equipament aleatori d un jugador.";
+        clon.tipoDeUso = "objetivoVecino"; 
+        clon.efecto = "desequipar_2";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon;
+    }
+
+    public static crearTrebolador(): Carta {
+        let clon = new Carta();
+        clon.id = `trebolador_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Trebolador";
+        clon.descripcion = "Descarta una carta aleatoria de un jugador.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoUniversal";
+        clon.efecto = "trebolador";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon;
+    }
+
+    public static crearPetaseta(): Carta {
+        let clon = new Carta();
+        clon.id = `petaseta_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Petaseta";
+        clon.descripcion = "A TODOS (te incluye) le destruye todo equipamiento y luego les hace 1 de daño inesquivable.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "petaseta";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon;
+    }
+
+    public static crearHumoseta(): Carta {
+        let clon = new Carta();
+        clon.id = `humoseta_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Humoseta";
+        clon.descripcion = "Tus ataques ignoran escudo.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = "humoseta";
+        clon.esConjurada = false;
+        clon.esPlanta = true
+        return clon
     }
 }
