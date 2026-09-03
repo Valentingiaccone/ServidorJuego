@@ -1780,6 +1780,31 @@ export class DaveElLoco implements IPersonaje {
     }
 }
 
+export class Junkrat implements IPersonaje {
+    nombre = "Junkrat";
+    habilidad = "Demolicion:\nAl inicio de su turno roba tantas cartas como salud tenga y luego recibe 1 de daño asi mismo, despues de eso roba las 2 de su turno.";
+    habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
+    sfxDefault = "sfxMensaje";
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (!miJugador){
+            console.error("ERROR: miJugador no existe en junkrat onIniciarTurno")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en junkrat onIniciarTurno")
+            return
+        }
+
+        if (miJugador.vidas >= 0){
+            sala.repartirCartas(miJugador, miJugador.vidas, "pasiva")
+            Utilidades.procesarDano(sala, miJugador, miJugador, 1, "pasiva", false)
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -1823,6 +1848,7 @@ export class GestorPersonajes {
         this.registrar(new Meg())
         this.registrar(new Perro())
         this.registrar(new DaveElLoco())
+        this.registrar(new Junkrat())
     }
 
     private registrar(p: IPersonaje) {

@@ -1750,6 +1750,10 @@ export class MyRoom extends Room implements IMyRoom{
     }
 
     repartirCartas(jugador: Jugador, cantidad: number, causa: string) {
+        if (!jugador.estaVivo){
+            return
+        }
+
         let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
         if (pasivaJugadorActual && pasivaJugadorActual.modificarRepartirCarta) {
             cantidad += pasivaJugadorActual.modificarRepartirCarta(this, jugador, causa)
