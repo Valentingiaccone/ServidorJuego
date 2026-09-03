@@ -511,6 +511,7 @@ export class EfectoEquiparPapapum implements IEfectoCarta {
         sala.state.probabilidadPapa = 1; 
 
         sala.broadcast("notificacion_turno", `🥔 ¡${jugador.nombre} activó al Papapum!`);
+        sala.broadcast("sfx", "sfxPapapumColocandose")
         sala.ejecutarAnimacionCarta(client, carta)
 
         jugador.mano.splice(indiceCarta, 1);

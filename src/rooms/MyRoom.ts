@@ -1567,6 +1567,7 @@ export class MyRoom extends Room implements IMyRoom{
                     atacante.tienePapa = false;
                     atacante.cartaPapa = null;
                     this.broadcast("notificacion_turno", `🥔 ¡${atacante.nombre} le pasó el Papapum a ${victima.nombre}!`);
+                    this.broadcast("sfx", "sfxPapapumColocandose")
                 }
 
                 if (this.colaDePeligro && this.colaDePeligro.length > 0) {

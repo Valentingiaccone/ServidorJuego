@@ -1753,12 +1753,12 @@ export class DaveElLoco implements IPersonaje {
     habilidad = "Plantas:\nCuando roba cartas roba 1 menos pero a cambio te da una planta entre 13 posibles.";
     habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["daveElLocoMuerte", false];
-    sfxDefault = "daveElLoco6";
+    sfxMuerte: [string, boolean] = ["sfxCrazyDaveMuerte", false];
+    sfxDefault = "sfxCrazyDave1";
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
-        const numero: number = Math.floor(Math.random() * 7)
-        const sfx: string = "daveElLoco" + numero
+        const numero: number = Math.floor(Math.random() * 12) + 1
+        const sfx: string = "sfxCrazyDave" + numero
         sala.broadcast("sfx", sfx)
     }
 
