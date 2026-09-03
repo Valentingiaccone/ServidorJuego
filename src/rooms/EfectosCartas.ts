@@ -830,7 +830,11 @@ export class EfectoImitadora implements IEfectoCarta {
             return false
         }
 
-        let cartasPlanta = jugadorQueJuega.mano.filter((c: any, index: number) => c.esPlanta === true && index !== indiceCarta);
+        let cartasPlanta = jugadorQueJuega.mano.filter((c: any, index: number) => 
+            c.esPlanta === true && 
+            index !== indiceCarta && 
+            c.efecto !== "imitadora"
+        );
 
         if (cartasPlanta.length === 0) {
             if (client){
