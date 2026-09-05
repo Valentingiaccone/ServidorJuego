@@ -1805,50 +1805,88 @@ export class Junkrat implements IPersonaje {
     }
 }
 
+export class Max implements IPersonaje {
+    nombre = "Max";
+    habilidad = "Max energy:\nCada 3 cartas que juegues roba una carta, pero para pasar el turno tenes que tener tu salud - 1 cartas en mano.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador no existe en max iniciar partida")
+            return
+        }
+
+        jugador.number.set("maxJugadas", 0)
+    }
+
+    onJugarCarta(sala: IMyRoom, jugador: any, cartaJugada: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador no existe en max on jugar carta")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en max on jugar carta")
+            return
+        }
+        
+        const maxJugadas: number = jugador.number.get("maxJugadas")
+        jugador.number.set("maxJugadas", maxJugadas + 1)
+
+        if (jugador.number.get("maxJugadas") >= 3){
+            jugador.number.set("maxJugadas", 0)
+            sala.repartirCartas(jugador, 1, "pasiva")
+            sala.agregarRegistro(`⚡ ${jugador.personaje} roba una carta extra por su pasiva.`)
+        }
+    }
+
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
         this.registrar(new Perro())
         this.registrar(new DaveElLoco())
         this.registrar(new Junkrat())
+        this.registrar(new Max())
     }
 
     private registrar(p: IPersonaje) {
