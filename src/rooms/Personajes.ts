@@ -419,7 +419,6 @@ export class Mikotoba implements IPersonaje {
 }
 
 export class Lesly implements IPersonaje {
-    // maya bug
     nombre = "Lesly";
     habilidad = "SAPA:\nComo una buena sapa lesly puede sapear la carta de mas a la izquierda de la mano de cada rival en todo momento, puede descartar la carta no conjurada de mas de su izquierda para conjurar una carta Valerie Ladrona (roba la carta de la izquierda) (2 por turno).";
     habilidadEnCatalan: string = "SAPA:\nCom una bona sapa Lesly, pot espiar en tot moment la carta situada més a l’esquerra de la mà de cada rival. Pot descartar la carta no conjurada que té més a l’esquerra per conjurar una carta Valerie Ladrona (roba la carta de l’esquerra) (2 per torn)."
@@ -428,7 +427,7 @@ export class Lesly implements IPersonaje {
     sfxDefault = "sfxLesly"
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.leslySapa = true
+        jugador.boolean.set("leslySapa", true)
         jugador.number.set("leslyUsosHabilidad", 0)
         let boton = new HabilidadActiva();
         boton.id = "lesly_panico";
@@ -995,7 +994,7 @@ export class Mortis implements IPersonaje {
 export class Maya implements IPersonaje {
     nombre = "Maya";
     habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos. Para pasar el turno debe tener su salud -1 cartas en mano. (seguramente no funcione con domino, flowery, Haley).";
-    habilidadEnCatalan = "Canalització:\nMentre estigui viva, utilitza les habilitats dels morts. Per passar el torn, ha de tenir la seva salut -1 cartes a la mà. (seguramente no funcione con domino, flowery, Haley).";
+    habilidadEnCatalan = ".";
     vidasBase = 4;
 
     // =================================================================
@@ -1839,7 +1838,141 @@ export class Max implements IPersonaje {
             sala.agregarRegistro(`⚡ ${jugador.personaje} roba una carta extra por su pasiva.`)
         }
     }
+}
 
+export class Tracer implements IPersonaje {
+    nombre = "Tracer";
+    habilidad = "Lo intentaremos otra vez:\nTiene 2 vidas menos, si no es Sheriff, comienza con 3 escudos temporales, durante su turno puede guardar su estado, las proximas 2 veces que muera, volverá a su ultimo estado guardado (guardar un estado sobreescribe el ultimo guardado).";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.number.set("tracerVecesMuerta", 0);
+        let boton = new HabilidadActiva();
+        boton.id = "tracer_guardarEstado";
+        boton.textoBoton = "Guardar estado";
+        boton.tooltip = "Guarda tu estado";
+        boton.spriteBoton = "botonTracer";
+        jugador.habilidadesActivas.push(boton);
+
+        jugador.vidas--;
+        jugador.vidasMaximas--;
+        jugador.vidas--;
+        jugador.vidasMaximas--;
+        if (jugador.rol != "Sheriff"){
+            Utilidades.agregarEscudos(sala, jugador, 3, 1, "pasiva");
+        }
+    }
+
+    // 1. EL CLONADOR DE CARTAS
+    private clonarCartaSegura(cartaOriginal: any): any {
+        if (!cartaOriginal) return null;
+        let clon = new Carta(); // Recreamos una carta fresca para Colyseus
+        clon.id = `tracer_${cartaOriginal.id}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        clon.nombre = cartaOriginal.nombre;
+        clon.descripcion = cartaOriginal.descripcion;
+        clon.descripcionEnCatalan = cartaOriginal.descripcionEnCatalan;
+        clon.tipoDeUso = cartaOriginal.tipoDeUso;
+        clon.efecto = cartaOriginal.efecto;
+        clon.esConjurada = true; // Por balance, lo que vuelve en el tiempo cuenta como conjurado
+        clon.tipoEmbrujo = cartaOriginal.tipoEmbrujo;
+        if (cartaOriginal.esPlanta) (clon as any).esPlanta = cartaOriginal.esPlanta;
+        return clon;
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: Jugador, client: any, idHabilidad: string): void {
+        if (jugador.estaVivo && idHabilidad == "tracer_guardarEstado"){
+
+            // 2. CREAMOS EL SNAPSHOT: Guardamos clones que servirán SOLO COMO MOLDES
+            let snapshot: any = {
+                vidas: jugador.vidas,
+                vidasMaximas: jugador.vidasMaximas,
+                vidasEscudo: jugador.vidasEscudo,
+                turnosEscudos: [...jugador.turnosEscudos], 
+                
+                nombreArma: jugador.nombreArma,
+                alcanceArma: jugador.alcanceArma,
+                danoExtraArmaBang: jugador.danoExtraArmaBang,
+                alcanceMinimoArma: jugador.alcanceMinimoArma,
+                cartaArma: this.clonarCartaSegura(jugador.cartaArma),
+
+                tieneMustang: jugador.tieneMustang,
+                tieneMustangPro: jugador.tieneMustangPro,
+                cartaMustang: this.clonarCartaSegura(jugador.cartaMustang),
+                
+                tieneMira: jugador.tieneMira,
+                tieneMiraPro: jugador.tieneMiraPro,
+                cartaMira: this.clonarCartaSegura(jugador.cartaMira),
+                
+                tieneBarril: jugador.tieneBarril,
+                tieneBarrilPro: jugador.tieneBarrilPro,
+                cartaBarril: this.clonarCartaSegura(jugador.cartaBarril),
+
+                // Convertimos la mano de ArraySchema a un array normal de JavaScript para la foto
+                mano: Array.from(jugador.mano).map((c: any) => this.clonarCartaSegura(c)) 
+            };
+
+            (jugador as any).tracerSnapshot = snapshot;
+
+            client.send("alerta_personal", "¡Estado temporal guardado! Si morís, volvés a este momento.");
+            sala.broadcast("notificacion_turno", `⏱️ ¡Tracer ha marcado un punto de retorno temporal!`);
+        }
+    }
+
+    onRecibirDano(sala: any, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (!victima || !sala) return;
+
+        // 3. LA RESTAURACIÓN 
+        if (victima.vidas <= 0 && (victima as any).tracerSnapshot && victima.number.get("tracerVecesMuerta") < 2) {
+            
+            victima.number.set("tracerVecesMuerta", victima.number.get("tracerVecesMuerta") + 1);
+
+            let snap = (victima as any).tracerSnapshot;
+
+            // A) Limpiamos lo que tenía al morir
+            victima.mano.forEach((c: any) => sala.agregarAlDescarte(c, victima, null));
+            victima.mano.clear();
+            if (victima.cartaArma) sala.agregarAlDescarte(victima.cartaArma, victima, null);
+            if (victima.cartaMustang) sala.agregarAlDescarte(victima.cartaMustang, victima, null);
+            if (victima.cartaMira) sala.agregarAlDescarte(victima.cartaMira, victima, null);
+            if (victima.cartaBarril) sala.agregarAlDescarte(victima.cartaBarril, victima, null);
+
+            // B) LA MAGIA ESTÁ ACÁ: Inyectamos los datos, pero volvemos a fabricar los clones 
+            // Esto asegura que Colyseus reciba instancias vírgenes y nuevas cada vez que revive.
+            victima.vidas = snap.vidas;
+            victima.vidasMaximas = snap.vidasMaximas;
+            victima.vidasEscudo = snap.vidasEscudo;
+            victima.turnosEscudos = [...snap.turnosEscudos];
+
+            victima.nombreArma = snap.nombreArma;
+            victima.alcanceArma = snap.alcanceArma;
+            victima.danoExtraArmaBang = snap.danoExtraArmaBang;
+            victima.alcanceMinimoArma = snap.alcanceMinimoArma;
+            victima.cartaArma = this.clonarCartaSegura(snap.cartaArma);
+
+            victima.tieneMustang = snap.tieneMustang;
+            victima.tieneMustangPro = snap.tieneMustangPro;
+            victima.cartaMustang = this.clonarCartaSegura(snap.cartaMustang);
+
+            victima.tieneMira = snap.tieneMira;
+            victima.tieneMiraPro = snap.tieneMiraPro;
+            victima.cartaMira = this.clonarCartaSegura(snap.cartaMira);
+
+            victima.tieneBarril = snap.tieneBarril;
+            victima.tieneBarrilPro = snap.tieneBarrilPro;
+            victima.cartaBarril = this.clonarCartaSegura(snap.cartaBarril);
+
+            // C) Volvemos a clonar la mano al insertarla
+            snap.mano.forEach((c: any) => {
+                let cartaFresca = this.clonarCartaSegura(c);
+                if (cartaFresca) victima.mano.push(cartaFresca);
+            });
+
+            // D) Avisamos a todos
+            sala.agregarRegistro(`⏪ ¡TRACER MURIÓ PERO RETROCEDIÓ EN EL TIEMPO! (${victima.number.get("tracerVecesMuerta")}/2)`);
+            sala.reproducirSfx("sfxTilink"); // Le da el toque genial
+        }
+    }
 }
 
 // 3. EL GESTOR DE PERSONAJES
@@ -1887,6 +2020,7 @@ export class GestorPersonajes {
         this.registrar(new DaveElLoco())
         this.registrar(new Junkrat())
         this.registrar(new Max())
+        // this.registrar(new Tracer()) en general anda bien, pero mucho lio, tiene pequeños errores, cuando quiera volverme loco programando la vuelvo a hacer
     }
 
     private registrar(p: IPersonaje) {

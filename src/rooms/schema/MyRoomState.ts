@@ -77,10 +77,6 @@ export class Jugador extends Schema {
     @type("number") modificarDistancia: number = 0; // distancia que los demas te ven a vos
     @type("number") modificarAlcance: number = 0; // alcance que tenes
     @type([HabilidadActiva]) habilidadesActivas = new ArraySchema<HabilidadActiva>();
-
-    // ----------------------------------------
-    // roles especificos
-    // ----------------------------------------
     @type("number") alturaFlowery: number = 0;
     @type("boolean") estaMuertoFalso: boolean = false;
     @type("number") rondasMuerto: number = 0;
@@ -94,12 +90,13 @@ export class Jugador extends Schema {
     @type("string") geometryDashModo: string = ""
     @type("number") usosBallEsteTurno: number = 0;
     @type("number") usosUfo: number = 0;
-    @type("boolean") leslySapa: boolean = false
     @type("boolean") ocultarEstadisticas: boolean = false
     @type("number") descartesBerry: number = 0;
     @type({ map: "number" }) number = new MapSchema<number>();
     @type({ map: "boolean" }) boolean = new MapSchema<boolean>();
     @type({ map: "string" }) string = new MapSchema<string>();
+    @type({ map: Jugador }) jugador = new MapSchema<Jugador>();
+    // hay 63 variables para cocos + 2 internas para el servidor (limite para cocos 64)
 }
 
 export class MyRoomState extends Schema {
