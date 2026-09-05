@@ -1355,6 +1355,10 @@ export class MyRoom extends Room implements IMyRoom{
                     if (victima.modificarDistancia){
                         distancia += victima.modificarDistancia
                     }
+
+                    if (atacante.number.get("pedroCrecimiento")){
+                        distancia -= atacante.number.get("pedroCrecimiento")
+                    }
                 }
 
                 // --- HOOK MODIFICAR DISTANCIA (ATACANTE) ---

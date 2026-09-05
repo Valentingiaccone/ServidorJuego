@@ -1838,6 +1838,10 @@ export class Max implements IPersonaje {
             sala.agregarRegistro(`⚡ ${jugador.personaje} roba una carta extra por su pasiva.`)
         }
     }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return -1
+    }
 }
 
 export class Tracer implements IPersonaje {
@@ -1975,6 +1979,84 @@ export class Tracer implements IPersonaje {
     }
 }
 
+export class Pedro implements IPersonaje {
+    nombre = "Pedro";
+    habilidad = "COMILON:\nAl golpear a un enemigo, le descarta un equipamiento aleatorio y pedro crece, puede crecer hasta 5 veces, cada crecimiento le da 1 de alcance, el crecimiento 1, 3 y 5 le permite almacenar una carta extra, recibir daño le provoca decrecer con un 50% de que ocurra.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.number.set("pedroCrecimiento", 0)
+        jugador.boolean.set("mostrarPedro", true)
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+        if (!miJugador){
+            console.error("ERROR: miJugador es null en pedro onGolpear")
+            return
+        }
+        if (!jugadorGolpeado){
+            console.error("ERROR: jugadorGolpeado es null en pedro onGolpear")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala es null en pedro onGolpear")
+            return
+        }
+
+        const descarte: any = Utilidades.descartarEquipamientoAleatorio(sala, jugadorGolpeado, null)
+        if (descarte != null){
+            if (miJugador.number.get("pedroCrecimiento") < 5){
+                miJugador.number.set("pedroCrecimiento", miJugador.number.get("pedroCrecimiento") + 1)
+                sala.agregarRegistro(`🌿 ${miJugador.personaje} crece ${miJugador.number.get("pedroCrecimiento")}/5`)
+            }
+        }
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        if (!jugador){
+            console.error("ERROR: jugador no existe en pedro modificarCartasEnManoAlPasarTurno")
+            return 0
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en pedro modificarCartasEnManoAlPasarTurno")
+            return 0
+        }
+
+        const crecimiento: number = jugador.number.get("pedroCrecimiento")
+        if (crecimiento == 1 || crecimiento == 2){
+            return 1
+        } else if (crecimiento == 3 || crecimiento == 4){
+            return 2
+        } else if (crecimiento >= 5){
+            return 3
+        }
+
+        return 0
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (!victima){
+            console.error("ERROR: victima no existe en pedro onRecibirDano")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en pedro onRecibirDano")
+            return
+        }
+
+        if (victima.vidas > 0){
+            if (victima.number.get("pedroCrecimiento") > 0){
+                const numero: number = Math.floor(Math.random() * 2)
+                if (numero == 1){
+                    victima.number.set("pedroCrecimiento", victima.number.get("pedroCrecimiento") - 1)
+                    sala.agregarRegistro(`🌿 ${victima.personaje} decrece ${victima.number.get("pedroCrecimiento")}/5`)
+                }
+            }
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -2020,6 +2102,12 @@ export class GestorPersonajes {
         this.registrar(new DaveElLoco())
         this.registrar(new Junkrat())
         this.registrar(new Max())
+        this.registrar(new Pedro())
+
+
+
+
+
         // this.registrar(new Tracer()) en general anda bien, pero mucho lio, tiene pequeños errores, cuando quiera volverme loco programando la vuelvo a hacer
     }
 
