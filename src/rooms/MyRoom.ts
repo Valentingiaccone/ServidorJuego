@@ -372,6 +372,10 @@ export class MyRoom extends Room implements IMyRoom{
                         opcion.habilidad = p.habilidad;
                         opcion.habilidadEnCatalan = p.habilidadEnCatalan;
                         opcion.vidasBase = p.vidasBase;
+                        if (p.spriteFueraDeJuego){
+                            opcion.spriteFueraDeJuego = p.spriteFueraDeJuego
+                        }
+                        
                         j.opcionesPersonaje.push(opcion);
                         indicePersonaje++;
                     }
@@ -1640,9 +1644,8 @@ export class MyRoom extends Room implements IMyRoom{
         })
 
         this.onMessage("enviarChat", (client, mensaje) => {
-            let jugador = this.state.jugadores.get(client.sessionId);
-            this.broadcast("chat", {jugador: jugador, mensaje: mensaje})
-        })
+            this.broadcast("chat", { sessionId: client.sessionId, mensaje: mensaje });
+        });
 
         this.onMessage("enviarComando", (client, datos) => {
             let comando = datos.comando;

@@ -13,6 +13,7 @@ export interface IPersonaje {
     vidasBase: number;
     sfxMuerte?: [string, boolean, number?];
     sfxDefault?: string;
+    spriteFueraDeJuego?: boolean
 
     onRecibirDano?(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void;
 
@@ -460,7 +461,7 @@ export class Lesly implements IPersonaje {
 
                 jugador.number.set("leslyUsosHabilidad", usos + 1)
 
-                sala.agregarRegistro(`🐸 ${jugador.personaje} acaba de conjurar un Panico (${usos + 1}/2)`)
+                sala.agregarRegistro(`🐸 ${jugador.personaje} acaba de conjurar una Valerie ladrona (${usos + 1}/2)`)
             } else {
                 client.send("alerta_personal", "No tenés ninguna carta para poder crear un panico.")
             }
@@ -475,7 +476,7 @@ export class Lesly implements IPersonaje {
 export class Domino implements IPersonaje {
     // maya bug (catalan)
     nombre = "Domino";
-    habilidad = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan.";
+    habilidad = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance).";
     habilidadEnCatalan: string = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteDominub", false];
@@ -605,6 +606,16 @@ export class Flowery implements IPersonaje {
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteFlowery", true];
     sfxDefault = "sfxFlowery"
+    spriteFueraDeJuego: boolean = true
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en iniciar partida flowery")
+            return
+        }
+
+        jugador.boolean.set("spriteFueraDeJuego", true)
+    }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
         if (!jugador.estaVivo){
@@ -853,6 +864,7 @@ export class Luciergana implements IPersonaje {
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.vidas--
         jugador.vidasMaximas--
+        jugador.boolean.set("lucierganaPrendida", false)
     }
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number){
@@ -860,8 +872,8 @@ export class Luciergana implements IPersonaje {
             return
         }
 
-        if (victima.lucierganaPrendida){
-            victima.lucierganaPrendida = false
+        if (victima.boolean.get("lucierganaPrendida")){
+            victima.boolean.set("lucierganaPrendida", false)
             victima.spriteAvatarOpcional = ""
             victima.vidas += danoCuerpo
             if (victima.vidas > victima.vidasMaximas){
@@ -874,14 +886,14 @@ export class Luciergana implements IPersonaje {
                 sala.agregarRegistro(`🐝💡 La ${victima.personaje} absorbe ${cantidad} de daño`)
             }
         } else {
-            victima.lucierganaPrendida = true
+            victima.boolean.set("lucierganaPrendida", true)
             victima.spriteAvatarOpcional = "Luciergana prendida"
         }
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
-        if (jugador.lucierganaPrendida){
-            jugador.lucierganaPrendida = false
+        if (jugador.boolean.get("lucierganaPrendida")){
+            jugador.boolean.set("lucierganaPrendida", false)
             jugador.spriteAvatarOpcional = ""
         }
     }
@@ -929,8 +941,8 @@ export class Haley implements IPersonaje {
 
 export class Maggey implements IPersonaje {
     nombre = "Maggey";
-    habilidad = "Ay! pero que mala suerte...:\nEl resto de los jugadores tiene mas mala suerte y les agrega en su ruleta un punto para robar una carta.";
-    habilidadEnCatalan = "Ai! Quina mala sort...:\nLa resta de jugadors té encara més mala sort i els afegeix a la seva ruleta un punt per robar una carta..";
+    habilidad = "Ay! pero que mala suerte...:\nEl resto de los jugadores tiene mas mala suerte y les agrega en su ruleta tres puntos para robar una carta.";
+    habilidadEnCatalan = ".";
     vidasBase = 4;
 
     private aplicarMalaSuerte(jugadorQueTira: any, miJugador: any) {
@@ -1072,9 +1084,11 @@ export class Maya implements IPersonaje {
             if (pasiva.onMuereOtroPersonaje) pasiva.onMuereOtroPersonaje(sala, victimaMuerta, miJugador);
         });
 
-        let pasiva: any = sala.gestorPersonajes.obtener(victimaMuerta.personaje)
-        if (pasiva && pasiva.onIniciarPartida){
-            pasiva.onIniciarPartida(sala, miJugador)
+        if (victimaMuerta.beneficiarseDeSuMuerte){
+            let pasiva: any = sala.gestorPersonajes.obtener(victimaMuerta.personaje)
+            if (pasiva && pasiva.onIniciarPartida){
+                pasiva.onIniciarPartida(sala, miJugador)
+            }
         }
     }
 
@@ -1112,6 +1126,12 @@ export class Maya implements IPersonaje {
         this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
             if (pasiva.onIniciarTurno) pasiva.onIniciarTurno(sala, miJugador)
         })
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
+            if (pasiva.onGolpear) pasiva.onGolpear(sala, miJugador, jugadorGolpeado);
+        });
     }
 
 
@@ -1981,13 +2001,15 @@ export class Tracer implements IPersonaje {
 
 export class Pedro implements IPersonaje {
     nombre = "Pedro";
-    habilidad = "COMILON:\nAl golpear a un enemigo, le descarta un equipamiento aleatorio y pedro crece, puede crecer hasta 5 veces, cada crecimiento le da 1 de alcance, el crecimiento 1, 3 y 5 le permite almacenar una carta extra, recibir daño le provoca decrecer con un 50% de que ocurra.";
+    habilidad = "Alimentame:\nAl golpear a un enemigo, le descarta un equipamiento aleatorio y pedro crece, puede crecer hasta 5 veces, cada crecimiento le da 1 de alcance, el crecimiento 1, 3 y 5 le permite almacenar una carta extra, recibir daño le provoca decrecer con un 50% de que ocurra.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    spriteFueraDeJuego: boolean = true
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.number.set("pedroCrecimiento", 0)
         jugador.boolean.set("mostrarPedro", true)
+        jugador.boolean.set("spriteFueraDeJuego", true)
     }
 
     onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {

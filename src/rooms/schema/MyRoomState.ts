@@ -27,6 +27,7 @@ export class OpcionPersonaje extends Schema {
     @type("string") habilidad: string = "";
     @type("string") habilidadEnCatalan: string = "";
     @type("number") vidasBase: number = 4;
+    @type("boolean") spriteFueraDeJuego: boolean = false;
 }
 
 export class Jugador extends Schema {
@@ -83,7 +84,6 @@ export class Jugador extends Schema {
     @type("boolean") beneficiarseDeSuMuerte: boolean = true
     @type("number") usosArtesanaEsteTurno: number = 0;
     @type("number") clonesCreadosEsteTurno: number = 0;
-    @type("boolean") lucierganaPrendida: boolean = false
     @type("number") robinDescartes: number = 0;
     @type("boolean") mikotobaEstaGordo: boolean = false
     @type("boolean") transformarCuraEnEscudo: boolean = false
@@ -96,7 +96,8 @@ export class Jugador extends Schema {
     @type({ map: "boolean" }) boolean = new MapSchema<boolean>();
     @type({ map: "string" }) string = new MapSchema<string>();
     @type({ map: Jugador }) jugador = new MapSchema<Jugador>();
-    // hay 63 variables para cocos + 2 internas para el servidor (limite para cocos 64)
+    @type({ map: Carta }) equipamiento = new MapSchema<Carta>();
+    // (limite para cocos 64)
 }
 
 export class MyRoomState extends Schema {
