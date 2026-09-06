@@ -776,79 +776,17 @@ export class Robin implements IPersonaje {
             return;
         }
 
-        let opcionesDeMejora: string[] = [];
+        // Dejamos que la magia ocurra en Utilidades
+        let textoMejora = Utilidades.mejorarEquipamientoAleatorio(sala, jugador);
 
-        if (jugador.tieneMustang && !jugador.tieneMustangPro) opcionesDeMejora.push("Caballo");
-        if (jugador.tieneMira && !jugador.tieneMiraPro) opcionesDeMejora.push("Mira");
-        if (jugador.tieneBarril && !jugador.tieneBarrilPro) opcionesDeMejora.push("Barril");
-        
-        let siguienteArma = this.obtenerSiguienteArma(jugador.nombreArma);
-        if (siguienteArma) opcionesDeMejora.push("Arma");
-
-        if (opcionesDeMejora.length === 0) {
-            return;
+        if (textoMejora !== "") {
+            sala.agregarRegistro(`🔨 ¡${jugador.personaje} descartó una carta y mejoró ${textoMejora}!`);
+            sala.reproducirSfx("robinMejora"); 
         }
-
-        let eleccion = opcionesDeMejora[Math.floor(Math.random() * opcionesDeMejora.length)];
-        let textoMejora = "";
-
-        if (eleccion === "Caballo") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearCaballoPro();
-            if (jugador.cartaMustang) sala.agregarAlDescarte(jugador.cartaMustang, jugador, null);
-            
-            jugador.tieneMustangPro = true;
-            jugador.cartaMustang = cartaMejorada;
-            textoMejora = "su Caballo";
-        } 
-        else if (eleccion === "Mira") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearMonoaldeaPro();
-            if (jugador.cartaMira) sala.agregarAlDescarte(jugador.cartaMira, jugador, null);
-            
-            jugador.tieneMiraPro = true;
-            jugador.cartaMira = cartaMejorada;
-            textoMejora = "su Monoaldea";
-        } 
-        else if (eleccion === "Barril") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearBarrilPro();
-            if (jugador.cartaBarril) sala.agregarAlDescarte(jugador.cartaBarril, jugador, null);
-            
-            jugador.tieneBarrilPro = true;
-            jugador.cartaBarril = cartaMejorada;
-            textoMejora = "su Barril";
-        } 
-        else if (eleccion === "Arma") {
-            let cartaArmaNueva = CatalogoCartasEspeciales.crearArma(siguienteArma.nombre, siguienteArma.alcance);
-            if (jugador.cartaArma) sala.agregarAlDescarte(jugador.cartaArma, jugador, null); 
-
-            jugador.cartaArma = cartaArmaNueva;
-            jugador.nombreArma = siguienteArma.nombre;
-            jugador.alcanceArma = siguienteArma.alcance;
-            textoMejora = `su arma a ${siguienteArma.nombre}`;
-        }
-
-        sala.agregarRegistro(`🔨 ¡${jugador.personaje} descartó una carta y mejoró ${textoMejora}!`);
-        sala.reproducirSfx("robinMejora"); 
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
         jugador.robinDescartes = 0;
-    }
-
-    private obtenerSiguienteArma(armaActual: string): any {
-        const secuencia = [
-            { nombre: "Colt .45", alcance: 1 },
-            { nombre: "Pistola de Shion", alcance: 2 },
-            { nombre: "Revolver de Casiddy", alcance: 3 },
-            { nombre: "Rifle de Ashe", alcance: 4 },
-            { nombre: "Francotirador", alcance: 5 },
-            //{ nombre: "Rifle de Plasma", alcance: 6 } 
-        ];
-
-        let index = secuencia.findIndex(a => a.nombre === armaActual);
-        if (index !== -1 && index < secuencia.length - 1) {
-            return secuencia[index + 1];
-        }
-        return null; 
     }
 }
 
@@ -1888,17 +1826,16 @@ export class Tracer implements IPersonaje {
         }
     }
 
-    // 1. EL CLONADOR DE CARTAS
     private clonarCartaSegura(cartaOriginal: any): any {
         if (!cartaOriginal) return null;
-        let clon = new Carta(); // Recreamos una carta fresca para Colyseus
+        let clon = new Carta(); 
         clon.id = `tracer_${cartaOriginal.id}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         clon.nombre = cartaOriginal.nombre;
         clon.descripcion = cartaOriginal.descripcion;
         clon.descripcionEnCatalan = cartaOriginal.descripcionEnCatalan;
         clon.tipoDeUso = cartaOriginal.tipoDeUso;
         clon.efecto = cartaOriginal.efecto;
-        clon.esConjurada = true; // Por balance, lo que vuelve en el tiempo cuenta como conjurado
+        clon.esConjurada = true; 
         clon.tipoEmbrujo = cartaOriginal.tipoEmbrujo;
         if (cartaOriginal.esPlanta) (clon as any).esPlanta = cartaOriginal.esPlanta;
         return clon;
@@ -1907,32 +1844,18 @@ export class Tracer implements IPersonaje {
     ejecutarHabilidadActiva(sala: any, jugador: Jugador, client: any, idHabilidad: string): void {
         if (jugador.estaVivo && idHabilidad == "tracer_guardarEstado"){
 
-            // 2. CREAMOS EL SNAPSHOT: Guardamos clones que servirán SOLO COMO MOLDES
             let snapshot: any = {
                 vidas: jugador.vidas,
                 vidasMaximas: jugador.vidasMaximas,
                 vidasEscudo: jugador.vidasEscudo,
                 turnosEscudos: [...jugador.turnosEscudos], 
                 
-                nombreArma: jugador.nombreArma,
-                alcanceArma: jugador.alcanceArma,
-                danoExtraArmaBang: jugador.danoExtraArmaBang,
-                alcanceMinimoArma: jugador.alcanceMinimoArma,
-                cartaArma: this.clonarCartaSegura(jugador.cartaArma),
+                // Guardamos el mapa dinámico completo
+                equipamiento: Array.from(jugador.equipamiento.entries()).map(([clave, carta]) => ({
+                    clave: clave,
+                    carta: this.clonarCartaSegura(carta)
+                })),
 
-                tieneMustang: jugador.tieneMustang,
-                tieneMustangPro: jugador.tieneMustangPro,
-                cartaMustang: this.clonarCartaSegura(jugador.cartaMustang),
-                
-                tieneMira: jugador.tieneMira,
-                tieneMiraPro: jugador.tieneMiraPro,
-                cartaMira: this.clonarCartaSegura(jugador.cartaMira),
-                
-                tieneBarril: jugador.tieneBarril,
-                tieneBarrilPro: jugador.tieneBarrilPro,
-                cartaBarril: this.clonarCartaSegura(jugador.cartaBarril),
-
-                // Convertimos la mano de ArraySchema a un array normal de JavaScript para la foto
                 mano: Array.from(jugador.mano).map((c: any) => this.clonarCartaSegura(c)) 
             };
 
@@ -1946,55 +1869,38 @@ export class Tracer implements IPersonaje {
     onRecibirDano(sala: any, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         if (!victima || !sala) return;
 
-        // 3. LA RESTAURACIÓN 
         if (victima.vidas <= 0 && (victima as any).tracerSnapshot && victima.number.get("tracerVecesMuerta") < 2) {
             
             victima.number.set("tracerVecesMuerta", victima.number.get("tracerVecesMuerta") + 1);
-
             let snap = (victima as any).tracerSnapshot;
 
             // A) Limpiamos lo que tenía al morir
             victima.mano.forEach((c: any) => sala.agregarAlDescarte(c, victima, null));
             victima.mano.clear();
-            if (victima.cartaArma) sala.agregarAlDescarte(victima.cartaArma, victima, null);
-            if (victima.cartaMustang) sala.agregarAlDescarte(victima.cartaMustang, victima, null);
-            if (victima.cartaMira) sala.agregarAlDescarte(victima.cartaMira, victima, null);
-            if (victima.cartaBarril) sala.agregarAlDescarte(victima.cartaBarril, victima, null);
+            Utilidades.destruirTodosLosEquipamientos(sala, victima);
 
-            // B) LA MAGIA ESTÁ ACÁ: Inyectamos los datos, pero volvemos a fabricar los clones 
-            // Esto asegura que Colyseus reciba instancias vírgenes y nuevas cada vez que revive.
+            // B) Restauramos valores crudos
             victima.vidas = snap.vidas;
             victima.vidasMaximas = snap.vidasMaximas;
             victima.vidasEscudo = snap.vidasEscudo;
             victima.turnosEscudos = [...snap.turnosEscudos];
 
-            victima.nombreArma = snap.nombreArma;
-            victima.alcanceArma = snap.alcanceArma;
-            victima.danoExtraArmaBang = snap.danoExtraArmaBang;
-            victima.alcanceMinimoArma = snap.alcanceMinimoArma;
-            victima.cartaArma = this.clonarCartaSegura(snap.cartaArma);
+            // C) Inyectamos el equipamiento clonado fresco
+            snap.equipamiento.forEach((item: any) => {
+                let cartaFresca = this.clonarCartaSegura(item.carta);
+                if (cartaFresca) {
+                    victima.equipamiento.set(item.clave, cartaFresca);
+                }
+            });
 
-            victima.tieneMustang = snap.tieneMustang;
-            victima.tieneMustangPro = snap.tieneMustangPro;
-            victima.cartaMustang = this.clonarCartaSegura(snap.cartaMustang);
-
-            victima.tieneMira = snap.tieneMira;
-            victima.tieneMiraPro = snap.tieneMiraPro;
-            victima.cartaMira = this.clonarCartaSegura(snap.cartaMira);
-
-            victima.tieneBarril = snap.tieneBarril;
-            victima.tieneBarrilPro = snap.tieneBarrilPro;
-            victima.cartaBarril = this.clonarCartaSegura(snap.cartaBarril);
-
-            // C) Volvemos a clonar la mano al insertarla
+            // D) Inyectamos la mano
             snap.mano.forEach((c: any) => {
                 let cartaFresca = this.clonarCartaSegura(c);
                 if (cartaFresca) victima.mano.push(cartaFresca);
             });
 
-            // D) Avisamos a todos
             sala.agregarRegistro(`⏪ ¡TRACER MURIÓ PERO RETROCEDIÓ EN EL TIEMPO! (${victima.number.get("tracerVecesMuerta")}/2)`);
-            sala.reproducirSfx("sfxTilink"); // Le da el toque genial
+            sala.reproducirSfx("sfxTilink");
         }
     }
 }

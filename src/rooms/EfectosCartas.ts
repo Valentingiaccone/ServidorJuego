@@ -62,27 +62,12 @@ export class EfectoCurarDuo implements IEfectoCarta {
 
 export class EfectoEquipar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        let nuevoAlcance = parseInt(parametros[2]); 
-        let danoExtraBang = parametros[3] ? parseInt(parametros[3]) : 0;
-        let alcanceMin = parametros[4] ? parseInt(parametros[4]) : 0;
-        
-        if (jugador.cartaArma) {
-            sala.agregarAlDescarte(jugador.cartaArma);
-        }
-        
-        jugador.nombreArma = cartaJugada.nombre;
-        jugador.alcanceArma = nuevoAlcance;
-        
-        // --- ASIGNAMOS LOS VALORES NUEVOS ---
-        jugador.danoExtraArmaBang = danoExtraBang;
-        jugador.alcanceMinimoArma = alcanceMin;
-        
-        jugador.cartaArma = cartaJugada;
+        Utilidades.equiparCarta(sala, jugador, cartaJugada, "arma");
         jugador.mano.splice(indiceCarta, 1);
         
         sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-        const numero: number = Math.floor(Math.random() * 3);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        const numero = Math.floor(Math.random() * 3);
         sala.broadcast("sfx", "equiparArma" + numero);
         return true;
     }
@@ -275,100 +260,63 @@ export class EfectoTiendaJuju implements IEfectoCarta {
 
 export class EfectoEquiparMustang implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        if (jugador.tieneMustang && jugador.cartaMustang) {
-            sala.agregarAlDescarte(jugador.cartaMustang);
-        }
-        jugador.tieneMustang = true;
-        jugador.tieneMustangPro = false
-        jugador.cartaMustang = cartaJugada;
+        Utilidades.equiparCarta(sala, jugador, cartaJugada, "mustang");
         jugador.mano.splice(indiceCarta, 1);
-        
         sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo.`);
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-        return true
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
     }
 }
 
 export class EfectoEquiparMira implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        if (jugador.tieneMira && jugador.cartaMira) {
-            sala.agregarAlDescarte(jugador.cartaMira); 
-        }
-        jugador.tieneMira = true;
-        jugador.tieneMiraPro = false
-        jugador.cartaMira = cartaJugada;
+        Utilidades.equiparCarta(sala, jugador, cartaJugada, "mira");
         jugador.mano.splice(indiceCarta, 1);
-        
         sala.broadcast("notificacion_turno", `🛖 ${jugador.nombre} equipó una Monoaldea.`);
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-        return true
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
     }
 }
 
 export class EfectoEquiparBarril implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        if (jugador.tieneBarril && jugador.cartaBarril) {
-            sala.agregarAlDescarte(jugador.cartaBarril); 
-        }
-        jugador.tieneBarril = true;
-        jugador.tieneBarrilPro = false
-        jugador.cartaBarril = cartaJugada;
+        Utilidades.equiparCarta(sala, jugador, cartaJugada, "barril");
         jugador.mano.splice(indiceCarta, 1);
-        
         sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril.`);
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-        const numero: number = Math.floor(Math.random() * 3);
-        const sfx: string = "barril" + numero
-        sala.broadcast("sfx", sfx)
-        return true
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        const numero = Math.floor(Math.random() * 3);
+        sala.broadcast("sfx", "barril" + numero);
+        return true;
     }
 }
 
 export class EfectoEquiparMustangPro implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        if (jugador.tieneMustang && jugador.cartaMustang) {
-            sala.agregarAlDescarte(jugador.cartaMustang); 
-        }
-        jugador.tieneMustang = true;
-        jugador.tieneMustangPro = true; // ACTIVAMOS LA VARIABLE PRO
-        jugador.cartaMustang = cartaJugada;
+        Utilidades.equiparCarta(sala, jugador, cartaJugada, "mustang");
         jugador.mano.splice(indiceCarta, 1);
-        
         sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo Pro.`);
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
         return true;
     }
 }
 
 export class EfectoEquiparMiraPro implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        if (jugador.tieneMira && jugador.cartaMira) {
-            sala.agregarAlDescarte(jugador.cartaMira); 
-        }
-        jugador.tieneMira = true;
-        jugador.tieneMiraPro = true; // ACTIVAMOS LA VARIABLE PRO
-        jugador.cartaMira = cartaJugada;
+        Utilidades.equiparCarta(sala, jugador, cartaJugada, "mira");
         jugador.mano.splice(indiceCarta, 1);
-        
         sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Monoaldea Pro.`);
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
         return true;
     }
 }
 
 export class EfectoEquiparBarrilPro implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        if (jugador.tieneBarril && jugador.cartaBarril) {
-            sala.agregarAlDescarte(jugador.cartaBarril); 
-        }
-        jugador.tieneBarril = true;
-        jugador.tieneBarrilPro = true; // ACTIVAMOS LA VARIABLE PRO
-        jugador.cartaBarril = cartaJugada;
+        Utilidades.equiparCarta(sala, jugador, cartaJugada, "barril");
         jugador.mano.splice(indiceCarta, 1);
-        
         sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril Pro.`);
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-        const numero: number = Math.floor(Math.random() * 3);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        const numero = Math.floor(Math.random() * 3);
         sala.broadcast("sfx", "barril" + numero);
         return true;
     }
@@ -376,20 +324,14 @@ export class EfectoEquiparBarrilPro implements IEfectoCarta {
 
 export class EfectoEquiparDinamita implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        if (jugador.tieneDinamita && jugador.cartaDinamita) {
-            sala.agregarAlDescarte(jugador.cartaDinamita); 
-        }
-        jugador.tieneDinamita = true;
-        jugador.cartaDinamita = cartaJugada;
+        Utilidades.equiparCarta(sala, jugador, cartaJugada, "dinamita");
         jugador.mano.splice(indiceCarta, 1);
-        
         sala.broadcast("notificacion_turno", `🧨 ¡${jugador.nombre} encendió una Dinamita!`);
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-        sala.broadcast("sfx", "dinamita")
-        return true
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.broadcast("sfx", "dinamita");
+        return true;
     }
 }
-
 export class EfectoDesequipar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
         
@@ -493,11 +435,10 @@ export class EfectoDescartar implements IEfectoCarta {
 
 export class EfectoEquiparPapapum implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, carta: any, indiceCarta: number, parametros: string[]): boolean {
-        
-        // 1. Validamos que NO haya otra papa ya equipada en la mesa
+        // Validamos buscando en los mapas de todos si alguien ya lo tiene
         let papaEnJuego = false;
         sala.state.jugadores.forEach((j: any) => {
-            if (j.tienePapa) papaEnJuego = true;
+            if (j.equipamiento && j.equipamiento.has("papa")) papaEnJuego = true;
         });
 
         if (papaEnJuego) {
@@ -505,14 +446,12 @@ export class EfectoEquiparPapapum implements IEfectoCarta {
             return false;
         }
 
-        // 2. Equipamos la carta y reseteamos el peligro global a 1/16
-        jugador.tienePapa = true;
-        jugador.cartaPapa = carta;
+        Utilidades.equiparCarta(sala, jugador, carta, "papa");
         sala.state.probabilidadPapa = 1; 
 
         sala.broadcast("notificacion_turno", `🥔 ¡${jugador.nombre} activó al Papapum!`);
-        sala.broadcast("sfx", "sfxPapapumColocandose")
-        sala.ejecutarAnimacionCarta(client, carta)
+        sala.broadcast("sfx", "sfxPapapumColocandose");
+        sala.ejecutarAnimacionCarta(client, carta);
 
         jugador.mano.splice(indiceCarta, 1);
         return true;
@@ -706,116 +645,64 @@ export class EfectoValerieLadrona implements IEfectoCarta {
 
 export class EfectoLanzaguisantes implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: Jugador, cartaJugada: Carta, indiceCarta: number, parametros: string[]): boolean { 
-        if (!jugador){
-            console.error("ERROR: jugador es null al equipar lanzaguisantes")
-            return false
-        }
-        if (!cartaJugada){
-            console.error("ERROR: carta jugada es null al equipar lanzaguisantes")
-            return false
-        }
+        if (!jugador || !cartaJugada) return false;
+
+        let armaActual = jugador.equipamiento.get("arma");
 
         if (cartaJugada.nombre == "Repetidora"){
-            if (jugador.cartaArma) {
-                sala.agregarAlDescarte(jugador.cartaArma)
-            }
+            Utilidades.equiparCarta(sala, jugador, cartaJugada, "arma");
+            jugador.mano.splice(indiceCarta, 1);
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
+            sala.ejecutarAnimacionCarta(client, cartaJugada);
+            return true;
             
-            jugador.nombreArma = cartaJugada.nombre
-            jugador.alcanceArma = 5
+        } else if (armaActual?.nombre == "Repetidora"){
+            sala.broadcast("notificacion_turno", `${jugador.nombre} jugó ${cartaJugada.nombre} pero ya tiene el Lanzaguisantes mejorado.`);
+            sala.ejecutarAnimacionCarta(client, cartaJugada);
+            jugador.mano.splice(indiceCarta, 1);
+            return true;
             
-            jugador.danoExtraArmaBang = 0
-            jugador.alcanceMinimoArma = 0
+        } else if (armaActual?.nombre == "Lanzaguisantes"){
+            const cartaRepetidora: Carta = CatalogoCartasEspeciales.crearRepetidora();
+            cartaRepetidora.esConjurada = true;
             
-            jugador.cartaArma = cartaJugada
-            jugador.mano.splice(indiceCarta, 1)
+            Utilidades.equiparCarta(sala, jugador, cartaRepetidora, "arma");
+            jugador.mano.splice(indiceCarta, 1);
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} mejoró su arma a ${cartaRepetidora.nombre}!`);
+            sala.ejecutarAnimacionCarta(client, cartaJugada);
+            return true;
             
-            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`)
-            sala.ejecutarAnimacionCarta(client, cartaJugada)
-            return true
-        } else if (jugador.cartaArma?.nombre == "Repetidora"){
-            sala.broadcast("notificacion_turno", `${jugador.nombre} jugó ${cartaJugada.nombre} pero ya tiene el Lanzaguisantes mejorado.`)
-            sala.ejecutarAnimacionCarta(client, cartaJugada)
-            jugador.mano.splice(indiceCarta, 1)
-
-            return true
-        } else if (jugador.cartaArma?.nombre == "Lanzaguisantes"){
-            if (jugador.cartaArma) {
-                sala.agregarAlDescarte(jugador.cartaArma)
-            }
-
-            const carta: Carta = CatalogoCartasEspeciales.crearRepetidora()
-            carta.esConjurada = true
-            
-            jugador.nombreArma = carta.nombre
-            jugador.alcanceArma = 5
-            
-            jugador.danoExtraArmaBang = 0
-            jugador.alcanceMinimoArma = 0
-            
-            jugador.cartaArma = carta
-            jugador.mano.splice(indiceCarta, 1)
-            
-            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} mejoró su arma a ${carta.nombre}!`)
-            sala.ejecutarAnimacionCarta(client, cartaJugada)
-            return true
         } else {
-            if (jugador.cartaArma) {
-                sala.agregarAlDescarte(jugador.cartaArma)
-            }
-            
-            jugador.nombreArma = cartaJugada.nombre
-            jugador.alcanceArma = 3
-            
-            jugador.danoExtraArmaBang = 0
-            jugador.alcanceMinimoArma = 0
-            
-            jugador.cartaArma = cartaJugada
-            jugador.mano.splice(indiceCarta, 1)
-            
-            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`)
-            sala.ejecutarAnimacionCarta(client, cartaJugada)
-            return true
+            Utilidades.equiparCarta(sala, jugador, cartaJugada, "arma");
+            jugador.mano.splice(indiceCarta, 1);
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
+            sala.ejecutarAnimacionCarta(client, cartaJugada);
+            return true;
         }
     }
 }
 
 export class EfectoCalabaza implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        if (!jugadorQueJuega){
-            console.error("ERROR: jugador es null en calabaza")
-            return false
-        }
-        if (!cartaJugada){
-            console.error("ERROR: carta jugada es null en calabaza")
-            return false
-        }
+        if (!jugadorQueJuega || !cartaJugada) return false;
 
-        jugadorQueJuega.boolean.set("calabaza", true)
+        Utilidades.equiparCarta(sala, jugadorQueJuega, cartaJugada, "calabaza");
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🎃 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`)
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-
-        return true
+        sala.broadcast("notificacion_turno", `🎃 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
     }
 }
 
 export class EfectoPlantorcha implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        if (!jugadorQueJuega){
-            console.error("ERROR: jugador es null en plantorcha")
-            return false
-        }
-        if (!cartaJugada){
-            console.error("ERROR: carta jugada es null en plantorcha")
-            return false
-        }
+        if (!jugadorQueJuega || !cartaJugada) return false;
 
-        jugadorQueJuega.boolean.set("plantorcha", true)
+        Utilidades.equiparCarta(sala, jugadorQueJuega, cartaJugada, "plantorcha");
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`)
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-
-        return true
+        sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
     }
 }
 
@@ -953,21 +840,13 @@ export class EfectoPetaseta implements IEfectoCarta {
 
 export class EfectoHumoseta implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        if (!jugadorQueJuega){
-            console.error("ERROR: jugador es null en humoseta")
-            return false
-        }
-        if (!cartaJugada){
-            console.error("ERROR: carta jugada es null en humoseta")
-            return false
-        }
+        if (!jugadorQueJuega || !cartaJugada) return false;
 
-        jugadorQueJuega.boolean.set("humoseta", true)
+        Utilidades.equiparCarta(sala, jugadorQueJuega, cartaJugada, "humoseta");
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🫧 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`)
-        sala.ejecutarAnimacionCarta(client, cartaJugada)
-
-        return true
+        sala.broadcast("notificacion_turno", `🫧 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
     }
 }
 

@@ -1,44 +1,45 @@
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
-import { Jugador } from "./schema/MyRoomState.js";
+import { Carta, Jugador } from "./schema/MyRoomState.js";
 
 export class Utilidades {
 
     public static procesarDano(sala: any, victima: Jugador, atacante: Jugador, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
-        
         if (!victima){
-            console.error("ERROR: victima no existe en procesarDano")
-            return
+            console.error("ERROR: victima no existe en procesarDano");
+            return;
         }
         if (!victima.estaVivo){
-            console.log("la victima ya está muerta asi que no se llama procesarDano")
-            return
+            return;
         }
 
-        if (victima.boolean.get("calabaza")){
-            victima.boolean.set("calabaza", false)
-            sala.broadcast("notificacion_turno", `🎃 La Calabaza de ${victima.personaje} lo protege del ataque.`)
-            return
+        // --- SISTEMA NUEVO: CALABAZA ---
+        let cartaCalabaza = victima.equipamiento.get("calabaza");
+        if (cartaCalabaza){
+            sala.agregarAlDescarte(cartaCalabaza, victima, null);
+            victima.equipamiento.delete("calabaza");
+            sala.broadcast("notificacion_turno", `🎃 La Calabaza de ${victima.personaje} lo protege del ataque.`);
+            return;
         }
 
-        if (atacante?.boolean.get("humoseta")){
-            ignoraEscudo = true
+        // --- SISTEMA NUEVO: HUMOSETA ---
+        if (atacante && atacante.equipamiento.has("humoseta")){
+            ignoraEscudo = true;
         }
 
         if (causa == "BANG"){
             if (atacante){
                 if (atacante.boolean.get("chispitasCargado")){
-                    atacante.boolean.set("chispitasCargado", false)
-                    cantidad = 999
+                    atacante.boolean.set("chispitasCargado", false);
+                    cantidad = 999;
                 }
-                if (atacante.boolean.get("plantorcha")){
-                    cantidad += 1
+                // --- SISTEMA NUEVO: PLANTORCHA ---
+                if (atacante.equipamiento.has("plantorcha")){
+                    cantidad += 1;
                 }
                 if (atacante.boolean.get("mercyActivada")){
-                    this.aplicarCuracion(sala, victima, cantidad, causa, false) 
-                    return              
+                    this.aplicarCuracion(sala, victima, cantidad, causa, false);
+                    return;              
                 }
-            } else {
-                console.error("ERROR: atacante no existe en procesarDano dentro del if del BANG")
             }
         }
 
@@ -69,21 +70,12 @@ export class Utilidades {
             pasivaAtacante.onGolpear(sala, atacante, victima);
         }
 
-        sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"})
-
+        sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"});
         sala.evaluarMuerte(victima, atacante, ignoraEscudo);
     }
 
     public static agregarEscudos(sala: any, jugador: any, cantidad: number, duracion: number, causa: string): void {
-        if (!jugador) {
-            console.error("ERROR: jugador no existe en agregar escudos")
-            return;
-        }
-        if (!jugador.estaVivo){
-            console.log("el jugador no está vivo para agregarle escudos")
-            return
-        }
-
+        if (!jugador || !jugador.estaVivo) return;
         if (!jugador.turnosEscudos) jugador.turnosEscudos = [];
 
         for (let i = 0; i < cantidad; i++) {
@@ -91,8 +83,7 @@ export class Utilidades {
                 jugador.turnosEscudos.push(duracion);
             }
         }
-
-        jugador.vidasEscudo = jugador.turnosEscudos.length
+        jugador.vidasEscudo = jugador.turnosEscudos.length;
 
         let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
         if (pasiva && pasiva.onRecibirEscudo) {
@@ -101,42 +92,20 @@ export class Utilidades {
     }
 
     public static puedeRecibirCuracion(sala: any, jugador: any): boolean {
-        if (!jugador){
-            console.error("ERROR: jugador no existe en puedeRecibirCuracion")
-            return false;
-        }
-        if (!jugador.estaVivo){
-            console.log("el jugador no está vivo en puedeRecibirCuracion")
-            return false
-        }
-        
+        if (!jugador || !jugador.estaVivo) return false;
         if (jugador.transformarCuraEnEscudo) return true;
 
         let totalVivos = 0;
         sala.state.jugadores.forEach((j: any) => {
-            if (j){
-                if (j.estaVivo) {
-                    totalVivos++;
-                }
-            } else {
-                console.error("ERROR: jugador no existe en el forEach de puedeRecibirCuracion")
-            }
+            if (j && j.estaVivo) totalVivos++;
         });
 
         if (totalVivos === 2) return true;
-
         return jugador.vidas < jugador.vidasMaximas;
     }
 
     public static aplicarCuracion(sala: any, jugador: any, cantidadBase: number, causa: string, forzarCuracion: boolean): void {
-        if (!jugador) {
-            console.error("ERROR: jugador no existe en aplicarCuracion")
-            return;
-        }
-        if (!jugador.estaVivo){
-            console.log("el jugador no está vivo para poder curarlo")
-            return
-        }
+        if (!jugador || !jugador.estaVivo) return;
 
         let cantidadFinal = cantidadBase;
         let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
@@ -152,11 +121,9 @@ export class Utilidades {
 
         if (jugador.transformarCuraEnEscudo && !forzarCuracion) {
             Utilidades.agregarEscudos(sala, jugador, cantidadFinal, Infinity, "CURACION");
-            
         } else if (totalVivos === 2 && !forzarCuracion) {
             Utilidades.agregarEscudos(sala, jugador, cantidadFinal, 1, "CURACION");
             sala.broadcast("notificacion_turno", `🛡️ ¡En duelo a muerte, la curación de ${jugador.nombre} se transforma en Escudo Temporal!`);
-            
         } else {
             jugador.vidas += cantidadFinal;
             let excedente = Math.max(0, jugador.vidas - jugador.vidasMaximas);
@@ -165,116 +132,169 @@ export class Utilidades {
             }
 
             if (jugador.boolean.get("botiquinExcedenteAEscudo")){
-                this.agregarEscudos(sala, jugador, excedente, 1, "PASIVA")
+                this.agregarEscudos(sala, jugador, excedente, 1, "PASIVA");
             }
 
             if (pasiva && pasiva.onRecibirCuracion) {
                 pasiva.onRecibirCuracion(sala, jugador);
             }
-
-            sala.broadcast("animacionJugador", {personaje: jugador.personaje, animacion: "recibirCuracion"})
+            sala.broadcast("animacionJugador", {personaje: jugador.personaje, animacion: "recibirCuracion"});
         }
     }
 
-    public static descartarEquipamientoAleatorio(sala: any, jugador: any, client: any): any | null {
-        let opciones: string[] = [];
+    // ==============================================================
+    // NUEVO SISTEMA DE EQUIPAMIENTO CENTRALIZADO
+    // ==============================================================
+
+    /**
+     * Equipa una carta en el mapa. Si ya había una en ese hueco, la descarta.
+     * Huecos comunes: "arma", "mustang", "mira", "barril", "prision", "dinamita", "papa", "calabaza", "plantorcha", "humoseta".
+     */
+    public static equiparCarta(sala: any, jugador: Jugador, carta: Carta, hueco: string): void {
+        if (jugador.equipamiento.has(hueco)) {
+            let cartaVieja = jugador.equipamiento.get(hueco);
+            sala.agregarAlDescarte(cartaVieja, jugador, null);
+        }
+        jugador.equipamiento.set(hueco, carta);
+    }
+
+    /**
+     * Devuelve las stats del arma calculadas dinámicamente desde el efecto de la carta.
+     * Si no hay arma, devuelve las stats por defecto (Colt .45)
+     */
+    public static getDatosArma(jugador: Jugador) {
+        let arma = jugador.equipamiento.get("arma");
+        if (!arma) return { nombre: "Colt .45", alcance: 1, danoExtra: 0, alcanceMinimo: 0 };
         
-        if (jugador.cartaArma) opciones.push("arma");
-        if (jugador.cartaMustang) opciones.push("mustang");
-        if (jugador.cartaMira) opciones.push("mira");
-        if (jugador.cartaBarril) opciones.push("barril");
-        if (jugador.cartaPrision) opciones.push("prision");
-        if (jugador.cartaDinamita) opciones.push("dinamita");
-        if (jugador.cartaPapa) opciones.push("papa");
-        if (jugador.boolean.get("calabaza")){
-            opciones.push("calabaza")
-        }
-        if (jugador.boolean.get("plantorcha")){
-            opciones.push("plantorcha")
-        }
-        if (jugador.boolean.get("humoseta")){
-            opciones.push("humoseta")
-        }
+        // Formato esperado en el efecto de armas: "equipar_arma_alcance_danoExtra_alcanceMinimo"
+        // Ej: "equipar_arma_3_0_0" o "equipar_arma_999_0_2"
+        let partes = arma.efecto.split("_");
+        return {
+            nombre: arma.nombre,
+            alcance: parseInt(partes[2]) || 1,
+            danoExtra: parseInt(partes[3]) || 0,
+            alcanceMinimo: parseInt(partes[4]) || 0
+        };
+    }
 
-        if (opciones.length === 0) return null;
+    /**
+     * Descarta un equipamiento aleatorio. 100% dinámico y escalable.
+     */
+    public static descartarEquipamientoAleatorio(sala: any, jugador: Jugador, client: any): Carta | null {
+        if (jugador.equipamiento.size === 0) return null;
 
-        let elegida = opciones[Math.floor(Math.random() * opciones.length)];
-        let cartaPerdida = null;
-
-        if (elegida === "arma") { 
-            cartaPerdida = jugador.cartaArma; 
-            jugador.cartaArma = null; 
-            jugador.nombreArma = "Colt .45"; 
-            jugador.alcanceArma = 1; 
-            jugador.danoExtraArmaBang = 0; 
-            jugador.alcanceMinimoArma = 0;
-        } 
-        else if (elegida === "mustang") { cartaPerdida = jugador.cartaMustang; jugador.cartaMustang = null; jugador.tieneMustang = false; jugador.tieneMustangPro = false; } 
-        else if (elegida === "mira") { cartaPerdida = jugador.cartaMira; jugador.cartaMira = null; jugador.tieneMira = false; jugador.tieneMiraPro = false; } 
-        else if (elegida === "barril") { cartaPerdida = jugador.cartaBarril; jugador.cartaBarril = null; jugador.tieneBarril = false; jugador.tieneBarrilPro = false; }
-        else if (elegida === "prision") { cartaPerdida = jugador.cartaPrision; jugador.cartaPrision = null; jugador.estaEnPrision = false; }
-        else if (elegida === "dinamita") { cartaPerdida = jugador.cartaDinamita; jugador.cartaDinamita = null; jugador.tieneDinamita = false; }
-        else if (elegida === "papa") { cartaPerdida = jugador.cartaPapa; jugador.cartaPapa = null; jugador.tienePapa = false; }
-        else if (elegida === "calabaza"){
-            cartaPerdida = CatalogoCartasEspeciales.crearCalabaza()
-            cartaPerdida.esConjurada = true
-            jugador.boolean.set("calabaza", false)
-        } else if (elegida === "plantorcha"){
-            cartaPerdida = CatalogoCartasEspeciales.crearPlantorcha()
-            cartaPerdida.esConjurada = true
-            jugador.boolean.set("plantorcha", false)
-        } else if (elegida === "humoseta"){
-            cartaPerdida = CatalogoCartasEspeciales.crearHumoseta()
-            cartaPerdida.esConjurada = true
-            jugador.boolean.set("humoseta", false)
-        }
+        let claves = Array.from(jugador.equipamiento.keys());
+        let claveElegida = claves[Math.floor(Math.random() * claves.length)];
+        
+        let cartaPerdida = jugador.equipamiento.get(claveElegida);
+        jugador.equipamiento.delete(claveElegida);
 
         if (cartaPerdida) {
             sala.agregarAlDescarte(cartaPerdida, jugador, client);
             return cartaPerdida;
         }
+        return null; 
+    }
 
-        return null; // no eliminó ningun equipamiento
+    /**
+     * Limpia la mesa entera del jugador (Por muerte o por Petaseta).
+     */
+    public static destruirTodosLosEquipamientos(sala: any, jugador: Jugador): void {
+        jugador.equipamiento.forEach((carta: Carta, clave: string) => {
+            sala.agregarAlDescarte(carta, jugador, null);
+        });
+        jugador.equipamiento.clear();
     }
 
     public static descartarCartaAleatoriaDeLaMano(jugador: any): any | null {
-        if (!jugador || !jugador.mano || jugador.mano.length === 0) {
-            return null;
-        }
-
+        if (!jugador || !jugador.mano || jugador.mano.length === 0) return null;
         let indiceAleatorio = Math.floor(Math.random() * jugador.mano.length);
-        
-        let cartaDescartada = jugador.mano.splice(indiceAleatorio, 1)[0];
-
-        return cartaDescartada;
+        return jugador.mano.splice(indiceAleatorio, 1)[0];
     }
 
-    public static destruirTodosLosEquipamientos(sala: any, jugador: Jugador): void {
-        if (jugador.cartaArma) sala.agregarAlDescarte(jugador.cartaArma);
-            if (jugador.cartaMustang) sala.agregarAlDescarte(jugador.cartaMustang);
-            jugador.tieneMustang = false;
-            jugador.tieneMustangPro = false
-            jugador.cartaMustang = null;
-            if (jugador.cartaMira) sala.agregarAlDescarte(jugador.cartaMira);
-            jugador.tieneMira = false;
-            jugador.tieneMiraPro = false
-            jugador.cartaMira = null;
-            if (jugador.cartaBarril) sala.agregarAlDescarte(jugador.cartaBarril);
-            jugador.tieneBarril = false;
-            jugador.tieneBarrilPro = false
-            jugador.cartaBarril = null;
-            if (jugador.cartaPrision) sala.agregarAlDescarte(jugador.cartaPrision);
-            jugador.estaEnPrision = false;
-            jugador.cartaPrision = null;
-            if (jugador.cartaDinamita) sala.agregarAlDescarte(jugador.cartaDinamita)
-            jugador.tieneDinamita = false;
-            jugador.cartaDinamita = null;
-            if (jugador.cartaPapa) sala.agregarAlDescarte(jugador.cartaPapa, jugador);
-            jugador.tienePapa = false;
-            jugador.cartaPapa = null;
-            
-            jugador.boolean.set("calabaza", false)
-            jugador.boolean.set("plantorcha", false)
-            jugador.boolean.set("humoseta", false)
+    // ==============================================================
+    // FUNCIONES DE MEJORA PARA ROBIN (Y FUTURAS CARTAS)
+    // ==============================================================
+
+    public static mejorarEquipamientoAleatorio(sala: any, jugador: Jugador): string {
+        let opcionesDeMejora: string[] = [];
+
+        let mustang = jugador.equipamiento.get("mustang");
+        if (mustang && mustang.nombre === "Caballo") opcionesDeMejora.push("mustang");
+
+        let mira = jugador.equipamiento.get("mira");
+        if (mira && mira.nombre === "Monoaldea") opcionesDeMejora.push("mira");
+
+        let barril = jugador.equipamiento.get("barril");
+        if (barril && barril.nombre === "Barril") opcionesDeMejora.push("barril");
+
+        let datosArmaActual = this.getDatosArma(jugador);
+        let siguienteArma = this.obtenerSiguienteArma(datosArmaActual.nombre);
+        if (siguienteArma) opcionesDeMejora.push("arma");
+
+        if (opcionesDeMejora.length === 0) return "";
+
+        let eleccion = opcionesDeMejora[Math.floor(Math.random() * opcionesDeMejora.length)];
+        
+        return this.mejorarEquipamientoEspecifico(sala, jugador, eleccion, siguienteArma);
+    }
+
+    public static mejorarEquipamientoEspecifico(sala: any, jugador: Jugador, hueco: string, datosNuevaArma: any = null): string {
+        let textoMejora = "";
+
+        if (hueco === "mustang") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearCaballoPro();
+            this.equiparCarta(sala, jugador, cartaMejorada, "mustang");
+            textoMejora = "su Caballo";
+        } 
+        else if (hueco === "mira") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearMonoaldeaPro();
+            this.equiparCarta(sala, jugador, cartaMejorada, "mira");
+            textoMejora = "su Monoaldea";
+        } 
+        else if (hueco === "barril") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearBarrilPro();
+            this.equiparCarta(sala, jugador, cartaMejorada, "barril");
+            textoMejora = "su Barril";
+        } 
+        else if (hueco === "arma" && datosNuevaArma) {
+            let cartaArmaNueva = CatalogoCartasEspeciales.crearArma(datosNuevaArma.nombre, datosNuevaArma.alcance);
+            this.equiparCarta(sala, jugador, cartaArmaNueva, "arma");
+            textoMejora = `su arma a ${datosNuevaArma.nombre}`;
+        }
+
+        return textoMejora;
+    }
+
+    private static obtenerSiguienteArma(armaActual: string): any {
+        const secuencia = [
+            { nombre: "Colt .45", alcance: 1 },
+            { nombre: "Pistola de Shion", alcance: 2 },
+            { nombre: "Revolver de Casiddy", alcance: 3 },
+            { nombre: "Rifle de Ashe", alcance: 4 },
+            { nombre: "Francotirador", alcance: 5 }
+        ];
+
+        let index = secuencia.findIndex(a => a.nombre === armaActual);
+        if (index !== -1 && index < secuencia.length - 1) {
+            return secuencia[index + 1];
+        }
+        return null; 
+    }
+
+    /**
+     * Desequipa una carta del mapa, la elimina del equipamiento y la devuelve.
+     * Ideal para Pánico, Cocoroch o cuando un equipamiento se consume (Dinamita/Prisión).
+     */
+    public static quitarEquipamiento(jugador: Jugador, hueco: string): Carta | null {
+        if (!jugador || !jugador.equipamiento) return null;
+
+        if (jugador.equipamiento.has(hueco)) {
+            let cartaRemovida = jugador.equipamiento.get(hueco);
+            jugador.equipamiento.delete(hueco);
+            return cartaRemovida;
+        }
+
+        return null;
     }
 }

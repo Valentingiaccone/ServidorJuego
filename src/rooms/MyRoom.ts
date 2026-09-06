@@ -137,37 +137,27 @@ export class MyRoom extends Room implements IMyRoom{
     }
 
     evaluarMuerte(victima: any, asesino: any = null, fueDanoVerdadero: boolean = false) {
-        
         let totalVivos = 0;
 
         this.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) {
-                totalVivos++;
-            }
+            if (j.estaVivo) totalVivos++;
         });
 
-        // --- 1. INTENTO DE SUPERVIVENCIA (Botiquines Automáticos) ---
+        // --- 1. INTENTO DE SUPERVIVENCIA ---
         while (victima.vidas <= 0 && totalVivos !== 2 && !victima.estaDesconectado) {
-            
             if (victima.transformarCuraEnEscudo) break; 
 
             let indiceBotiquin = victima.mano.findIndex((c: any) => c.nombre === "Botiquín");
-            
             if (indiceBotiquin !== -1) {
                 let botiquin = victima.mano.splice(indiceBotiquin, 1)[0];
                 this.agregarAlDescarte(botiquin);
-                
-                // ¡Llamamos a nuestro médico centralizado!
                 Utilidades.aplicarCuracion(this, victima, 1, "BOTIQUIN", false);
-                
                 this.broadcast("notificacion_turno", `🩹 ¡${victima.nombre} usó un ${botiquin.nombre} automáticamente para evitar la muerte!`);
-                
             } else {
-                break; // No tiene más botiquines, muere oficialmente
+                break;
             }
         }
 
-        // Si la vida subió a 1 o más, se salvó. Cortamos acá.
         if (victima.vidas > 0) return; 
 
         // --- 2. MUERTE CONFIRMADA ---
@@ -185,92 +175,54 @@ export class MyRoom extends Room implements IMyRoom{
 
             if (victima.personaje === "Kazuma" && victima.rol !== "Sheriff" && !victima.estaMuertoFalso) {
                 victima.estaMuertoFalso = true;
-                victima.rondasMuerto = Math.floor(Math.random() * 2) + 2
+                victima.rondasMuerto = Math.floor(Math.random() * 2) + 2;
                 this.broadcast("notificacion_turno", `☠️ ${victima.nombre} ha sido ELIMINADO?.`);
             } else {
                 victima.estaMuertoFalso = false;
                 console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
             }
 
-            // --- 3. RECOMPENSAS Y CASTIGOS POR ASESINATO ---
+            // --- 3. RECOMPENSAS Y CASTIGOS ---
             if (asesino && asesino.estaVivo) {
                 if (victima.rol === "Forajido") {
                     if (victima.beneficiarseDeSuMuerte){
                         this.broadcast("notificacion_turno", `💰 ¡${asesino.nombre} eliminó a un Forajido y cobra la recompensa de 2 cartas!`);
                         this.repartirCartas(asesino, 2, "recompensa_forajido");
                     } else {
-                        this.broadcast("notificacion_turno", `${asesino.nombre} no roba cartas por elimininacion porque ${victima.nombre} ya murió antes`)
+                        this.broadcast("notificacion_turno", `${asesino.nombre} no roba cartas por elimininacion porque ${victima.nombre} ya murió antes`);
                     }
                 } 
                 else if (victima.rol === "Alguacil" && asesino.rol === "Sheriff") {
                     if (victima.beneficiarseDeSuMuerte){
                         this.broadcast("notificacion_turno", `🤦‍♂️ ¡El Sheriff mató a su propio Alguacil! Como castigo, pierde todas sus cartas y equipamiento.`);
-                    
                         asesino.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
                         asesino.mano.clear();
-                        
-                        if (asesino.cartaArma) this.agregarAlDescarte(asesino.cartaArma);
-                        asesino.nombreArma = "Colt .45";
-                        asesino.alcanceArma = 1;
-                        asesino.danoExtraArmaBang = 0; // RESET
-                        asesino.alcanceMinimoArma = 0; // RESET
-                        asesino.cartaArma = null;
-
-                        if (asesino.cartaMustang) { this.agregarAlDescarte(asesino.cartaMustang); asesino.tieneMustang = false; asesino.tieneMustangPro = false; asesino.cartaMustang = null; }
-                        if (asesino.cartaMira) { this.agregarAlDescarte(asesino.cartaMira); asesino.tieneMira = false; asesino.tieneMiraPro = false; asesino.cartaMira = null; }
-                        if (asesino.cartaBarril) { this.agregarAlDescarte(asesino.cartaBarril); asesino.tieneBarril = false; asesino.tieneBarrilPro = false; asesino.cartaBarril = null; }
-                        if (asesino.cartaPrision) { this.agregarAlDescarte(asesino.cartaPrision); asesino.estaEnPrision = false; asesino.cartaPrision = null; }
-                        if (asesino.cartaDinamita) { this.agregarAlDescarte(asesino.cartaDinamita); asesino.tieneDinamita = false; asesino.cartaDinamita = null; }
-                        if (asesino.cartaPapa) { this.agregarAlDescarte(asesino.cartaPapa); asesino.tienePapa = false; asesino.cartaPapa = null; }
+                        Utilidades.destruirTodosLosEquipamientos(this, asesino);
                     } else {
-                        this.broadcast("notificacion_turno", `El Sheriff no pierde nada ya que ${victima.nombre} ya murió anteriormente`)
+                        this.broadcast("notificacion_turno", `El Sheriff no pierde nada ya que ${victima.nombre} ya murió anteriormente`);
                     }
                 }
             }
 
-            // --- 4. LIMPIEZA DE EQUIPAMIENTO Y MANO DE LA VÍCTIMA ---
+            // --- 4. LIMPIEZA DE LA VÍCTIMA ---
             victima.mano.forEach((carta: any) => this.agregarAlDescarte(carta));
             victima.mano.clear();
-
-            // LIMPIEZA DE ESCUDOS
             victima.vidasEscudo = 0;
             victima.turnosEscudos = [];
-
-            Utilidades.destruirTodosLosEquipamientos(this, victima)
-            
-            victima.embrujos.clear()
-
-            victima.nombreArma = "Colt .45";
-            victima.alcanceArma = 1;
-            victima.danoExtraArmaBang = 0; // RESET
-            victima.alcanceMinimoArma = 0; // RESET
+            Utilidades.destruirTodosLosEquipamientos(this, victima);
+            victima.embrujos.clear();
 
             let idVictima = "";
             this.state.jugadores.forEach((j, id) => {
                 if (j === victima) idVictima = id;
             });
 
-            // DESTRABADORES (Por si muere mientras el juego lo esperaba)
-            if (this.state.jugadorEnPeligro === idVictima) {
-                this.avanzarColaDePeligro();
-            }
-            if (this.state.jugadorDebeDescartar === idVictima) {
-                this.state.jugadorDebeDescartar = "";
-            }
-            if (this.state.jugadorBajoAtaqueIndio === idVictima) {
-                this.avanzarColaIndios();
-            }
-            if (this.state.jugadorEligiendoTienda === idVictima) {
-                this.avanzarColaTienda();
-            }
-            if (this.state.jugadorEnDuelo === idVictima) {
-                this.state.jugadorEnDuelo = "";
-                this.state.oponenteDuelo = "";
-            }
-            if (this.state.jugadorDesenfundando === idVictima) {
-                this.state.jugadorDesenfundando = "";
-                this.state.motivoDesenfundar = "";
-            }
+            if (this.state.jugadorEnPeligro === idVictima) this.avanzarColaDePeligro();
+            if (this.state.jugadorDebeDescartar === idVictima) this.state.jugadorDebeDescartar = "";
+            if (this.state.jugadorBajoAtaqueIndio === idVictima) this.avanzarColaIndios();
+            if (this.state.jugadorEligiendoTienda === idVictima) this.avanzarColaTienda();
+            if (this.state.jugadorEnDuelo === idVictima) { this.state.jugadorEnDuelo = ""; this.state.oponenteDuelo = ""; }
+            if (this.state.jugadorDesenfundando === idVictima) { this.state.jugadorDesenfundando = ""; this.state.motivoDesenfundar = ""; }
 
             let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
             totalVivos = 0;
@@ -279,7 +231,6 @@ export class MyRoom extends Room implements IMyRoom{
                 if (j.estaVivo) {
                     vivos[j.rol as keyof typeof vivos]++;
                     totalVivos++;
-                    
                     let pasivaJugadorActual = this.gestorPersonajes.obtener(j.personaje);
                     if (pasivaJugadorActual && pasivaJugadorActual.onMuereOtroPersonaje) {
                         pasivaJugadorActual.onMuereOtroPersonaje(this, victima, j);
@@ -287,25 +238,20 @@ export class MyRoom extends Room implements IMyRoom{
                 }
             });
 
-            victima.beneficiarseDeSuMuerte = false
-
-            let totalJugadores: number = this.state.jugadores.size;
-            let todosVivos: boolean = totalJugadores == totalVivos
+            victima.beneficiarseDeSuMuerte = false;
+            let todosVivos = (this.state.jugadores.size == totalVivos);
 
             if (vivos.Sheriff === 0) {
                 this.state.estadoJuego = "Terminado";
-                this.broadcast("musica", "fin")
-                if (totalVivos === 1 && vivos.Renegado === 1) {
-                    this.broadcast("victoria", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
-                } else {
-                    this.broadcast("victoria", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
-                }
+                this.broadcast("musica", "fin");
+                if (totalVivos === 1 && vivos.Renegado === 1) this.broadcast("victoria", "🏆 ¡EL RENEGADO GANA LA PARTIDA!");
+                else this.broadcast("victoria", "🏆 ¡LOS FORAJIDOS GANAN LA PARTIDA!");
             } else if (vivos.Forajido === 0 && vivos.Renegado === 0) {
                 this.state.estadoJuego = "Terminado";
                 this.broadcast("victoria", "🏆 ¡EL SHERIFF GANA LA PARTIDA!");
-                this.broadcast("musica", "fin")
+                this.broadcast("musica", "fin");
             } else if (!todosVivos){
-                this.actualizarMusicaAutomatica()
+                this.actualizarMusicaAutomatica();
             }
         }
     }
@@ -859,73 +805,29 @@ export class MyRoom extends Room implements IMyRoom{
             let accion = cartaSabotaje.efecto.split("_")[0]; 
             let cartaAfectada = null;
 
-            // Extraemos la carta exacta que pidieron
             if (datos.zonaObjetivo === "mano" && datos.indiceCarta >= 0 && datos.indiceCarta < victima.mano.length) {
                 cartaAfectada = victima.mano.splice(datos.indiceCarta, 1)[0];
-            } else if (datos.zonaObjetivo === "arma" && victima.cartaArma) {
-                cartaAfectada = victima.cartaArma;
-                victima.cartaArma = null;
-                victima.nombreArma = "Colt .45";
-                victima.alcanceArma = 1;
-                victima.danoExtraArmaBang = 0; // RESET
-                victima.alcanceMinimoArma = 0; // RESET
-            } else if (datos.zonaObjetivo === "mustang" && victima.cartaMustang) {
-                cartaAfectada = victima.cartaMustang;
-                victima.cartaMustang = null;
-                victima.tieneMustang = false;
-                victima.tieneMustangPro = false
-            } else if (datos.zonaObjetivo === "mira" && victima.cartaMira) {
-                cartaAfectada = victima.cartaMira;
-                victima.cartaMira = null;
-                victima.tieneMira = false;
-                victima.tieneMiraPro = false
-            } else if (datos.zonaObjetivo === "barril" && victima.cartaBarril) {
-                cartaAfectada = victima.cartaBarril;
-                victima.cartaBarril = null;
-                victima.tieneBarril = false;
-                victima.tieneBarrilPro = false
-            } else if (datos.zonaObjetivo === "prision" && victima.cartaPrision) {
-                cartaAfectada = victima.cartaPrision;
-                victima.cartaPrision = null;
-                victima.estaEnPrision = false;
-            } else if (datos.zonaObjetivo === "dinamita" && victima.cartaDinamita) {
-                cartaAfectada = victima.cartaDinamita;
-                victima.cartaDinamita = null;
-                victima.tieneDinamita = false;
-            } else if (datos.zonaObjetivo === "papa" && victima.cartaPapa) {
-                cartaAfectada = victima.cartaPapa;
-                victima.cartaPapa = null;
-                victima.tienePapa = false;
-            } else if (datos.zonaObjetivo === "calabaza" && victima.boolean.get("calabaza")) {
-                cartaAfectada = CatalogoCartasEspeciales.crearCalabaza()
-                cartaAfectada.esConjurada = true
-                victima.boolean.set("calabaza", false)
-            } else if (datos.zonaObjetivo === "plantorcha" && victima.boolean.get("plantorcha")) {
-                cartaAfectada = CatalogoCartasEspeciales.crearPlantorcha()
-                cartaAfectada.esConjurada = true
-                victima.boolean.set("plantorcha", false)
-            } else if (datos.zonaObjetivo === "humoseta" && victima.boolean.get("humoseta")) {
-                cartaAfectada = CatalogoCartasEspeciales.crearHumoseta()
-                cartaAfectada.esConjurada = true
-                victima.boolean.set("humoseta", false)
+            } else {
+                // Gracias a la refactorización, el robo de CUALQUIER equipamiento es 1 sola línea
+                cartaAfectada = Utilidades.quitarEquipamiento(victima, datos.zonaObjetivo);
             }
 
             if (!cartaAfectada) return; 
 
             if (accion === "robar") {
                 atacante.mano.push(cartaAfectada);
-                this.ejecutarAnimacionCarta(client, cartaSabotaje)
+                this.ejecutarAnimacionCarta(client, cartaSabotaje);
                 this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
-                this.broadcast("sfx", "panico")
+                this.broadcast("sfx", "panico");
 
-                let pasiva = this.gestorPersonajes.obtener(atacante.personaje)
+                let pasiva = this.gestorPersonajes.obtener(atacante.personaje);
                 if (pasiva && pasiva.onJugarCarta){
-                    pasiva.onJugarCarta(this, atacante, cartaSabotaje)
+                    pasiva.onJugarCarta(this, atacante, cartaSabotaje);
                 }
             }
 
             atacante.mano.splice(indiceCartaJugada, 1);
-            this.agregarAlDescarte(cartaSabotaje)
+            this.agregarAlDescarte(cartaSabotaje);
         });
 
         this.onMessage("lanzar_cocoroch", (client, datos) => {
@@ -960,52 +862,9 @@ export class MyRoom extends Room implements IMyRoom{
 
             if (datos.zona === "mano") {
                 cartaAfectada = victima.mano.splice(datos.indice, 1)[0];
-            } else if (datos.zona === "arma" && victima.cartaArma) {
-                cartaAfectada = victima.cartaArma;
-                victima.cartaArma = null;
-                victima.nombreArma = "Colt .45";
-                victima.alcanceArma = 1;
-                victima.danoExtraArmaBang = 0; // RESET
-                victima.alcanceMinimoArma = 0; // RESET
-            } else if (datos.zona === "mustang" && victima.cartaMustang) {
-                cartaAfectada = victima.cartaMustang;
-                victima.cartaMustang = null;
-                victima.tieneMustang = false;
-                victima.tieneMustangPro = false
-            } else if (datos.zona === "mira" && victima.cartaMira) {
-                cartaAfectada = victima.cartaMira;
-                victima.cartaMira = null;
-                victima.tieneMira = false;
-                victima.tieneMiraPro = false
-            } else if (datos.zona === "barril" && victima.cartaBarril) {
-                cartaAfectada = victima.cartaBarril;
-                victima.cartaBarril = null;
-                victima.tieneBarril = false;
-                victima.tieneBarrilPro = false
-            } else if (datos.zona === "prision" && victima.cartaPrision) {
-                cartaAfectada = victima.cartaPrision;
-                victima.cartaPrision = null;
-                victima.estaEnPrision = false;
-            } else if (datos.zona === "dinamita" && victima.cartaDinamita) {
-                cartaAfectada = victima.cartaDinamita;
-                victima.cartaDinamita = null;
-                victima.tieneDinamita = false;
-            } else if (datos.zona === "papa" && victima.cartaPapa) {
-                cartaAfectada = victima.cartaPapa;
-                victima.cartaPapa = null;
-                victima.tienePapa = false;
-            } else if (datos.zona == "calabaza" && victima.boolean.get("calabaza")){
-                cartaAfectada = CatalogoCartasEspeciales.crearCalabaza()
-                cartaAfectada.esConjurada = true
-                victima.boolean.set("calabaza", false)
-            } else if (datos.zona == "plantorcha" && victima.boolean.get("plantorcha")){
-                cartaAfectada = CatalogoCartasEspeciales.crearPlantorcha()
-                cartaAfectada.esConjurada = true
-                victima.boolean.set("plantorcha", false)
-            } else if (datos.zona == "humoseta" && victima.boolean.get("humoseta")){
-                cartaAfectada = CatalogoCartasEspeciales.crearHumoseta()
-                cartaAfectada.esConjurada = true
-                victima.boolean.set("humoseta", false)
+            } else {
+                // Mágicamente abstraído
+                cartaAfectada = Utilidades.quitarEquipamiento(victima, datos.zona);
             }
 
             if (cartaAfectada) {
@@ -1026,16 +885,18 @@ export class MyRoom extends Room implements IMyRoom{
             
             let victima = this.state.jugadores.get(client.sessionId);
             let maxUsos = 0;
-            if (victima.tieneBarril) maxUsos++;
-            if (victima.tieneBarrilPro) maxUsos++;
+            
+            let barril = victima.equipamiento.get("barril");
+            if (barril) {
+                if (barril.nombre === "Barril Pro") maxUsos += 2;
+                else maxUsos += 1;
+            }
             if (victima.tieneBarrilPasiva) maxUsos++;
 
             if (maxUsos === 0 || this.state.usosBarril >= maxUsos) return;
 
             this.state.usosBarril++;
-            
             this.prepararDesenfundar(client.sessionId, "Barril");
-            
             this.broadcast("notificacion_turno", `🛢️ ¡${victima.nombre} tira de la ruleta del Barril!`);
         });
 
@@ -1149,16 +1010,12 @@ export class MyRoom extends Room implements IMyRoom{
                         }
                     } 
                     else if (motivoActual === "Dinamita") {
-                        if (fueExitoStr !== "exito") { // Explotó
+                        if (fueExitoStr !== "exito") { 
                             this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió Rojo. La dinamita explotó en la cara de ${victima?.nombre}.`);
-                            const numero: number = Math.floor(Math.random() * 3);
-                            const sfx: string = "explosion" + numero;
-                            this.broadcast("sfx", sfx);
+                            const numero = Math.floor(Math.random() * 3);
+                            this.broadcast("sfx", "explosion" + numero);
                             
-                            if (victima && victima.cartaDinamita) descartarEquipamientoSeguro(victima.cartaDinamita);
-                            if (victima) victima.tieneDinamita = false;
-                            if (victima) victima.cartaDinamita = null;
-
+                            Utilidades.quitarEquipamiento(victima, "dinamita");
                             Utilidades.procesarDano(this, victima, null, 3, "DINAMITA");
                             
                             if (victima && victima.estaVivo) this.evaluarFasePapa(client.sessionId);
@@ -1166,37 +1023,31 @@ export class MyRoom extends Room implements IMyRoom{
                         } else {
                             this.broadcast("notificacion_turno", `💨 ¡Uf! Salió Verde. La Dinamita pasa al siguiente jugador.`);
                             
+                            let cartaDinamita = Utilidades.quitarEquipamiento(victima, "dinamita");
                             let siguiente = this.obtenerSiguienteJugadorVivo(client.sessionId);
-                            if (siguiente.jugador) {
-                                siguiente.jugador.tieneDinamita = true;
-                                siguiente.jugador.cartaDinamita = victima?.cartaDinamita;
+                            
+                            if (siguiente.jugador && cartaDinamita) {
+                                Utilidades.equiparCarta(this, siguiente.jugador, cartaDinamita, "dinamita");
                             }
-                            if (victima) victima.tieneDinamita = false;
-                            if (victima) victima.cartaDinamita = null;
-
                             this.evaluarFasePapa(client.sessionId);
                         }
                     }
                     else if (motivoActual === "Papa") {
-                        if (fueExitoStr !== "exito") { // EXPLOTÓ
+                        if (fueExitoStr !== "exito") { 
                             this.broadcast("notificacion_turno", `💥 ¡PAPA PAPA PAPAPUM, BOOOM! Salió Rojo. El Papapum explotó encima de ${victima?.nombre}.`);
                             const numero = Math.floor(Math.random() * 3);
                             this.broadcast("sfx", "explosion" + numero);
                             
-                            if (victima && victima.cartaPapa) descartarEquipamientoSeguro(victima.cartaPapa);
-                            if (victima) victima.tienePapa = false;
-                            if (victima) victima.cartaPapa = null;
-                            this.state.probabilidadPapa = 1; // Reseteamos el peligro global
+                            Utilidades.quitarEquipamiento(victima, "papa");
+                            this.state.probabilidadPapa = 1; 
                             
                             Utilidades.procesarDano(this, victima, null, 2, "PAPA");
                             
                             if (victima && victima.estaVivo) this.evaluarFasePrision(client.sessionId);
                             else this.avanzarAlSiguienteTurno(client.sessionId);
-                            
-                        } else { // SE SALVÓ
-                            this.state.probabilidadPapa++;
-                            this.state.probabilidadPapa++;
-                            let p: number = this.state.probabilidadPapa;
+                        } else { 
+                            this.state.probabilidadPapa += 2;
+                            let p = this.state.probabilidadPapa;
                             if (p > 15) p = 15;
                             
                             this.broadcast("notificacion_turno", `💨 ¡Salió Verde! La Papapum no explotó, pero la probabilidad aumentó a ${p}/16.`);
@@ -1206,26 +1057,21 @@ export class MyRoom extends Room implements IMyRoom{
                     else if (motivoActual === "Prision") {
                         if (fueExitoStr === "exito") {
                             this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.nombre} escapó de la cárcel.`);
-                            let pasiva = this.gestorPersonajes.obtener(victima.personaje)
+                            let pasiva = this.gestorPersonajes.obtener(victima.personaje);
                             if (pasiva && pasiva.onIniciarTurno){
-                                pasiva.onIniciarTurno(this, victima)
+                                pasiva.onIniciarTurno(this, victima);
                             }
                             this.repartirCartas(victima, 2, "turno");
                             this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
                         } else {
                             this.broadcast("notificacion_turno", `⛓️ ¡Salió Rojo! ${victima?.nombre} se queda encerrado.`);
-                            let pasivaJugadorActual = this.gestorPersonajes.obtener(victima?.personaje);
-                            if (pasivaJugadorActual && pasivaJugadorActual.onPasarTurno) {
-                                pasivaJugadorActual.onPasarTurno(this, victima);
+                            let pasiva = this.gestorPersonajes.obtener(victima?.personaje);
+                            if (pasiva && pasiva.onPasarTurno) {
+                                pasiva.onPasarTurno(this, victima);
                             }
                             this.avanzarAlSiguienteTurno(client.sessionId);
                         }
-                        
-                        if (victima && victima.cartaPrision) {
-                            descartarEquipamientoSeguro(victima.cartaPrision);
-                            victima.cartaPrision = null;
-                            victima.estaEnPrision = false;
-                        }
+                        Utilidades.quitarEquipamiento(victima, "prision");
                     }
                     // --- NUEVA FASE: EMBRUJOS FANTASMALES ---
                     else if (motivoActual === "Embrujo") {
@@ -1313,64 +1159,50 @@ export class MyRoom extends Room implements IMyRoom{
                 let pasivaAtacante = this.gestorPersonajes.obtener(atacante.personaje);
                 let puedeDispararExtra = pasivaAtacante && pasivaAtacante.puedeDispararBang ? pasivaAtacante.puedeDispararBang(this, atacante, victima) : false;
 
-                if (atacante.yaDisparo && !puedeDispararExtra && atacante.nombreArma !== "Pistola de Tracer") {
+                let statsArma = Utilidades.getDatosArma(atacante);
+
+                if (atacante.yaDisparo && !puedeDispararExtra && statsArma.nombre !== "Pistola de Tracer") {
                     client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
                     return; 
                 }
 
                 let vivos: string[] = [];
-                this.state.jugadores.forEach((j, id) => {
-                    if (j.estaVivo) vivos.push(id);
-                });
+                this.state.jugadores.forEach((j, id) => { if (j.estaVivo) vivos.push(id); });
 
                 let idxAtacante = vivos.indexOf(client.sessionId);
                 let idxVictima = vivos.indexOf(datosDelDisparo.objetivoId);
-
                 let n = vivos.length;
                 let diferencia = Math.abs(idxAtacante - idxVictima);
-                let distancia = Math.min(diferencia, n - diferencia);
                 let distanciaFisica = Math.min(diferencia, n - diferencia);
+                let distancia = distanciaFisica;
 
-                // --- NUEVO: REGLA DE ALCANCE MÍNIMO (Mortero) ---
-                let minArma = atacante.alcanceMinimoArma || 0;
-                if (distanciaFisica < minArma) {
+                if (distanciaFisica < statsArma.alcanceMinimo) {
                     client.send("alerta_personal", `El arma está diseñada para largo alcance. No podés dispararle a alguien tan cerca.`);
                     return;
                 }
 
                 let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
                 let cartaUsada = (indiceCarta !== -1) ? atacante.mano[indiceCarta] : null;
-
-                let alcanceMaximo = atacante.alcanceArma;
+                let alcanceMaximo = statsArma.alcance;
 
                 if (cartaUsada && cartaUsada.tipoDeUso === "objetivoVecino") {
-                    alcanceMaximo = 1
+                    alcanceMaximo = 1;
                 } else {
-                    if (atacante.tieneMiraPro) distancia -= 2;
-                    else if (atacante.tieneMira) distancia -= 1;
+                    let miraAtacante = atacante.equipamiento.get("mira");
+                    if (miraAtacante) distancia -= (miraAtacante.nombre === "Monoaldea Pro" ? 2 : 1);
 
-                    if (victima.tieneMustangPro) distancia += 2;
-                    else if (victima.tieneMustang) distancia += 1;
+                    let mustangVictima = victima.equipamiento.get("mustang");
+                    if (mustangVictima) distancia += (mustangVictima.nombre === "Caballo Pro" ? 2 : 1);
 
-                    if (atacante.modificarAlcance){
-                        distancia -= atacante.modificarAlcance // lo puse negativo ya que con mas alcance, la distancia al objetivo se reduce
-                    }
-
-                    if (victima.modificarDistancia){
-                        distancia += victima.modificarDistancia
-                    }
-
-                    if (atacante.number.get("pedroCrecimiento")){
-                        distancia -= atacante.number.get("pedroCrecimiento")
-                    }
+                    if (atacante.modificarAlcance) distancia -= atacante.modificarAlcance;
+                    if (victima.modificarDistancia) distancia += victima.modificarDistancia;
+                    if (atacante.number.get("pedroCrecimiento")) distancia -= atacante.number.get("pedroCrecimiento");
                 }
 
-                // --- HOOK MODIFICAR DISTANCIA (ATACANTE) ---
                 if (pasivaAtacante && pasivaAtacante.modificarDistancia) {
                     distancia = pasivaAtacante.modificarDistancia(this, atacante, victima, distancia);
                 }
 
-                // --- HOOK MODIFICAR DISTANCIA (VÍCTIMA) ---
                 let pasivaVictimaDistancia = this.gestorPersonajes.obtener(victima.personaje);
                 if (pasivaVictimaDistancia && pasivaVictimaDistancia.modificarDistancia) {
                     distancia = pasivaVictimaDistancia.modificarDistancia(this, atacante, victima, distancia);
@@ -1381,32 +1213,26 @@ export class MyRoom extends Room implements IMyRoom{
                     return; 
                 }
                 
-                // --- NUEVO: ACEPTAMOS TANTO dano_1 COMO dano_2 ---
                 if (cartaUsada && (cartaUsada.efecto === "dano_1" || cartaUsada.efecto === "dano_2")) {
-                    
                     atacante.yaDisparo = true;
                     atacante.mano.splice(indiceCarta, 1);
-                    this.agregarAlDescarte(cartaUsada)
+                    this.agregarAlDescarte(cartaUsada);
                     
                     this.state.jugadorEnPeligro = datosDelDisparo.objetivoId;
                     this.state.atacanteActual = client.sessionId;
                     
-                    // --- NUEVO: MEMORIZAMOS EL DAÑO Y LA CAUSA ---
                     let danoBase = (cartaUsada.efecto === "dano_2") ? 2 : 1;
-                    
-                    // ¡EL FRENO DE BALANCE! Solo sumamos el daño extra del arma si es un BANG normal
-                    let bonusDano = (cartaUsada.efecto === "dano_1") ? (atacante.danoExtraArmaBang || 0) : 0;
+                    let bonusDano = (cartaUsada.efecto === "dano_1") ? statsArma.danoExtra : 0;
                     
                     this.state.danoPendiente = danoBase + bonusDano; 
                     this.causaDePeligro = "BANG";
                     this.state.usosBarril = 0;
                     
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-                    this.ejecutarAnimacionCarta(client, cartaUsada)
+                    this.ejecutarAnimacionCarta(client, cartaUsada);
                 
-                    let pasiva = this.gestorPersonajes.obtener(atacante.personaje)
-                    if (pasiva && pasiva.onJugarCarta){
-                        pasiva.onJugarCarta(this, atacante, cartaUsada)
+                    if (pasivaAtacante && pasivaAtacante.onJugarCarta){
+                        pasivaAtacante.onJugarCarta(this, atacante, cartaUsada);
                     }
                 }
             }
@@ -1465,7 +1291,7 @@ export class MyRoom extends Room implements IMyRoom{
                 client.send("alerta_personal", "No te podés meter preso a vos mismo.");
                 return;
             }
-            if (victima.estaEnPrision) {
+            if (victima.equipamiento.has("prision")) {
                 client.send("alerta_personal", `${victima.nombre} ya está en prisión.`);
                 return;
             }
@@ -1474,9 +1300,8 @@ export class MyRoom extends Room implements IMyRoom{
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
                 
-                // Le equipamos la prisión a la víctima
-                victima.estaEnPrision = true;
-                victima.cartaPrision = cartaUsada;
+                // Le equipamos la prisión a la víctima usando el nuevo sistema
+                Utilidades.equiparCarta(this, victima, cartaUsada, "prision");
                 
                 this.ejecutarAnimacionCarta(client, cartaUsada)
                 this.broadcast("notificacion_turno", `⛓️ ¡${atacante.nombre} mandó a la cárcel a ${victima.nombre}!`);
@@ -1569,11 +1394,11 @@ export class MyRoom extends Room implements IMyRoom{
 
             if (sobrevivioAlAtaque) {
 
-                if (recibioBalazo && atacante && atacante.tienePapa && this.causaDePeligro == "BANG") {
-                    victima.tienePapa = true;
-                    victima.cartaPapa = atacante.cartaPapa;
-                    atacante.tienePapa = false;
-                    atacante.cartaPapa = null;
+                if (recibioBalazo && atacante && atacante.equipamiento.has("papa") && this.causaDePeligro == "BANG") {
+                    let papaTrasladada = Utilidades.quitarEquipamiento(atacante, "papa");
+                    if (papaTrasladada) {
+                        Utilidades.equiparCarta(this, victima, papaTrasladada, "papa");
+                    }
                     this.broadcast("notificacion_turno", `🥔 ¡${atacante.nombre} le pasó el Papapum a ${victima.nombre}!`);
                     this.broadcast("sfx", "sfxPapapumColocandose")
                 }
@@ -1886,7 +1711,7 @@ export class MyRoom extends Room implements IMyRoom{
         let jugador = this.state.jugadores.get(idJugador);
         if (!jugador) return;
 
-        if (jugador.tieneDinamita) {
+        if (jugador.equipamiento.has("dinamita")) {
             this.broadcast("notificacion_turno", `🧨 ¡La Dinamita arde frente a ${jugador.nombre}! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Dinamita");
         } else {
@@ -1898,7 +1723,7 @@ export class MyRoom extends Room implements IMyRoom{
         let jugador = this.state.jugadores.get(idJugador);
         if (!jugador) return;
 
-        if (jugador.tienePapa) {
+        if (jugador.equipamiento.has("papa")) {
             this.broadcast("notificacion_turno", `🥔 ¡El Papapum quema en las manos de ${jugador.nombre}! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Papa");
         } else {
@@ -1910,7 +1735,7 @@ export class MyRoom extends Room implements IMyRoom{
         let jugador = this.state.jugadores.get(idJugador);
         if (!jugador) return;
 
-        if (jugador.estaEnPrision) {
+        if (jugador.equipamiento.has("prision")) {
             this.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} está en Prisión! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Prision");
         } else {

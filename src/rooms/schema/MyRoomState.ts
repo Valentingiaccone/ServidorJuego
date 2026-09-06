@@ -5,14 +5,13 @@ export class Carta extends Schema {
     @type("string") nombre: string = "";
     @type("string") descripcion: string = "";
     @type("string") descripcionEnCatalan: string = "";
-    @type("string") tipoDeUso: string = ""; // Ej: "instantanea", "objetivo", "reaccion"
-    @type("string") efecto: string = "";    // Ej: "curar_1", "dano_1"
+    @type("string") tipoDeUso: string = ""; 
+    @type("string") efecto: string = "";    
     @type("boolean") esConjurada: boolean = false;
-    @type("string") tipoEmbrujo: string = ""; // bueno o malo
-    @type("number") prioridadBang: number = 0; // 0 no es tipo bang, > 0 mientras mas bajo, mas prioridad tiene para descartes automaticos 
+    @type("string") tipoEmbrujo: string = ""; 
+    @type("number") prioridadBang: number = 0; 
     @type("string") idDuenoDelPerro: string = "";
     @type("boolean") esPlanta: boolean = false;
-    // ---------------------------------------------
 }
 
 export class HabilidadActiva extends Schema {
@@ -41,42 +40,30 @@ export class Jugador extends Schema {
     @type("boolean") estaVivo: boolean = true;
     @type("number") vidasMaximas: number = 4;
     @type("boolean") yaDisparo: boolean = false;
-    @type("string") nombreArma: string = "Colt .45"; // El arma por defecto
-    @type("number") alcanceArma: number = 1;         // Alcance base
-    @type(Carta) cartaArma: Carta;
+    
     @type("string") personaje: string = "";
     @type("string") habilidad: string = "";
     @type("string") habilidadEnCatalan: string = "";
     @type("string") sfxDefault: string = "sfxMensaje";
     sfxMuerte: [string, boolean, number?] = ["muerteAmongus", false];
+    
     @type([Carta]) mano = new ArraySchema<Carta>();
-    @type(Carta) cartaMustang: Carta;
-    @type(Carta) cartaMira: Carta;
-    @type("boolean") tieneMustangPro: boolean = false;
-    @type("boolean") tieneMiraPro: boolean = false;
-    @type("boolean") tieneBarrilPro: boolean = false;
-    @type("boolean") tieneMustang: boolean = false;
-    @type("boolean") tieneMira: boolean = false;
-    @type("boolean") tieneBarril: boolean = false;
-    @type(Carta) cartaBarril: Carta;
-    @type("boolean") estaEnPrision: boolean = false;
-    @type(Carta) cartaPrision: Carta;
-    @type("boolean") tieneDinamita: boolean = false;
-    @type(Carta) cartaDinamita: Carta;
+    
+    // --- EL NUEVO REY DEL EQUIPAMIENTO ---
+    @type({ map: Carta }) equipamiento = new MapSchema<Carta>();
+    // ------------------------------------
+
     @type("string") spriteAvatarOpcional: string = ""
-    @type("boolean") tienePapa: boolean = false;
-    @type(Carta) cartaPapa: Carta;
     @type("boolean") estaDesconectado: boolean = false;
     @type(["string"]) embrujos = new ArraySchema<string>();
     @type("boolean") yaJugoFantasma: boolean = false;
     @type("boolean") puedeUsarFallo: boolean = true;
     @type("number") vidasEscudo: number = 0;
-    @type("boolean") tieneBarrilPasiva: boolean = false;
-    turnosEscudos: number[] = []; // Memoria secreta del servidor
-    @type("number") danoExtraArmaBang: number = 0;
-    @type("number") alcanceMinimoArma: number = 0;
-    @type("number") modificarDistancia: number = 0; // distancia que los demas te ven a vos
-    @type("number") modificarAlcance: number = 0; // alcance que tenes
+    @type("boolean") tieneBarrilPasiva: boolean = false; // Mantenida porque es genética de Darryl, no una carta
+    turnosEscudos: number[] = []; 
+    
+    @type("number") modificarDistancia: number = 0; 
+    @type("number") modificarAlcance: number = 0; 
     @type([HabilidadActiva]) habilidadesActivas = new ArraySchema<HabilidadActiva>();
     @type("number") alturaFlowery: number = 0;
     @type("boolean") estaMuertoFalso: boolean = false;
@@ -96,8 +83,6 @@ export class Jugador extends Schema {
     @type({ map: "boolean" }) boolean = new MapSchema<boolean>();
     @type({ map: "string" }) string = new MapSchema<string>();
     @type({ map: Jugador }) jugador = new MapSchema<Jugador>();
-    @type({ map: Carta }) equipamiento = new MapSchema<Carta>();
-    // (limite para cocos 64)
 }
 
 export class MyRoomState extends Schema {
@@ -115,7 +100,7 @@ export class MyRoomState extends Schema {
     @type("string") jugadorEnDuelo: string = "";
     @type("string") oponenteDuelo: string = "";
     @type("string") jugadorDesenfundando: string = "";
-    @type("string") motivoDesenfundar: string = ""; // Puede ser "Barril", "Prision" o "Dinamita"
+    @type("string") motivoDesenfundar: string = ""; 
     @type(Carta) cartaDesenfundada: Carta = new Carta();
     @type("number") usosBarril: number = 0;
     @type(["string"]) layoutRuleta = new ArraySchema<string>();
@@ -126,6 +111,5 @@ export class MyRoomState extends Schema {
     @type("number") probabilidadPapa: number = 1;
     @type("string") ruletaVerde: string = "";
     @type("string") ruletaRojo: string = "";
-    @type("boolean") faseTransicion: boolean = false; // anti bug prision
+    @type("boolean") faseTransicion: boolean = false; 
 }
-
