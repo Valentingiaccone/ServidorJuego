@@ -332,6 +332,7 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
         return true;
     }
 }
+
 export class EfectoDesequipar implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
         
@@ -850,6 +851,44 @@ export class EfectoHumoseta implements IEfectoCarta {
     }
 }
 
+export class EfectoGranDesaparicion implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega){
+            console.error("ERROR: jugadorQueJuega es null en EfectoGranDesaparicion")
+            return false
+        }
+        if (!sala){
+            console.error("ERROR: sala es null en EfectoGranDesaparicion")
+            return false
+        }
+        if (!cartaJugada){
+            console.error("ERROR: cartaJugada es null en EfectoGranDesaparicion")
+            return false
+        }
+
+        if (cartaJugada.idGranDesaparicion != ""){
+            const jugadorVinculado: Jugador = Utilidades.obtenerJugadorPorSessionId(sala, cartaJugada.idGranDesaparicion)
+            if (jugadorVinculado){
+                if (jugadorVinculado.equipamiento.size <= 0){
+                    if (client){
+                        client.send("alerta_personal", `${jugadorVinculado.personaje} no tiene ningun equipamiento para descartarle`)
+                    } else {
+                        console.error("ERROR: client es null en gran desaparicion")
+                    }
+
+                    return false
+                }
+
+                jugadorQueJuega.mano.splice(indiceCarta, 1);
+                Utilidades.destruirTodosLosEquipamientos(sala, jugadorVinculado)
+                sala.agregarRegistro(`🎩 ${jugadorQueJuega.personaje} le hace desaparecer todo el equipamiento a ${jugadorVinculado.personaje}`)
+            
+                return true
+            }
+        }
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -884,6 +923,7 @@ export class DespachadorDeCartas {
         "trebolador": new EfectoTrebolador(),
         "petaseta": new EfectoPetaseta(),
         "humoseta": new EfectoHumoseta(),
+        "granDesaparicion": new EfectoGranDesaparicion(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

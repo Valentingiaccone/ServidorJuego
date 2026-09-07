@@ -70,8 +70,8 @@ export interface IPersonaje {
 
 export class ColeCasiddy implements IPersonaje {
     nombre = "Cole Casiddy";
-    habilidad = "Recarga en la recámara:\nAl recibir daño, roba tantas cartas como daño haya sufrido.";
-    habilidadEnCatalan: string = "Recàrrega a la recambra:\nEn rebre dany, roba tantes cartes com dany hagi patit."
+    habilidad = "Recarga en la recámara:\nAl recibir daño, roba 2 cartas.";
+    habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteCasiddy", false];
     sfxDefault= "sfxCasiddy"
@@ -79,8 +79,8 @@ export class ColeCasiddy implements IPersonaje {
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
         if (victima.vidas > 0) {
-            sala.repartirCartas(victima, cantidad, "pasiva");
-            sala.agregarRegistro(`🤠 ${victima.personaje} robó ${cantidad} carta tras recibir daño por ${causa}.`);
+            sala.repartirCartas(victima, 2, "pasiva");
+            sala.agregarRegistro(`🤠 ${victima.personaje} robó 2 cartas tras recibir daño por ${causa}.`);
         }
     }
 }
@@ -134,7 +134,6 @@ export class Maton implements IPersonaje {
 }
 
 export class Mandy implements IPersonaje {
-    // maya bug
     nombre = "Mandy";
     habilidad = "Concentración:\nConsidera a todos los demás jugadores a distancia -2.";
     habilidadEnCatalan: string = "Concentració:\nConsidera tots els altres jugadors a distància -2."
@@ -171,7 +170,6 @@ export class Tralalero implements IPersonaje {
 }
 
 export class Darryl implements IPersonaje {
-    // maya bug
     nombre = "Darryl";
     habilidad = "Darryl el Barryl:\nTiene el efecto de la carta Barril siempre activo, si se equipa un barril, es como si tuviera dos.";
     habilidadEnCatalan: string = "Darryl el Barryl:\nTé l'efecte de la carta Barril sempre actiu; si s'equipa un barril, és com si en tingués dos."
@@ -248,17 +246,13 @@ export class Frank implements IPersonaje {
 
 export class Trucy implements IPersonaje {
     nombre = "Trucy";
-    habilidad = "Baraja de cartas:\nCada vez que roba cartas, roba una extra, pero para pasar el turno, sus cartas en mano deben ser su salud - 1.";
-    habilidadEnCatalan: string = "Baralla de cartes:\nCada vegada que roba cartes, en roba una d'extra, però per passar el torn, les cartes que té a la mà han de ser la seva vida - 1."
+    habilidad = "Baraja de cartas:\nCada vez que roba cartas roba una extra.";
+    habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTrucy", false];
 
     modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
         return 1
-    }
-
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
-        return -1
     }
 }
 
@@ -474,10 +468,9 @@ export class Lesly implements IPersonaje {
 }
 
 export class Domino implements IPersonaje {
-    // maya bug (catalan)
     nombre = "Domino";
-    habilidad = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance).";
-    habilidadEnCatalan: string = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 3 alcance), ademas mientras está vivo, el resto vé las descripciones (menos esta) en catalan."
+    habilidad = "Dominub:\nAl recibir daño gana un dominó aleatorio con un efecto desconocido (puede curar, robar una carta, o equiparse como arma de 4 alcance).";
+    habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteDominub", false];
     sfxDefault = "sfxNitromeme"
@@ -511,7 +504,7 @@ export class Domino implements IPersonaje {
             dominoArma.descripcion = "?????";
             dominoArma.descripcionEnCatalan = "?????"
             dominoArma.tipoDeUso = "equipamiento";
-            dominoArma.efecto = `equipar_arma_${3}`;
+            dominoArma.efecto = `equipar_arma_${4}`;
             dominoArma.esConjurada = true
             victima.mano.push(dominoArma)
         }
@@ -1694,12 +1687,7 @@ export class Perro implements IPersonaje {
                 let indiceAleatorio = Math.floor(Math.random() * cartasLibres.length);
                 let cartaAleatoria = cartasLibres[indiceAleatorio];
 
-                let idDeMiJugador = "";
-                sala.getJugadores().forEach((j, sessionId) => {
-                    if (j === miJugador) idDeMiJugador = sessionId;
-                });
-
-                cartaAleatoria.idDuenoDelPerro = idDeMiJugador;
+                cartaAleatoria.idDuenoDelPerro = Utilidades.obtenerSessionIdDeJugador(sala, miJugador);
             }
         }
     }
@@ -1810,6 +1798,7 @@ export class Tracer implements IPersonaje {
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.number.set("tracerVecesMuerta", 0);
+
         let boton = new HabilidadActiva();
         boton.id = "tracer_guardarEstado";
         boton.textoBoton = "Guardar estado";
@@ -1985,52 +1974,261 @@ export class Pedro implements IPersonaje {
     }
 }
 
+export class Amelia implements IPersonaje {
+    nombre = "Amelia";
+    habilidad = "Amelia la asombrosa:\nAl pasar el turno gana un escudo (no sirve en 1vs1), cada 3 cartas que juega gana un escudo, cada vez que roba, roba una extra, cada 2 vidas que pierde por culpa de otro jugador, gana una Gran desaparicion (hace desaparecer todo el equipamiento, va dirigido al jugador que la golpeó), puede descartar sus 2 cartas de la izquierda para ganar tantos escudos como cartas en mano tenga luego del descarte (recarga 3 rondas), puede perder 1 vida para que sus escudos actuales duren un turno mas (recarga 2 rondas), para pasar el turno debe tener su salud -2 cartas en mano.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAmelia", false];
+    sfxDefault = "sfxAmelia"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador no existe en onInicarPartida en Amelia")
+            return
+        }
+
+        jugador.number.set("ameliaJugadas", 0)
+        jugador.number.set("ameliaVidasPerdias", 0)
+
+        let boton = new HabilidadActiva();
+        boton.id = "amelia_agregarEscudo";
+        boton.textoBoton = "Agregar escudo";
+        boton.tooltip = "Descarta 2 cartas, te da escudo segun tus cartas";
+        boton.spriteBoton = "botonAmeliaAgregarEscudo";
+        jugador.habilidadesActivas.push(boton);
+
+        jugador.number.set("ameliaRecargaAgregarEscudo", 0)
+
+        let boton2 = new HabilidadActiva();
+        boton2.id = "amelia_aumentarDuracionEscudo";
+        boton2.textoBoton = "Aumentar duracion";
+        boton2.tooltip = "Pierde vida, aumenta duracion escudo";
+        boton2.spriteBoton = "botonAmeliaAumentarDuracion";
+        jugador.habilidadesActivas.push(boton2);
+
+        jugador.number.set("ameliaRecargaDuracionEscudo", 0)
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador){
+            console.error("ERROR: jugador no existe en onPasarTurno en Amelia")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en onPasarTurno en Amelia")
+            return
+        }
+
+        let totalVivos = 0;
+        sala.getJugadores().forEach((j: any) => {
+            if (j && j.estaVivo) totalVivos++;
+        });
+
+        if (totalVivos > 2){
+            Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
+            sala.agregarRegistro(`🎩 ${jugador.personaje} obtuvo un escudo por pasar su turno.`)
+        }
+
+        jugador.number.set("ameliaRecargaAgregarEscudo", jugador.number.get("ameliaRecargaAgregarEscudo") - 1)
+        jugador.number.set("ameliaRecargaDuracionEscudo", jugador.number.get("ameliaRecargaDuracionEscudo") - 1)
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador no existe en onJugarCarta en Amelia")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en onJugarCarta en Amelia")
+            return
+        }
+
+        jugador.number.set("ameliaJugadas", jugador.number.get("ameliaJugadas") + 1)
+
+        if (jugador.number.get("ameliaJugadas") >= 3){
+            jugador.number.set("ameliaJugadas", 0)
+
+            Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
+            sala.agregarRegistro(`🎩 ${jugador.personaje} obtuvo un escudo por jugar 3 cartas`)
+        }
+    }
+
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
+        return 1
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (!victima){
+            console.error("ERROR: victima no existe en onRecibirDano en Amelia")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en onRecibirDano en Amelia")
+            return
+        }
+        if (!atacante){
+            console.error("ERROR: atacante no existe en onRecibirDano en Amelia")
+            return
+        }
+        if (!atacante.estaVivo){
+            return
+        }
+        if (atacante == victima){
+            return
+        }
+
+        if (danoCuerpo > 0){
+            victima.number.set("ameliaVidasPerdias", victima.number.get("ameliaVidasPerdias") + danoCuerpo)
+            if (victima.number.get("ameliaVidasPerdias") >= 2){
+                victima.number.set("ameliaVidasPerdias", 0)
+
+                let carta: Carta = CatalogoCartasEspeciales.crearGranDesaparicion()
+                if (carta){
+                    carta.idGranDesaparicion = Utilidades.obtenerSessionIdDeJugador(sala, atacante)
+                    carta.esConjurada = true
+                    if (carta.idGranDesaparicion != ""){
+                        carta.descripcion = `Desaparece todo el equipamiento de ${atacante.personaje}`
+                        victima.mano.push(carta)
+                        sala.agregarRegistro(`🎩 ${victima.personaje} conjuró una Gran desaparicion vinculada a ${atacante.personaje}.`)
+                        
+                        const numero: number = Math.floor(Math.random() * 2);
+                        const sfx: string = "ameliaConjuraGranDesaparicion" + numero
+                        sala.reproducirSfx(sfx)
+                    }
+                }
+            }
+        }
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en ejecutarHabilidadActiva en Amelia")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala es null en ejecutarHabilidadActiva en Amelia")
+            return
+        }
+
+        if (jugador.estaVivo && idHabilidad == "amelia_agregarEscudo"){
+
+            if (jugador.number.get("ameliaRecargaAgregarEscudo") > 0){
+                client.send("alerta_personal", `Esta habilidad se está recargando, faltan ${jugador.number.get("ameliaRecargaAgregarEscudo")} rondas.`)
+                return
+            }
+
+            if (jugador.mano.length < 2) {
+                client.send("alerta_personal", "Necesitás al menos 2 cartas para poder usar esta habilidad.");
+                return;
+            }
+            
+            if (jugador.mano.length === 2) {
+                client.send("alerta_personal", "Si descartás tus únicas 2 cartas, te quedarías con 0 en la mano y no ganarías ningún escudo.");
+                return;
+            }
+
+            let cartasADescartar = jugador.mano.splice(0, 2);
+
+            sala.descartarCarta(cartasADescartar[0], jugador, "pasiva");
+            sala.descartarCarta(cartasADescartar[1], jugador, "pasiva");
+
+            let escudosGanados = jugador.mano.length;
+            Utilidades.agregarEscudos(sala, jugador, escudosGanados, 1, "pasiva");
+
+            sala.agregarRegistro(`🎩 ¡${jugador.personaje} descartó 2 cartas y generó ${escudosGanados} escudos temporales!`);
+            const numero: number = Math.floor(Math.random() * 2);
+            const sfx: string = "ameliaHabilidadAgregarEscudo" + numero
+            sala.reproducirSfx(sfx)
+
+            jugador.number.set("ameliaRecargaAgregarEscudo", 3)
+        } 
+        else if (jugador.estaVivo && idHabilidad == "amelia_aumentarDuracionEscudo"){
+
+            if (jugador.number.get("ameliaRecargaDuracionEscudo") > 0){
+                client.send("alerta_personal", `Esta habilidad se está recargando, faltan ${jugador.number.get("ameliaRecargaDuracionEscudo")} rondas.`)
+                return
+            }
+            
+            if (jugador.vidas <= 1) {
+                client.send("alerta_personal", "No podés usar esta habilidad porque te costaría la vida.");
+                return;
+            }
+
+            if (!jugador.turnosEscudos || jugador.turnosEscudos.length === 0) {
+                client.send("alerta_personal", "No tenés ningún escudo activo para extender su duración.");
+                return;
+            }
+
+            Utilidades.procesarDano(sala, jugador, jugador, 1, "pasiva", true);
+
+            if (jugador.estaVivo) {
+                for (let i = 0; i < jugador.turnosEscudos.length; i++) {
+                    jugador.turnosEscudos[i]++;
+                }
+
+                sala.agregarRegistro(`🎩 ¡${jugador.personaje} sacrificó 1 de vida para extender la duración de todos sus escudos 1 turno más!`);
+                // const numero: number = Math.floor(Math.random() * 2);
+                // const sfx: string = "ameliaHabilidadAgregarEscudo" + numero
+                sala.reproducirSfx("ameliaHabilidadRecargaDuracionEscudo0")
+
+                jugador.number.set("ameliaRecargaDuracionEscudo", 2)
+            }
+        }
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return -2
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
         this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
-        this.registrar(new Perro())
-        this.registrar(new DaveElLoco())
-        this.registrar(new Junkrat())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
+        // this.registrar(new Perro())
+        // this.registrar(new DaveElLoco())
+        // this.registrar(new Junkrat())
         this.registrar(new Max())
         this.registrar(new Pedro())
+        this.registrar(new Amelia())
 
 
 

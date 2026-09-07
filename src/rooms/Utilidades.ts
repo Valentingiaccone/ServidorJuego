@@ -1,4 +1,5 @@
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
+import { IMyRoom } from "./IMyRoom.js";
 import { Carta, Jugador } from "./schema/MyRoomState.js";
 
 export class Utilidades {
@@ -296,5 +297,36 @@ export class Utilidades {
         }
 
         return null;
+    }
+
+    /**
+     * Busca en la sala a un jugador específico y devuelve su Session ID (Client ID).
+     * Devuelve un string vacío "" si no lo encuentra.
+     */
+    public static obtenerSessionIdDeJugador(sala: IMyRoom, jugadorBuscado: Jugador): string {
+        if (!sala || !jugadorBuscado) return "";
+        
+        let idEncontrado = "";
+        
+        sala.getJugadores().forEach((j: any, sessionId: string) => {
+            if (j === jugadorBuscado) {
+                idEncontrado = sessionId;
+            }
+        });
+        
+        return idEncontrado;
+    }
+
+    /**
+     * Busca en la sala a un jugador usando su Session ID (Client ID) y devuelve el objeto Jugador.
+     * Devuelve null si no lo encuentra (por ejemplo, si se desconectó).
+     */
+    public static obtenerJugadorPorSessionId(sala: IMyRoom, sessionId: string): Jugador | null {
+        if (!sala || !sessionId) return null;
+        
+        // El MapSchema nos permite buscar directamente por la clave
+        let jugador = sala.getJugadores().get(sessionId);
+        
+        return jugador || null;
     }
 }

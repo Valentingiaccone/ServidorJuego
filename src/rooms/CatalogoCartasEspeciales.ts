@@ -213,6 +213,18 @@ export class CatalogoCartasEspeciales {
         return clon
     }
 
+    public static crearGranDesaparicion(): Carta {
+        let clon = new Carta();
+        clon.id = `gran_desaparicion_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Gran desaparicion";
+        clon.descripcion = "este texto se pone dinamicamente, si lees esto es un error";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "granDesaparicion";
+        clon.esConjurada = false;
+        return clon
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [

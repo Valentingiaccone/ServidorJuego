@@ -11,6 +11,7 @@ export class Carta extends Schema {
     @type("string") tipoEmbrujo: string = ""; 
     @type("number") prioridadBang: number = 0; 
     @type("string") idDuenoDelPerro: string = "";
+    @type("string") idGranDesaparicion: string = "";
     @type("boolean") esPlanta: boolean = false;
 }
 
