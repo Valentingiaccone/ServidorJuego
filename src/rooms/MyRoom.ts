@@ -272,10 +272,12 @@ export class MyRoom extends Room implements IMyRoom{
                 
                 arrayJugadores.sort(() => Math.random() - 0.5); 
                 
-                this.state.jugadores.clear(); 
+                this.state.jugadores.clear();
+                this.state.ordenSillasFisicas.clear();
                 
                 arrayJugadores.forEach(([id, jug]) => {
-                    this.state.jugadores.set(id, jug); 
+                    this.state.jugadores.set(id, jug);
+                    this.state.ordenSillasFisicas.push(id);
                 });
 
                 this.broadcast("musica", "seleccionDePersonaje")
@@ -1167,7 +1169,10 @@ export class MyRoom extends Room implements IMyRoom{
                 }
 
                 let vivos: string[] = [];
-                this.state.jugadores.forEach((j, id) => { if (j.estaVivo) vivos.push(id); });
+                this.state.ordenSillasFisicas.forEach((id: string) => { 
+                    let j = this.state.jugadores.get(id);
+                    if (j && j.estaVivo) vivos.push(id); 
+                });
 
                 let idxAtacante = vivos.indexOf(client.sessionId);
                 let idxVictima = vivos.indexOf(datosDelDisparo.objetivoId);

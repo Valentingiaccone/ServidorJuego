@@ -329,4 +329,59 @@ export class Utilidades {
         
         return jugador || null;
     }
+
+    /**
+     * Mueve físicamente a un jugador en la mesa intercambiando su silla con el rival vivo más cercano en esa dirección.
+     * No afecta el orden de los turnos. Devuelve el jugador desplazado o null si falló.
+     */
+    public static moverPosicionFisica(sala: IMyRoom, jugador: Jugador, direccion: "antihorario" | "horario"): Jugador | null {
+        // esto lo hago porque visualmente es al reves, si decis antihorario, visualmente será antihorario pero en codigo será horario
+        if (direccion == "antihorario"){
+            direccion = "horario"
+        } else {
+            direccion = "antihorario"
+        }
+
+        let state = (sala as any).state;
+        let idOrigen = this.obtenerSessionIdDeJugador(sala, jugador);
+        if (!idOrigen) return null;
+
+        let arraySillas = state.ordenSillasFisicas;
+        let idxOrigen = arraySillas.indexOf(idOrigen);
+        if (idxOrigen === -1) return null;
+
+        let n = arraySillas.length;
+        // Derecha suma (+1), Izquierda resta (-1)
+        let paso = (direccion === "antihorario") ? 1 : -1; 
+        
+        let idxDestino = -1;
+        let jugadorDestino: Jugador | null = null;
+
+        // Buscamos la siguiente silla que tenga a alguien VIVO
+        for (let i = 1; i < n; i++) {
+            // El (+ n) % n asegura que si estamos en el índice 0 y restamos 1, demos la vuelta al final de la mesa
+            let idxTest = (idxOrigen + (paso * i) + n) % n; 
+            let idTest = arraySillas[idxTest];
+            let jugTest = state.jugadores.get(idTest);
+            
+            if (jugTest && jugTest.estaVivo) {
+                idxDestino = idxTest;
+                jugadorDestino = jugTest;
+                break;
+            }
+        }
+
+        if (idxDestino !== -1 && jugadorDestino) {
+            // ¡Intercambiamos los IDs en el array visual/físico!
+            let temp = arraySillas[idxOrigen];
+            arraySillas[idxOrigen] = arraySillas[idxDestino];
+            arraySillas[idxDestino] = temp;
+
+            //sala.agregarRegistro(`🪑 ¡${jugador.personaje} se movió a la ${direccion} e intercambió asiento con ${jugadorDestino.personaje}!`);
+            
+            return jugadorDestino;
+        }
+
+        return null; // Nadie vivo para intercambiar
+    }
 }

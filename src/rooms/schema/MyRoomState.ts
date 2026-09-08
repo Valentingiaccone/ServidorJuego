@@ -113,4 +113,5 @@ export class MyRoomState extends Schema {
     @type("string") ruletaVerde: string = "";
     @type("string") ruletaRojo: string = "";
     @type("boolean") faseTransicion: boolean = false; 
+    @type(["string"]) ordenSillasFisicas = new ArraySchema<string>();
 }

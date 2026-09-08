@@ -1623,6 +1623,9 @@ export class Meg implements IPersonaje {
     }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (!jugador.estaVivo){
+            return
+        }
         if (jugador.string.get("modoMeg") == "CHIQUITA" && cartaJugada.nombre == "¡Fallo!"){
             let carta = CatalogoCartasEspeciales.crearFallo()
             carta.esConjurada = true
@@ -1639,6 +1642,9 @@ export class Meg implements IPersonaje {
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador.estaVivo){
+            return
+        }
         if (jugador.string.get("modoMeg") == "CHIQUITA"){
             jugador.string.set("modoMeg", "CONSTRUCTORA")
             jugador.spriteAvatarOpcional = "Meg constructora"
@@ -1646,6 +1652,9 @@ export class Meg implements IPersonaje {
     }
 
     onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (!miJugador.estaVivo){
+            return
+        }
         if (miJugador.string.get("modoMeg") == "CONSTRUCTORA"){
             miJugador.string.set("modoMeg", "ROBOT")
             miJugador.spriteAvatarOpcional = ""
@@ -1702,6 +1711,9 @@ export class DaveElLoco implements IPersonaje {
     sfxDefault = "sfxCrazyDave1";
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (!jugador.estaVivo){
+            return
+        }
         const numero: number = Math.floor(Math.random() * 12) + 1
         const sfx: string = "sfxCrazyDave" + numero
         sala.broadcast("sfx", sfx)
@@ -1742,6 +1754,9 @@ export class Junkrat implements IPersonaje {
             console.error("ERROR: sala no existe en junkrat onIniciarTurno")
             return
         }
+        if (!miJugador.estaVivo){
+            return
+        }
 
         if (miJugador.vidas >= 0){
             sala.repartirCartas(miJugador, miJugador.vidas, "pasiva")
@@ -1772,6 +1787,9 @@ export class Max implements IPersonaje {
         }
         if (!sala){
             console.error("ERROR: sala no existe en max on jugar carta")
+            return
+        }
+        if (!jugador.estaVivo){
             return
         }
         
@@ -2020,6 +2038,10 @@ export class Amelia implements IPersonaje {
             return
         }
 
+        if (!jugador.estaVivo){
+            return
+        }
+
         let totalVivos = 0;
         sala.getJugadores().forEach((j: any) => {
             if (j && j.estaVivo) totalVivos++;
@@ -2041,6 +2063,10 @@ export class Amelia implements IPersonaje {
         }
         if (!sala){
             console.error("ERROR: sala no existe en onJugarCarta en Amelia")
+            return
+        }
+
+        if (!jugador.estaVivo){
             return
         }
 
@@ -2075,6 +2101,10 @@ export class Amelia implements IPersonaje {
             return
         }
         if (atacante == victima){
+            return
+        }
+
+        if (!victima.estaVivo){
             return
         }
 
@@ -2182,6 +2212,62 @@ export class Amelia implements IPersonaje {
     }
 }
 
+export class Microbio implements IPersonaje {
+    nombre = "Microbio";
+    habilidad = "Microbios traviesos:\nAl jugar una carta se mueve a antihorario. A los jugadores que sobrepasa les roba una carta aleatoria (3 veces, se recarga al inicio del turno). Para pasar el turno deben tener su salud - 1 cartas en mano.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador no existe en microbio onIniciarPartida")
+            return
+        }
+
+        jugador.number.set("microbio", 0)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (!miJugador){
+            console.error("ERROR: miJugador no existe en microbio onIniciarTurno")
+            return
+        }
+
+        miJugador.number.set("microbio", 0)
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador no existe en microbio onJugarCarta")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en microbio onJugarCarta")
+            return
+        }
+
+        if (!jugador.estaVivo){
+            return
+        }
+
+        let jugadorSobrepasado: Jugador = Utilidades.moverPosicionFisica(sala, jugador, "antihorario")
+
+        jugador.number.set("microbio", jugador.number.get("microbio") + 1)
+
+        if (jugadorSobrepasado && jugadorSobrepasado.mano.length > 0 && jugadorSobrepasado.estaVivo && jugador.number.get("microbio") <= 3) {
+            let indiceAleatorio = Math.floor(Math.random() * jugadorSobrepasado.mano.length);
+            let cartaRobada = jugadorSobrepasado.mano.splice(indiceAleatorio, 1)[0];
+            jugador.mano.push(cartaRobada);
+            
+            sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario y robó ${cartaRobada.nombre} a ${jugadorSobrepasado.personaje} (${jugador.number.get("microbio")}/3)!`);
+            sala.reproducirSfx("microbioMovimiento")
+        } else {
+            sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario!`);
+            sala.reproducirSfx("microbioMovimiento")
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -2229,6 +2315,7 @@ export class GestorPersonajes {
         this.registrar(new Max())
         this.registrar(new Pedro())
         this.registrar(new Amelia())
+        this.registrar(new Microbio())
 
 
 
