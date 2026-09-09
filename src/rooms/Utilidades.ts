@@ -39,6 +39,7 @@ export class Utilidades {
                 }
                 if (atacante.boolean.get("mercyActivada")){
                     this.aplicarCuracion(sala, victima, cantidad, causa, false);
+                    this.aplicarCuracion(sala, atacante, 1, causa, false)
                     return;              
                 }
             }
@@ -124,7 +125,7 @@ export class Utilidades {
             Utilidades.agregarEscudos(sala, jugador, cantidadFinal, Infinity, "CURACION");
         } else if (totalVivos === 2 && !forzarCuracion) {
             Utilidades.agregarEscudos(sala, jugador, cantidadFinal, 1, "CURACION");
-            sala.broadcast("notificacion_turno", `🛡️ ¡En duelo a muerte, la curación de ${jugador.nombre} se transforma en Escudo Temporal!`);
+            sala.broadcast("notificacion_turno", `🛡️ ¡En duelo a muerte, la curación de ${jugador.personaje} se transforma en Escudo Temporal!`);
         } else {
             jugador.vidas += cantidadFinal;
             let excedente = Math.max(0, jugador.vidas - jugador.vidasMaximas);

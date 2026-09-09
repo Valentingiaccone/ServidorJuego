@@ -415,8 +415,8 @@ export class Mikotoba implements IPersonaje {
 
 export class Lesly implements IPersonaje {
     nombre = "Lesly";
-    habilidad = "SAPA:\nComo una buena sapa lesly puede sapear la carta de mas a la izquierda de la mano de cada rival en todo momento, puede descartar la carta no conjurada de mas de su izquierda para conjurar una carta Valerie Ladrona (roba la carta de la izquierda) (2 por turno).";
-    habilidadEnCatalan: string = "SAPA:\nCom una bona sapa Lesly, pot espiar en tot moment la carta situada més a l’esquerra de la mà de cada rival. Pot descartar la carta no conjurada que té més a l’esquerra per conjurar una carta Valerie Ladrona (roba la carta de l’esquerra) (2 per torn)."
+    habilidad = "SAPA:\nComo una buena sapa lesly puede sapear la carta de mas a la izquierda de la mano de cada rival en todo momento, puede descartar la carta no conjurada de mas de su izquierda para conjurar una carta Valerie Ladrona (roba la carta de la izquierda) (1 por turno).";
+    habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLesly", false];
     sfxDefault = "sfxLesly"
@@ -434,8 +434,8 @@ export class Lesly implements IPersonaje {
 
     ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
         if (jugador.estaVivo && idHabilidad == "lesly_panico"){
-            if (jugador.number.get("leslyUsosHabilidad") >= 2){
-                client.send("alerta_personal", "Ya usaste 2 veces la habilidad este turno.")
+            if (jugador.number.get("leslyUsosHabilidad") >= 1){
+                client.send("alerta_personal", "Ya usaste la habilidad este turno.")
                 return
             }
 
@@ -455,7 +455,7 @@ export class Lesly implements IPersonaje {
 
                 jugador.number.set("leslyUsosHabilidad", usos + 1)
 
-                sala.agregarRegistro(`🐸 ${jugador.personaje} acaba de conjurar una Valerie ladrona (${usos + 1}/2)`)
+                sala.agregarRegistro(`🐸 ${jugador.personaje} acaba de conjurar una Valerie ladrona (${usos + 1}/1)`)
             } else {
                 client.send("alerta_personal", "No tenés ninguna carta para poder crear un panico.")
             }
@@ -645,7 +645,7 @@ export class Flowery implements IPersonaje {
 
                     // YA NO ROBA CARTAS DEL RIVAL (Eliminado)
 
-                    if (v.estaVivo && v.rol !== "Sheriff" && !v.estaEnPrision) {
+                    if (v.estaVivo && v.rol !== "Sheriff" && !v.equipamiento.has("prision")) {
                         const prision = new Carta();
                         
                         // EL PARCHE ANTICRASHEO: Agregamos el sessionId al final para garantizar unicidad absoluta
@@ -658,8 +658,8 @@ export class Flowery implements IPersonaje {
                         prision.efecto = "prision";
                         prision.esConjurada = true;
 
-                        v.estaEnPrision = true;
-                        v.cartaPrision = prision;
+                        // --- NUEVO SISTEMA DE EQUIPAMIENTO ---
+                        Utilidades.equiparCarta(sala, v, prision, "prision");
                     }
                 }
             });
@@ -1331,6 +1331,10 @@ export class Cubo implements IPersonaje {
     }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (!jugador || !jugador.estaVivo){
+            return
+        }
+
         if (jugador.geometryDashModo == "Wave" && cartaJugada.nombre == "¡Fallo!"){
             let carta = CatalogoCartasEspeciales.crearFallo()
             carta.esConjurada = true
@@ -1457,7 +1461,7 @@ export class VonKarma implements IPersonaje {
                 return;
             }
             
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} falsificó evidencia! Pierde 1 vida y roba 2 cartas.`);
+            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} falsificó evidencia! Pierde 1 vida y roba 2 cartas.`);
             
             Utilidades.procesarDano(sala, jugador, jugador, 1, "FALSIFICACION", true);
 
@@ -1470,8 +1474,8 @@ export class VonKarma implements IPersonaje {
 
 export class Mercy implements IPersonaje {
     nombre = "Mercy";
-    habilidad = "Los heroes nunca mueren:\nDurante tu turno, podes intercambiar entre que tus Bang! hagan daño o curen, los demas no saben si el Bang! hará daño o curará.";
-    habilidadEnCatalan = "Els herois mai moren:\nDurant el teu torn, pots escollir si els teus Bang! fan mal o curen, els altres no saben si el Bang! farà mal o curarà.";
+    habilidad = "Los heroes nunca mueren:\nDurante tu turno, podes intercambiar entre que tus Bang! hagan daño o curen, los demas no saben si el Bang! hará daño o curará. Curar con un Bang! a otro jugador te cura 1.";
+    habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
@@ -1767,7 +1771,7 @@ export class Junkrat implements IPersonaje {
 
 export class Max implements IPersonaje {
     nombre = "Max";
-    habilidad = "Max energy:\nCada 3 cartas que juegues roba una carta, pero para pasar el turno tenes que tener tu salud - 1 cartas en mano.";
+    habilidad = "Max energy:\nCada 3 cartas que juegues roba una carta.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
@@ -1801,10 +1805,6 @@ export class Max implements IPersonaje {
             sala.repartirCartas(jugador, 1, "pasiva")
             sala.agregarRegistro(`⚡ ${jugador.personaje} roba una carta extra por su pasiva.`)
         }
-    }
-
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
-        return -1
     }
 }
 
@@ -2214,7 +2214,7 @@ export class Amelia implements IPersonaje {
 
 export class Microbio implements IPersonaje {
     nombre = "Microbio";
-    habilidad = "Microbios traviesos:\nAl jugar una carta se mueve a antihorario. A los jugadores que sobrepasa les roba una carta aleatoria (3 veces, se recarga al inicio del turno). Para pasar el turno deben tener su salud - 1 cartas en mano.";
+    habilidad = "Microbios traviesos:\nAl jugar una carta se mueve a antihorario. A los jugadores que sobrepasa les roba una carta aleatoria (2 veces, se recarga al inicio del turno). Para pasar el turno deben tener su salud - 1 cartas en mano.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
@@ -2254,17 +2254,21 @@ export class Microbio implements IPersonaje {
 
         jugador.number.set("microbio", jugador.number.get("microbio") + 1)
 
-        if (jugadorSobrepasado && jugadorSobrepasado.mano.length > 0 && jugadorSobrepasado.estaVivo && jugador.number.get("microbio") <= 3) {
+        if (jugadorSobrepasado && jugadorSobrepasado.mano.length > 0 && jugadorSobrepasado.estaVivo && jugador.number.get("microbio") <= 2) {
             let indiceAleatorio = Math.floor(Math.random() * jugadorSobrepasado.mano.length);
             let cartaRobada = jugadorSobrepasado.mano.splice(indiceAleatorio, 1)[0];
             jugador.mano.push(cartaRobada);
             
-            sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario y robó ${cartaRobada.nombre} a ${jugadorSobrepasado.personaje} (${jugador.number.get("microbio")}/3)!`);
+            sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario y robó ${cartaRobada.nombre} a ${jugadorSobrepasado.personaje} (${jugador.number.get("microbio")}/2)!`);
             sala.reproducirSfx("microbioMovimiento")
         } else {
             sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario!`);
             sala.reproducirSfx("microbioMovimiento")
         }
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return -1
     }
 }
 

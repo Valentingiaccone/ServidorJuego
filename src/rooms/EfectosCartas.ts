@@ -14,7 +14,7 @@ export class EfectoCurar implements IEfectoCarta {
         if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
             Utilidades.aplicarCuracion(sala, jugador, 1, "BOTIQUIN", false);
 
-            sala.broadcast("notificacion_turno", `🩹 ${jugador.nombre} usó un Botiquín.`);
+            sala.broadcast("notificacion_turno", `🩹 ${jugador.personaje} usó un Botiquín.`);
             sala.ejecutarAnimacionCarta(client, cartaJugada)
             sala.broadcast("sfx", "curacion");
 
@@ -50,7 +50,7 @@ export class EfectoCurarDuo implements IEfectoCarta {
         Utilidades.aplicarCuracion(sala, jugadorQueJuega, 1, "CURADUO", false);
         Utilidades.aplicarCuracion(sala, victima, 1, "CURADUO", false);
 
-        sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.nombre} compartieron curación!`);
+        sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.personaje} compartieron curación!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "curacion");
 
@@ -65,7 +65,7 @@ export class EfectoEquipar implements IEfectoCarta {
         Utilidades.equiparCarta(sala, jugador, cartaJugada, "arma");
         jugador.mano.splice(indiceCarta, 1);
         
-        sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
+        sala.broadcast("notificacion_turno", `🔫 ¡${jugador.personaje} se equipó ${cartaJugada.nombre}!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         const numero = Math.floor(Math.random() * 3);
         sala.broadcast("sfx", "equiparArma" + numero);
@@ -78,8 +78,8 @@ export class EfectoRobar implements IEfectoCarta {
         let cantidad = parseInt(parametros[1]); 
         sala.repartirCartas(jugador, cantidad, "carta");
         
-        console.log(`🃏 ${jugador.nombre} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
-        sala.broadcast("notificacion_turno", `🃏 ${jugador.nombre} jugó ${cartaJugada.nombre}.`);
+        console.log(`🃏 ${jugador.personaje} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
+        sala.broadcast("notificacion_turno", `🃏 ${jugador.personaje} jugó ${cartaJugada.nombre}.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         
         jugador.mano.splice(indiceCarta, 1);
@@ -262,7 +262,7 @@ export class EfectoEquiparMustang implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         Utilidades.equiparCarta(sala, jugador, cartaJugada, "mustang");
         jugador.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo.`);
+        sala.broadcast("notificacion_turno", `🐎 ${jugador.personaje} montó un Caballo.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         return true;
     }
@@ -272,7 +272,7 @@ export class EfectoEquiparMira implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         Utilidades.equiparCarta(sala, jugador, cartaJugada, "mira");
         jugador.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🛖 ${jugador.nombre} equipó una Monoaldea.`);
+        sala.broadcast("notificacion_turno", `🛖 ${jugador.personaje} equipó una Monoaldea.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         return true;
     }
@@ -282,7 +282,7 @@ export class EfectoEquiparBarril implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         Utilidades.equiparCarta(sala, jugador, cartaJugada, "barril");
         jugador.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril.`);
+        sala.broadcast("notificacion_turno", `🛢️ ${jugador.personaje} se escondió detrás de un Barril.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         const numero = Math.floor(Math.random() * 3);
         sala.broadcast("sfx", "barril" + numero);
@@ -294,7 +294,7 @@ export class EfectoEquiparMustangPro implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         Utilidades.equiparCarta(sala, jugador, cartaJugada, "mustang");
         jugador.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🐎 ${jugador.nombre} montó un Caballo Pro.`);
+        sala.broadcast("notificacion_turno", `🐎 ${jugador.personaje} montó un Caballo Pro.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         return true;
     }
@@ -304,7 +304,7 @@ export class EfectoEquiparMiraPro implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         Utilidades.equiparCarta(sala, jugador, cartaJugada, "mira");
         jugador.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🔭 ${jugador.nombre} equipó una Monoaldea Pro.`);
+        sala.broadcast("notificacion_turno", `🔭 ${jugador.personaje} equipó una Monoaldea Pro.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         return true;
     }
@@ -314,7 +314,7 @@ export class EfectoEquiparBarrilPro implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         Utilidades.equiparCarta(sala, jugador, cartaJugada, "barril");
         jugador.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🛢️ ${jugador.nombre} se escondió detrás de un Barril Pro.`);
+        sala.broadcast("notificacion_turno", `🛢️ ${jugador.personaje} se escondió detrás de un Barril Pro.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         const numero = Math.floor(Math.random() * 3);
         sala.broadcast("sfx", "barril" + numero);
@@ -326,7 +326,7 @@ export class EfectoEquiparDinamita implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         Utilidades.equiparCarta(sala, jugador, cartaJugada, "dinamita");
         jugador.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🧨 ¡${jugador.nombre} encendió una Dinamita!`);
+        sala.broadcast("notificacion_turno", `🧨 ¡${jugador.personaje} encendió una Dinamita!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         sala.broadcast("sfx", "dinamita");
         return true;
@@ -362,12 +362,12 @@ export class EfectoDesequipar implements IEfectoCarta {
         }
 
         if (cartasVoladas.length === 0) {
-            client.send("alerta_personal", `${victima.nombre} no tiene ningún equipamiento para quitarle.`);
+            client.send("alerta_personal", `${victima.personaje} no tiene ningún equipamiento para quitarle.`);
             return false;
         }
 
         let nombresCartas = cartasVoladas.join(" y ");
-        sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.nombre} lanzó ${cartaJugada.nombre}! ${victima.nombre} perdió ${nombresCartas}, directo al descarte.`);
+        sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.nombre} lanzó ${cartaJugada.nombre}! ${victima.personaje} perdió ${nombresCartas}, directo al descarte.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         
         jugadorQueJuega.mano.splice(indiceCarta, 1);
@@ -384,21 +384,21 @@ export class EfectoDescartar implements IEfectoCarta {
         let cantidad = parametros[2] ? parseInt(parametros[2]) : 1;
 
         if (tipoMaldicion === "venenoso") {
-            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.nombre} descartó un ${carta.nombre} y el veneno le quita ${cantidad} vida (Daño directo)!`);
+            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.personaje} descartó un ${carta.nombre} y el veneno le quita ${cantidad} vida (Daño directo)!`);
             Utilidades.procesarDano(sala, jugador, null, cantidad, "MALDICION", true);
         }
         else if (tipoMaldicion === "reductor") {
             if (jugador.vidasMaximas == jugador.vidas){
-                sala.broadcast("notificacion_turno", `⬇️ ${jugador.nombre} descartó un ${carta.nombre} pero no le afecta porque tiene la salud al maximo`);
+                sala.broadcast("notificacion_turno", `⬇️ ${jugador.personaje} descartó un ${carta.nombre} pero no le afecta porque tiene la salud al maximo`);
             } else if (jugador.vidasMaximas > 1){
-                sala.broadcast("notificacion_turno", `⬇️ ¡${jugador.nombre} descartó un ${carta.nombre} y su salud máxima bajó en ${cantidad}!`);
+                sala.broadcast("notificacion_turno", `⬇️ ¡${jugador.personaje} descartó un ${carta.nombre} y su salud máxima bajó en ${cantidad}!`);
                 jugador.vidasMaximas -= cantidad;
                 if (jugador.vidas > jugador.vidasMaximas) {
                     jugador.vidas = jugador.vidasMaximas;
                     sala.evaluarMuerte(jugador); 
                 }
             } else {
-                sala.broadcast("notificacion_turno", `⬇️ ${jugador.nombre} descartó un ${carta.nombre} pero su salud maxima no puede bajar de 1`);
+                sala.broadcast("notificacion_turno", `⬇️ ${jugador.personaje} descartó un ${carta.nombre} pero su salud maxima no puede bajar de 1`);
             }
         } 
         else if (tipoMaldicion === "comilon") {
@@ -407,9 +407,9 @@ export class EfectoDescartar implements IEfectoCarta {
                 let cartaDevorada = Utilidades.descartarEquipamientoAleatorio(sala, jugador, client);
 
                 if (cartaDevorada) {
-                    sala.broadcast("notificacion_turno", `👾 ¡Una maldición devoró un equipamiento (${cartaDevorada.nombre}) de ${jugador.nombre}!`);
+                    sala.broadcast("notificacion_turno", `👾 ¡Una maldición devoró un equipamiento (${cartaDevorada.nombre}) de ${jugador.personaje}!`);
                 } else {
-                    sala.broadcast("notificacion_turno", `👾 Una maldición intentó actuar, pero ${jugador.nombre} ya no tenía equipamiento.`);
+                    sala.broadcast("notificacion_turno", `👾 Una maldición intentó actuar, pero ${jugador.personaje} ya no tenía equipamiento.`);
                     break; 
                 }
             }
@@ -420,11 +420,11 @@ export class EfectoDescartar implements IEfectoCarta {
                     let indiceRandom = Math.floor(Math.random() * jugador.mano.length);
                     let cartaExtra = jugador.mano.splice(indiceRandom, 1)[0];
                     
-                    sala.broadcast("notificacion_turno", `👻 ¡Una maldición obligó a ${jugador.nombre} a descartar ${cartaExtra.nombre}!`);
+                    sala.broadcast("notificacion_turno", `👻 ¡Una maldición obligó a ${jugador.personaje} a descartar ${cartaExtra.nombre}!`);
                     
                     sala.descartarCarta(cartaExtra, jugador, "VOLUNTARIO")
                 } else {
-                    sala.broadcast("notificacion_turno", `👻 Una maldición intentó actuar, pero la mano de ${jugador.nombre} ya estaba vacía.`);
+                    sala.broadcast("notificacion_turno", `👻 Una maldición intentó actuar, pero la mano de ${jugador.personaje} ya estaba vacía.`);
                     break;
                 }
             }
@@ -450,7 +450,7 @@ export class EfectoEquiparPapapum implements IEfectoCarta {
         Utilidades.equiparCarta(sala, jugador, carta, "papa");
         sala.state.probabilidadPapa = 1; 
 
-        sala.broadcast("notificacion_turno", `🥔 ¡${jugador.nombre} activó al Papapum!`);
+        sala.broadcast("notificacion_turno", `🥔 ¡${jugador.personaje} activó al Papapum!`);
         sala.broadcast("sfx", "sfxPapapumColocandose");
         sala.ejecutarAnimacionCarta(client, carta);
 
@@ -498,7 +498,7 @@ export class EfectoRayo implements IEfectoCarta {
         victimasIds.forEach(id => {
             let victima = sala.state.jugadores.get(id);
             if (victima && victima.estaVivo) {
-                sala.broadcast("notificacion_turno", `⚡ ¡KABOOM! El rayo impacta a ${victima.nombre} y pierde 1 vida.`);
+                sala.broadcast("notificacion_turno", `⚡ ¡KABOOM! El rayo impacta a ${victima.personaje} y pierde 1 vida.`);
                 Utilidades.procesarDano(sala, victima, jugadorQueJuega, 1, "RAYO");
             }
         });
@@ -541,12 +541,12 @@ export class EfectoEmbrujar implements IEfectoCarta {
         }
 
         if (victima.embrujos.length + cantidad > 16) {
-            client.send("alerta_personal", `La ruleta de ${victima.nombre} ya está demasiado embrujada, no cabe este maleficio.`);
+            client.send("alerta_personal", `La ruleta de ${victima.personaje} ya está demasiado embrujada, no cabe este maleficio.`);
             return false;
         }
 
         if (victima.boolean.get("dahliaSheriff") && cartaJugada.tipoEmbrujo == "malo"){
-            client.send("alerta_personal", `No podés embrujar de forma negativa a ${victima.nombre} ya que tiene una pasiva que lo protege.`)
+            client.send("alerta_personal", `No podés embrujar de forma negativa a ${victima.personaje} ya que tiene una pasiva que lo protege.`)
             return false
         }
 
@@ -626,7 +626,7 @@ export class EfectoValerieLadrona implements IEfectoCarta {
         }
 
         if (victima.mano.length === 0) {
-            client.send("alerta_personal", `${victima.nombre} no tiene cartas en la mano para robarle.`);
+            client.send("alerta_personal", `${victima.personaje} no tiene cartas en la mano para robarle.`);
             return false;
         }
 
@@ -653,12 +653,12 @@ export class EfectoLanzaguisantes implements IEfectoCarta {
         if (cartaJugada.nombre == "Repetidora"){
             Utilidades.equiparCarta(sala, jugador, cartaJugada, "arma");
             jugador.mano.splice(indiceCarta, 1);
-            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.personaje} se equipó ${cartaJugada.nombre}!`);
             sala.ejecutarAnimacionCarta(client, cartaJugada);
             return true;
             
         } else if (armaActual?.nombre == "Repetidora"){
-            sala.broadcast("notificacion_turno", `${jugador.nombre} jugó ${cartaJugada.nombre} pero ya tiene el Lanzaguisantes mejorado.`);
+            sala.broadcast("notificacion_turno", `${jugador.personaje} jugó ${cartaJugada.nombre} pero ya tiene el Lanzaguisantes mejorado.`);
             sala.ejecutarAnimacionCarta(client, cartaJugada);
             jugador.mano.splice(indiceCarta, 1);
             return true;
@@ -669,14 +669,14 @@ export class EfectoLanzaguisantes implements IEfectoCarta {
             
             Utilidades.equiparCarta(sala, jugador, cartaRepetidora, "arma");
             jugador.mano.splice(indiceCarta, 1);
-            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} mejoró su arma a ${cartaRepetidora.nombre}!`);
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.personaje} mejoró su arma a ${cartaRepetidora.nombre}!`);
             sala.ejecutarAnimacionCarta(client, cartaJugada);
             return true;
             
         } else {
             Utilidades.equiparCarta(sala, jugador, cartaJugada, "arma");
             jugador.mano.splice(indiceCarta, 1);
-            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.nombre} se equipó ${cartaJugada.nombre}!`);
+            sala.broadcast("notificacion_turno", `🔫 ¡${jugador.personaje} se equipó ${cartaJugada.nombre}!`);
             sala.ejecutarAnimacionCarta(client, cartaJugada);
             return true;
         }
@@ -787,7 +787,7 @@ export class EfectoTrebolador implements IEfectoCarta {
         const carta: Carta = Utilidades.descartarCartaAleatoriaDeLaMano(victima)
         if (!carta){
             if (client){
-                client.send("alerta_personal", `No se pudo descartar ninguna carta de ${victima.nombre}`)
+                client.send("alerta_personal", `No se pudo descartar ninguna carta de ${victima.personaje}`)
             } else {
                 console.error("ERROR: client es null en trebolador")
             }
