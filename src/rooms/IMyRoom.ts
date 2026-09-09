@@ -10,6 +10,8 @@ export interface IMyRoom {
     // en un futuro borrar client, creo que no sirve
     agregarAlDescarte(carta: Carta, jugador: Jugador, client: any): void
 
+    descartarCarta(cartaDescartada: Carta, jugador: Jugador, motivo: string): void
+
     reproducirSfx(sfx: string): void
 
     getJugadores(): MapSchema<Jugador>
