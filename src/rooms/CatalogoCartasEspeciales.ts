@@ -225,6 +225,18 @@ export class CatalogoCartasEspeciales {
         return clon
     }
 
+    public static crearHordaDeBloons(): Carta {
+        let clon = new Carta();
+        clon.id = `horda_bloons_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Horda de Bloons";
+        clon.descripcion = "Lanzá bloons a un jugador a tu alcance. Debe usar un BANG!, Barril o perder 1 vida.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivo"; 
+        clon.efecto = "hordaBloons";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
@@ -236,6 +248,7 @@ export class CatalogoCartasEspeciales {
             { id: "superBang", copias: 1},
             { id: "clon", copias: 2 },
             { id: "escopetasReaper", copias: 1 },
+            { id: "hordaDeBloons", copias: 3 },
            // { id: "mortero", copias: 1 },
         ];
     }
@@ -252,6 +265,7 @@ export class CatalogoCartasEspeciales {
             case "clon": return this.crearClon();
             case "escopetasReaper": return this.crearEscopetasReaper();
             case "mortero": return this.crearMortero();
+            case "hordaDeBloons": return this.crearHordaDeBloons()
 
             default: return null;
         }

@@ -1,5 +1,5 @@
 import { Room, Client } from "colyseus";
-import { Carta, HabilidadActiva, Jugador, MyRoomState, OpcionPersonaje } from "./schema/MyRoomState.js";
+import { Carta, HabilidadActiva, Jugador, MyRoomState, OpcionInteraccion, OpcionPersonaje } from "./schema/MyRoomState.js";
 import { DespachadorDeCartas } from "./EfectosCartas.js";
 import { GestorPersonajes } from "./Personajes.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
@@ -15,7 +15,8 @@ export class MyRoom extends Room implements IMyRoom{
     causaDePeligro: string = "";
     colaIndios: string[] = [];
     colaTienda: string[] = [];
-    ruletaInterna: any[] = []; // <-- NUEVO
+    ruletaInterna: any[] = [];
+    colaInteracciones: any[] = [];
     
     
     // Instanciamos nuestros nuevos motores
@@ -23,6 +24,40 @@ export class MyRoom extends Room implements IMyRoom{
     gestorPersonajes = new GestorPersonajes();
 
     private musicaNormal: boolean = false
+
+    encolarInteraccion(idJugador: string, titulo: string, tema: string, opciones: any[]) {
+        this.colaInteracciones.push({ idJugador, titulo, tema, opciones });
+    }
+
+    procesarSiguienteInteraccion() {
+        if (this.colaInteracciones.length > 0) {
+            let sig = this.colaInteracciones.shift();
+            let victima = this.state.jugadores.get(sig.idJugador);
+            
+            if (victima && victima.estaVivo) {
+                this.state.interaccionActiva.idJugadorObjetivo = sig.idJugador;
+                this.state.interaccionActiva.titulo = sig.titulo;
+                this.state.interaccionActiva.temaVisual = sig.tema;
+                
+                this.state.interaccionActiva.opciones.clear();
+                sig.opciones.forEach((op: any) => {
+                    let nuevaOp = new OpcionInteraccion();
+                    nuevaOp.idAccion = op.idAccion;
+                    nuevaOp.texto = op.texto;
+                    nuevaOp.habilitado = op.habilitado;
+                    nuevaOp.color = op.color;
+                    this.state.interaccionActiva.opciones.push(nuevaOp);
+                });
+            } else {
+                this.procesarSiguienteInteraccion(); // Salteamos a los muertos
+            }
+        } else {
+            // Terminó la cadena de interacciones
+            this.state.interaccionActiva.idJugadorObjetivo = "";
+            this.state.atacanteActual = "";
+            this.actualizarMusicaAutomatica(); 
+        }
+    }
 
     avanzarColaDePeligro() {
         this.state.usosBarril = 0;
@@ -223,6 +258,7 @@ export class MyRoom extends Room implements IMyRoom{
             if (this.state.jugadorEligiendoTienda === idVictima) this.avanzarColaTienda();
             if (this.state.jugadorEnDuelo === idVictima) { this.state.jugadorEnDuelo = ""; this.state.oponenteDuelo = ""; }
             if (this.state.jugadorDesenfundando === idVictima) { this.state.jugadorDesenfundando = ""; this.state.motivoDesenfundar = ""; }
+            if (this.state.interaccionActiva.idJugadorObjetivo === idVictima) this.procesarSiguienteInteraccion();
 
             let vivos = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
             totalVivos = 0;
@@ -562,7 +598,7 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.mazo.push(nuevaCarta);
                 });
 
-                let cantidadDeCartasExtension = 8
+                let cantidadDeCartasExtension = 9
                 
                 let poolRaras = CatalogoCartasEspeciales.obtenerPoolExtensiones();
                 
@@ -1124,30 +1160,61 @@ export class MyRoom extends Room implements IMyRoom{
             }, 5000); //<- ruleta
         });
         
-        this.onMessage("responder_indios", (client, datos) => {
-            if (this.state.jugadorBajoAtaqueIndio !== client.sessionId) return;
+        this.onMessage("responder_interaccion", (client, idAccion) => {
+            if (this.state.interaccionActiva.idJugadorObjetivo !== client.sessionId) return;
 
             let victima = this.state.jugadores.get(client.sessionId);
+
+            // ============================================
+            // EL DESPACHADOR CENTRAL DE DECISIONES
+            // Acá vas a ir agregando tus nuevas cartas
+            // ============================================
             
-            if (datos.accion === "descartar") {
-                let indiceBang = victima.mano.findIndex((c: any) => c.id === datos.idCarta);
+            // --- CARTA INDIOS ---
+            if (idAccion === "indios_descartar") {
+                let indiceBang = victima.mano.findIndex((c: any) => c.nombre === "BANG!");
                 if (indiceBang !== -1) {
                     let cartaDescartada = victima.mano.splice(indiceBang, 1)[0];
-                    this.agregarAlDescarte(cartaDescartada)
+                    this.agregarAlDescarte(cartaDescartada);
                     this.broadcast("notificacion_turno", `🛡️ ${victima.nombre} descartó un BANG! y ahuyentó a los Indios.`);
                 }
-                
-                // Como esquivó y está vivo, avanzamos la cola manualmente
-                this.avanzarColaIndios(); 
-                
-            } else if (datos.accion === "dano") {
+                this.procesarSiguienteInteraccion(); 
+            } 
+            else if (idAccion === "indios_dano") {
                 this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por los Indios!`);
                 let asesino = this.state.jugadores.get(this.state.atacanteActual);
-                
                 Utilidades.procesarDano(this, victima, asesino, 1, "INDIOS");
-
+                
                 if (victima.vidas > 0) {
-                    this.avanzarColaIndios();
+                    this.procesarSiguienteInteraccion();
+                }
+            }
+
+            // --- EJEMPLO: CARTA HORDA DE BLOONS ---
+            else if (idAccion === "bloons_bang") {
+                let indiceBang = victima.mano.findIndex((c: any) => c.nombre === "BANG!");
+                if (indiceBang !== -1) {
+                    let cartaDescartada = victima.mano.splice(indiceBang, 1)[0];
+                    this.agregarAlDescarte(cartaDescartada);
+                    this.broadcast("notificacion_turno", `🎈 ¡${victima.nombre} disparó un BANG! y reventó la horda de Bloons!`);
+                }
+                this.procesarSiguienteInteraccion(); 
+            }
+            else if (idAccion === "bloons_barril") {
+                let barril = Utilidades.quitarEquipamiento(victima, "barril");
+                if (barril) {
+                    this.agregarAlDescarte(barril, victima, client);
+                    this.broadcast("notificacion_turno", `🎈 ¡${victima.nombre} se escondió en su Barril pero los Bloons lo destruyeron! (Salió ileso)`);
+                }
+                this.procesarSiguienteInteraccion();
+            }
+            else if (idAccion === "bloons_dano") {
+                this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por la horda de Bloons!`);
+                let asesino = this.state.jugadores.get(this.state.atacanteActual);
+                Utilidades.procesarDano(this, victima, asesino, 1, "BLOONS");
+                
+                if (victima.vidas > 0) {
+                    this.procesarSiguienteInteraccion();
                 }
             }
         });
@@ -1910,7 +1977,8 @@ export class MyRoom extends Room implements IMyRoom{
                 this.state.jugadorBajoAtaqueIndio !== "" ||
                 this.state.jugadorEligiendoTienda !== "" ||
                 this.state.jugadorEnDuelo !== "" ||
-                this.state.jugadorDesenfundando !== "");
+                this.state.jugadorDesenfundando !== "" ||
+                this.state.interaccionActiva.idJugadorObjetivo !== "");
     }
 
     descartarCarta(cartaDescartada: Carta, jugador: Jugador, motivo: string){

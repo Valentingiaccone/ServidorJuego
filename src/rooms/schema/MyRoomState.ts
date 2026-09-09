@@ -1,5 +1,19 @@
 import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
+export class OpcionInteraccion extends Schema {
+    @type("string") idAccion: string = "";
+    @type("string") texto: string = "";
+    @type("boolean") habilitado: boolean = true;
+    @type("string") color: string = "blanco"; 
+}
+
+export class InteraccionRequest extends Schema {
+    @type("string") idJugadorObjetivo: string = "";
+    @type("string") titulo: string = "";
+    @type("string") temaVisual: string = ""; 
+    @type([OpcionInteraccion]) opciones = new ArraySchema<OpcionInteraccion>();
+}
+
 export class Carta extends Schema {
     @type("string") id: string = "";
     @type("string") nombre: string = "";
@@ -114,4 +128,5 @@ export class MyRoomState extends Schema {
     @type("string") ruletaRojo: string = "";
     @type("boolean") faseTransicion: boolean = false; 
     @type(["string"]) ordenSillasFisicas = new ArraySchema<string>();
+    @type(InteraccionRequest) interaccionActiva = new InteraccionRequest();
 }

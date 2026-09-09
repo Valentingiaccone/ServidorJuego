@@ -151,13 +151,13 @@ export class EfectoTiratachuela implements IEfectoCarta {
 
 export class EfectoIndios implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        sala.colaIndios = [];
+        let victimasIds: string[] = [];
         
         sala.state.jugadores.forEach((j: any, sessionId: string) => {
-            if (j.estaVivo && sessionId !== client.sessionId) sala.colaIndios.push(sessionId);
+            if (j.estaVivo && sessionId !== client.sessionId) victimasIds.push(sessionId);
         });
 
-        if (sala.colaIndios.length > 0) {
+        if (victimasIds.length > 0) {
             jugadorQueJuega.mano.splice(indiceCarta, 1);
             sala.agregarAlDescarte(cartaJugada);
             
@@ -165,11 +165,25 @@ export class EfectoIndios implements IEfectoCarta {
             sala.ejecutarAnimacionCarta(client, cartaJugada)
             sala.broadcast("musica", "indiadaOst")
             sala.state.atacanteActual = client.sessionId;
-            sala.avanzarColaIndios();
-            return true
+            
+            // --- EL NUEVO SISTEMA EN ACCIÓN ---
+            victimasIds.forEach(idVictima => {
+                let victima = sala.state.jugadores.get(idVictima);
+                // Le evaluamos la mano para saber si habilitar el botón
+                let tieneBang = victima.mano.some((c: any) => c.nombre === "BANG!");
+                
+                sala.encolarInteraccion(idVictima, "¡Ataque de Indios!\nDefendete o perdé 1 vida.", "indios", [
+                    { idAccion: "indios_descartar", texto: "Descartar BANG!", habilitado: tieneBang, color: "verde" },
+                    { idAccion: "indios_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
+                ]);
+            });
+            
+            // Disparamos el primer panel
+            sala.procesarSiguienteInteraccion();
+            return true;
         } else {
             client.send("alerta_personal", "No hay nadie vivo para atacar.");
-            return false
+            return false;
         }
     }
 }
@@ -889,6 +903,43 @@ export class EfectoGranDesaparicion implements IEfectoCarta {
     }
 }
 
+export class EfectoHordaBloons implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        // 1. Identificamos a la víctima
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
+            return false;
+        }
+
+        // 2. Consumimos la carta
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        sala.broadcast("notificacion_turno", `🎈 ¡${jugadorQueJuega.personaje} le mandó una Horda de Bloons a ${victima.personaje}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+
+        sala.state.atacanteActual = client.sessionId;
+
+        let tieneBang = victima.mano.some((c: any) => c.nombre === "BANG!");
+        let tieneBarril = victima.equipamiento.has("barril");
+
+        sala.encolarInteraccion(idObjetivo, `¡${jugadorQueJuega.personaje} te ataca con Bloons!\nElegí cómo defenderte:`, "bloons", [
+            { idAccion: "bloons_bang", texto: "Reventarlos (Usa BANG!)", habilitado: tieneBang, color: "verde" },
+            { idAccion: "bloons_barril", texto: "Cubrirse (Pierde Barril)", habilitado: tieneBarril, color: "azul" },
+            { idAccion: "bloons_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
+        ]);
+
+        // 6. Disparamos la cola
+        sala.procesarSiguienteInteraccion();
+        
+        return true;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -924,6 +975,7 @@ export class DespachadorDeCartas {
         "petaseta": new EfectoPetaseta(),
         "humoseta": new EfectoHumoseta(),
         "granDesaparicion": new EfectoGranDesaparicion(),
+        "hordaBloons": new EfectoHordaBloons(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
