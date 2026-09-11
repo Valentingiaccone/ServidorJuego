@@ -785,10 +785,7 @@ export class MyRoom extends Room implements IMyRoom{
                         // --- EL DESPACHADOR ACTÚA ---
                         const esValido: boolean = this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, client, jugador, cartaJugada, indiceCarta, partesEfecto, this.gestorPersonajes);
                         if (esValido){
-                            let pasiva = this.gestorPersonajes.obtener(jugador.personaje)
-                            if (pasiva && pasiva.onJugarCarta){
-                                pasiva.onJugarCarta(this, jugador, cartaJugada)
-                            }
+                            this.ejecutarPasivasAlJugarCarta(jugador, cartaJugada)
                         }
                     }
                 }
@@ -819,10 +816,7 @@ export class MyRoom extends Room implements IMyRoom{
 
                         // Si fue válida (nadie tenía la vida llena, etc.), activamos pasivas
                         if (jugadaExitosa) {
-                            let pasivaJugadorActual = this.gestorPersonajes.obtener(jugador.personaje);
-                            if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-                                pasivaJugadorActual.onJugarCarta(this, jugador, cartaJugada);
-                            }
+                            this.ejecutarPasivasAlJugarCarta(jugador, cartaJugada)
                         }
                     }
                 }
@@ -858,10 +852,7 @@ export class MyRoom extends Room implements IMyRoom{
                 this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
                 this.broadcast("sfx", "panico");
 
-                let pasiva = this.gestorPersonajes.obtener(atacante.personaje);
-                if (pasiva && pasiva.onJugarCarta){
-                    pasiva.onJugarCarta(this, atacante, cartaSabotaje);
-                }
+                this.ejecutarPasivasAlJugarCarta(atacante, cartaSabotaje)
             }
 
             atacante.mano.splice(indiceCartaJugada, 1);
@@ -885,10 +876,7 @@ export class MyRoom extends Room implements IMyRoom{
                 const sfx: string = "cocoroch" + numero
                 this.broadcast("sfx", sfx)
 
-                let pasiva = this.gestorPersonajes.obtener(atacante.personaje)
-                if (pasiva && pasiva.onJugarCarta){
-                    pasiva.onJugarCarta(this, atacante, cartaUsada)
-                }
+                this.ejecutarPasivasAlJugarCarta(atacante, cartaUsada)
             }
         });
 
@@ -1310,9 +1298,7 @@ export class MyRoom extends Room implements IMyRoom{
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
                     this.ejecutarAnimacionCarta(client, cartaUsada);
                 
-                    if (pasivaAtacante && pasivaAtacante.onJugarCarta){
-                        pasivaAtacante.onJugarCarta(this, atacante, cartaUsada);
-                    }
+                    this.ejecutarPasivasAlJugarCarta(atacante, cartaUsada)
                 }
             }
         });
@@ -1335,10 +1321,7 @@ export class MyRoom extends Room implements IMyRoom{
                 let victima = this.state.jugadores.get(datos.idObjetivo);
                 this.broadcast("notificacion_turno", `⚔️ ¡${atacante.nombre} retó a duelo a ${victima?.nombre}!`);
             
-                let pasiva = this.gestorPersonajes.obtener(atacante.personaje)
-                if (pasiva && pasiva.onJugarCarta){
-                    pasiva.onJugarCarta(this, atacante, cartaUsada)
-                }
+                this.ejecutarPasivasAlJugarCarta(atacante, cartaUsada)
             }
         });
 
@@ -1386,10 +1369,7 @@ export class MyRoom extends Room implements IMyRoom{
                 this.broadcast("notificacion_turno", `⛓️ ¡${atacante.nombre} mandó a la cárcel a ${victima.nombre}!`);
                 this.broadcast("sfx", "prision")
 
-                let pasiva = this.gestorPersonajes.obtener(atacante.personaje)
-                if (pasiva && pasiva.onJugarCarta){
-                    pasiva.onJugarCarta(this, atacante, cartaUsada)
-                }
+                this.ejecutarPasivasAlJugarCarta(atacante, cartaUsada)
             }
         });
 
@@ -1444,10 +1424,7 @@ export class MyRoom extends Room implements IMyRoom{
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
                         this.ejecutarAnimacionCarta(client, carta)
                     
-                        let pasivaJugadorActual = this.gestorPersonajes.obtener(victima.personaje);
-                        if (pasivaJugadorActual && pasivaJugadorActual.onJugarCarta) {
-                            pasivaJugadorActual.onJugarCarta(this, victima, carta);
-                        }
+                       this.ejecutarPasivasAlJugarCarta(victima, carta)
                     }
                 }
                 else {
@@ -2053,5 +2030,21 @@ export class MyRoom extends Room implements IMyRoom{
         }
 
         this.broadcast("animacion_carta", { idJugador: client.sessionId, carta: carta});
+    }
+
+    private ejecutarPasivasAlJugarCarta(jugadorQueJuega: Jugador, cartaJugada: Carta){
+        let pasiva = this.gestorPersonajes.obtener(jugadorQueJuega.personaje)
+        if (pasiva && pasiva.onJugarCarta){
+            pasiva.onJugarCarta(this, jugadorQueJuega, cartaJugada)
+        }
+
+        this.state.jugadores.forEach((j: Jugador) => {
+            if (j){
+                let p = this.gestorPersonajes.obtener(j.personaje)
+                if (p && p.onJugarCartaGlobal){
+                    p.onJugarCartaGlobal(this, j, jugadorQueJuega, cartaJugada)
+                }
+            }
+        });
     }
 }

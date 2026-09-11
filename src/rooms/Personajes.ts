@@ -66,6 +66,8 @@ export interface IPersonaje {
     onIniciarTurno?(sala: IMyRoom, miJugador: Jugador): void
 
     onGolpear?(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void
+
+    onJugarCartaGlobal?(sala: IMyRoom, miJugador: Jugador, jugadorQueJuega: Jugador, cartaJugada: Carta): void;
 }
 
 export class ColeCasiddy implements IPersonaje {
@@ -1065,6 +1067,18 @@ export class Maya implements IPersonaje {
         });
     }
 
+    onJugarCartaGlobal(sala: IMyRoom, miJugador: Jugador, jugadorQueJuega: Jugador, cartaJugada: Carta): void {
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
+            if (pasiva.onJugarCartaGlobal) pasiva.onJugarCartaGlobal(sala, miJugador, jugadorQueJuega, cartaJugada);
+        });
+    }
+
+    onSacarEmbrujoEnRuleta(sala: any, miJugador: Jugador, tipo: string): void {
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
+            if (pasiva.onSacarEmbrujoEnRuleta) pasiva.onSacarEmbrujoEnRuleta(sala, miJugador, tipo);
+        });
+    }
+
 
     // --- HOOKS DE NÚMEROS Y VARIABLES ---
 
@@ -1994,7 +2008,7 @@ export class Pedro implements IPersonaje {
 
 export class Amelia implements IPersonaje {
     nombre = "Amelia";
-    habilidad = "Amelia la asombrosa:\nAl pasar el turno gana un escudo (no sirve en 1vs1), cada 3 cartas que juega gana un escudo, cada vez que roba, roba una extra, cada 2 vidas que pierde por culpa de otro jugador, gana una Gran desaparicion (hace desaparecer todo el equipamiento, va dirigido al jugador que la golpeó), puede descartar sus 2 cartas de la izquierda para ganar tantos escudos como cartas en mano tenga luego del descarte (recarga 3 rondas), puede perder 1 vida para que sus escudos actuales duren un turno mas (recarga 2 rondas), para pasar el turno debe tener su salud -2 cartas en mano.";
+    habilidad = "Amelia la asombrosa:\nAl pasar el turno gana un escudo (no sirve en 1vs1), cada 4 cartas que juega gana un escudo, cada vez que roba, roba una extra, cada 2 vidas que pierde por culpa de otro jugador, gana una Gran desaparicion (hace desaparecer todo el equipamiento, va dirigido al jugador que la golpeó), puede descartar sus 2 cartas de la izquierda para ganar tantos escudos como cartas en mano tenga luego del descarte (recarga 3 rondas), puede perder 1 vida para que sus escudos actuales duren un turno mas (recarga 2 rondas), para pasar el turno debe tener su salud -2 cartas en mano.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmelia", false];
@@ -2072,7 +2086,7 @@ export class Amelia implements IPersonaje {
 
         jugador.number.set("ameliaJugadas", jugador.number.get("ameliaJugadas") + 1)
 
-        if (jugador.number.get("ameliaJugadas") >= 3){
+        if (jugador.number.get("ameliaJugadas") >= 4){
             jugador.number.set("ameliaJugadas", 0)
 
             Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
@@ -2217,6 +2231,7 @@ export class Microbios implements IPersonaje {
     habilidad = "Microbios traviesos:\nAl jugar una carta se mueve a antihorario. A los jugadores que sobrepasa les roba una carta aleatoria (2 veces, se recarga al inicio del turno). Para pasar el turno deben tener su salud - 1 cartas en mano.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxDefault = "sfxMicrobios"
 
     onIniciarPartida(sala: any, jugador: any): void {
         if (!jugador){
@@ -2277,6 +2292,8 @@ export class PerroNinja implements IPersonaje {
     habilidad = "Corte preciso:\nPor cada vida que vaya a perder, si puede descarta tu Bang! de la izquierda para defenderse.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muertePerroNinja", false];
+    sfxDefault = "sfxPerroNinja"
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         if (!victima){
@@ -2305,6 +2322,46 @@ export class PerroNinja implements IPersonaje {
                 } else {
                     break; 
                 }
+            }
+        }
+    }
+}
+
+export class Monito implements IPersonaje {
+    nombre = "Monito";
+    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano, roba una carta.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteMonito", false];
+    sfxDefault = "sfxMonito"
+
+    onJugarCartaGlobal(sala: IMyRoom, miJugador: Jugador, jugadorQueJuega: Jugador, cartaJugada: Carta): void {
+        if (!miJugador){
+            console.error("ERROR: miJugador no existe en onJugarCartaGlobal de Monito")
+            return
+        }
+        if (!jugadorQueJuega){
+            console.error("ERROR: jugadorQueJuega no existe en onJugarCartaGlobal de Monito")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala no existe en onJugarCartaGlobal de Monito")
+            return
+        }
+        if (!cartaJugada){
+            console.error("ERROR: cartaJugada no existe en onJugarCartaGlobal de Monito")
+            return
+        }
+
+        if (miJugador.estaVivo && miJugador != jugadorQueJuega){
+            let tieneCopia = miJugador.mano.some((c: Carta) => c.nombre === cartaJugada.nombre);
+
+            if (tieneCopia) {
+                sala.repartirCartas(miJugador, 1, "pasiva");
+                
+                sala.agregarRegistro(`🐒 ¡${miJugador.personaje} copió a ${jugadorQueJuega.personaje}! Como tiene un ${cartaJugada.nombre} en mano, roba 1 carta.`);
+                
+                sala.reproducirSfx("sfxMonito");
             }
         }
     }
@@ -2359,6 +2416,7 @@ export class GestorPersonajes {
         this.registrar(new Amelia())
         this.registrar(new Microbios())
         this.registrar(new PerroNinja())
+        this.registrar(new Monito())
 
 
 
