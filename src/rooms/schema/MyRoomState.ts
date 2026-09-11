@@ -22,7 +22,7 @@ export class Carta extends Schema {
     @type("string") tipoDeUso: string = ""; 
     @type("string") efecto: string = "";    
     @type("boolean") esConjurada: boolean = false;
-    @type("string") tipoEmbrujo: string = ""; 
+    @type("string") tipoEmbrujo: "bueno" | "malo" | "" = ""; 
     @type("number") prioridadBang: number = 0; 
     @type("string") idDuenoDelPerro: string = "";
     @type("string") idGranDesaparicion: string = "";

@@ -1116,35 +1116,42 @@ export class MyRoom extends Room implements IMyRoom{
                         if (victima) victima.embrujos.clear(); // Limpiamos la ruleta de embrujos para el proximo turno
                         
                         if (fueExitoStr === "dano") {
-                            this.broadcast("notificacion_turno", `👻 ¡El embrujo hirió a ${victima?.nombre}! Pierde 1 vida.`);
+                            this.broadcast("notificacion_turno", `👻 ¡El embrujo hirió a ${victima?.personaje}! Pierde 1 vida.`);
                             Utilidades.procesarDano(this, victima, null, 1, "EMBRUJO", true);
                         } else if (fueExitoStr === "curar") {
                             if (victima && Utilidades.puedeRecibirCuracion(this, victima)) {
                                 Utilidades.aplicarCuracion(this, victima, 1, "EMBRUJO", true);
-                                this.broadcast("notificacion_turno", `👻 ¡El embrujo sanó a ${victima?.nombre}!`);
+                                this.broadcast("notificacion_turno", `👻 ¡El embrujo sanó a ${victima?.personaje}!`);
                             } else {
-                                this.broadcast("notificacion_turno", `👻 El embrujo intentó sanar a ${victima?.nombre}, pero ya estaba al máximo.`);
+                                this.broadcast("notificacion_turno", `👻 El embrujo intentó sanar a ${victima?.personaje}, pero ya estaba al máximo.`);
                             }
                         } else if (fueExitoStr === "robar") {
                             if (victima) this.repartirCartas(victima, 1, "embrujo");
-                            this.broadcast("notificacion_turno", `👻 ¡El embrujo le dio una carta extra a ${victima?.nombre}!`);
+                            this.broadcast("notificacion_turno", `👻 ¡El embrujo le dio una carta extra a ${victima?.personaje}!`);
                         } else if (fueExitoStr === "descartar") {
                             if (victima && victima.mano.length > 0) {
                                 let c = victima.mano.splice(Math.floor(Math.random() * victima.mano.length), 1)[0];
                                 this.descartarCarta(c, victima, "EMBRUJO")
-                                this.broadcast("notificacion_turno", `👻 ¡El embrujo descartó una carta de ${victima.nombre}!`);
+                                this.broadcast("notificacion_turno", `👻 ¡El embrujo descartó una carta de ${victima?.personaje}!`);
                             } else {
-                                this.broadcast("notificacion_turno", `👻 El embrujo falló, la mano de ${victima?.nombre} estaba vacía.`);
+                                this.broadcast("notificacion_turno", `👻 El embrujo falló, la mano de ${victima?.personaje} estaba vacía.`);
                             }
                         } else if (fueExitoStr === "comilon") {
                             let cartaDevorada = Utilidades.descartarEquipamientoAleatorio(this, victima, client);
                             if (cartaDevorada) {
-                                this.broadcast("notificacion_turno", `👻 ¡El embrujo devoró un equipamiento ${cartaDevorada.nombre} de ${victima.nombre}!`);
+                                this.broadcast("notificacion_turno", `👻 ¡El embrujo devoró un equipamiento ${cartaDevorada.nombre} de ${victima?.personaje}!`);
                             } else {
-                                this.broadcast("notificacion_turno", `👻 El embrujo falló, ${victima?.nombre} no tenía ningún equipamiento.`);
+                                this.broadcast("notificacion_turno", `👻 El embrujo falló, ${victima?.personaje} no tenía ningún equipamiento.`);
+                            }
+                        } else if (fueExitoStr === "libro") {
+                            let textoMejora: string = Utilidades.mejorarEquipamientoAleatorio(this, victima)
+                            if (textoMejora != "") {
+                                this.broadcast("notificacion_turno", `👻 ¡El embrujo afecta a ${victima?.personaje} y mejora ${textoMejora}!`);
+                            } else {
+                                this.broadcast("notificacion_turno", `👻 El embrujo falló, ${victima?.personaje} no tenía ningún equipamiento que se pueda mejorar.`);
                             }
                         } else {
-                            this.broadcast("notificacion_turno", `💨 ¡${victima?.nombre} tuvo suerte y se salvó del embrujo!`);
+                            this.broadcast("notificacion_turno", `💨 ¡${victima?.personaje} tuvo suerte y se salvó del embrujo!`);
                         }
 
                         let pasiva = this.gestorPersonajes.obtener(victima.personaje)

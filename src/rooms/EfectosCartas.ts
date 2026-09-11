@@ -161,7 +161,7 @@ export class EfectoIndios implements IEfectoCarta {
             jugadorQueJuega.mano.splice(indiceCarta, 1);
             sala.agregarAlDescarte(cartaJugada);
             
-            sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.nombre} lanzó un ataque de ¡Indios!`);
+            sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.personaje} lanzó un ataque de ¡Indios!`);
             sala.ejecutarAnimacionCarta(client, cartaJugada)
             sala.broadcast("musica", "indiadaOst")
             sala.state.atacanteActual = client.sessionId;
@@ -172,7 +172,7 @@ export class EfectoIndios implements IEfectoCarta {
                 // Le evaluamos la mano para saber si habilitar el botón
                 let tieneBang = victima.mano.some((c: any) => c.nombre === "BANG!");
                 
-                sala.encolarInteraccion(idVictima, "¡Ataque de Indios!\nDefendete o perdé 1 vida.", "indios", [
+                sala.encolarInteraccion(idVictima, `¡${jugadorQueJuega.personaje} te ataca con indios!`, "indios", [
                     { idAccion: "indios_descartar", texto: "Descartar BANG!", habilitado: tieneBang, color: "verde" },
                     { idAccion: "indios_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
                 ]);
@@ -927,7 +927,7 @@ export class EfectoHordaBloons implements IEfectoCarta {
         let tieneBang = victima.mano.some((c: any) => c.nombre === "BANG!");
         let tieneBarril = victima.equipamiento.has("barril");
 
-        sala.encolarInteraccion(idObjetivo, `¡${jugadorQueJuega.personaje} te ataca con Bloons!\nElegí cómo defenderte:`, "bloons", [
+        sala.encolarInteraccion(idObjetivo, `¡${jugadorQueJuega.personaje} te ataca con Bloons!`, "bloons", [
             { idAccion: "bloons_bang", texto: "Reventarlos (Usa BANG!)", habilitado: tieneBang, color: "verde" },
             { idAccion: "bloons_barril", texto: "Cubrirse (Pierde Barril)", habilitado: tieneBarril, color: "azul" },
             { idAccion: "bloons_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }

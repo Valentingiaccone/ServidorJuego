@@ -307,7 +307,7 @@ export class CatalogoCartasEspeciales {
     }
 
     public static crearCartaFantasmaAleatoria(): Carta {
-        let opciones = ["dano", "curar", "robar", "descartar", "comilon"];
+        let opciones = ["dano", "curar", "robar", "descartar", "comilon", "libro"];
         let elegida = opciones[Math.floor(Math.random() * opciones.length)];
         
         let clon = new Carta();
@@ -345,6 +345,12 @@ export class CatalogoCartasEspeciales {
             clon.descripcionEnCatalan = "Afegeix 3 espais d eliminació d equipament a la ruleta d un jugador viu.";
             clon.efecto = "embrujar_comilon_3";
             clon.tipoEmbrujo = "malo"
+        } else if (elegida === "libro") {
+            clon.nombre = "Libro encantado";
+            clon.descripcion = "Agrega 3 espacios de mejora de equipamiento en la ruleta de un jugador vivo.";
+            clon.descripcionEnCatalan = ".";
+            clon.efecto = "embrujar_libro_3";
+            clon.tipoEmbrujo = "bueno"
         }
         return clon;
     }
