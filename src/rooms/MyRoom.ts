@@ -78,23 +78,6 @@ export class MyRoom extends Room implements IMyRoom{
         }
     }
 
-    avanzarColaIndios() {
-        if (this.colaIndios.length > 0) {
-            this.state.jugadorBajoAtaqueIndio = this.colaIndios.shift(); 
-            let victima = this.state.jugadores.get(this.state.jugadorBajoAtaqueIndio);
-            if (victima && victima.estaVivo) {
-                this.broadcast("notificacion_turno", `🏹 ¡Los Indios atacan a ${victima.nombre}! ¿Tendrá un BANG!?`);
-            } else {
-                this.avanzarColaIndios()
-            }
-        } else {
-            this.state.jugadorBajoAtaqueIndio = "";
-            this.state.atacanteActual = "";
-            this.actualizarMusicaAutomatica()
-            this.broadcast("notificacion_turno", `⛺ El ataque de los Indios ha terminado.`);
-        }
-    }
-
     avanzarColaTienda() {
         if (this.colaTienda.length > 0) {
             this.state.jugadorEligiendoTienda = this.colaTienda.shift();
@@ -254,7 +237,6 @@ export class MyRoom extends Room implements IMyRoom{
 
             if (this.state.jugadorEnPeligro === idVictima) this.avanzarColaDePeligro();
             if (this.state.jugadorDebeDescartar === idVictima) this.state.jugadorDebeDescartar = "";
-            if (this.state.jugadorBajoAtaqueIndio === idVictima) this.avanzarColaIndios();
             if (this.state.jugadorEligiendoTienda === idVictima) this.avanzarColaTienda();
             if (this.state.jugadorDesenfundando === idVictima) { this.state.jugadorDesenfundando = ""; this.state.motivoDesenfundar = ""; }
             if (this.state.interaccionActiva.idJugadorObjetivo === idVictima) this.procesarSiguienteInteraccion();
@@ -866,8 +848,8 @@ export class MyRoom extends Room implements IMyRoom{
             
             if (indiceCartaJugada !== -1) {
                 let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
-                this.agregarAlDescarte(cartaUsada)
                 this.ejecutarAnimacionCarta(client, cartaUsada)
+                this.agregarAlDescarte(cartaUsada)
 
                 this.state.jugadorDebeDescartar = datos.idObjetivo;
                 this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
@@ -1322,6 +1304,7 @@ export class MyRoom extends Room implements IMyRoom{
                 if (cartaUsada && (cartaUsada.efecto === "dano_1" || cartaUsada.efecto === "dano_2")) {
                     atacante.yaDisparo = true;
                     atacante.mano.splice(indiceCarta, 1);
+                    this.ejecutarAnimacionCarta(client, cartaUsada);
                     this.agregarAlDescarte(cartaUsada);
                     
                     this.state.jugadorEnPeligro = datosDelDisparo.objetivoId;
@@ -1335,7 +1318,6 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.usosBarril = 0;
                     
                     this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-                    this.ejecutarAnimacionCarta(client, cartaUsada);
                 
                     this.ejecutarPasivasAlJugarCarta(atacante, cartaUsada)
                 }
@@ -1407,10 +1389,10 @@ export class MyRoom extends Room implements IMyRoom{
                     if (indice !== -1 && victima.mano[indice].efecto === "esquivar") {
                         let carta = victima.mano[indice];
                         victima.mano.splice(indice, 1);
+                        this.ejecutarAnimacionCarta(client, carta)
                         this.agregarAlDescarte(carta)
                         
                         this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
-                        this.ejecutarAnimacionCarta(client, carta)
                     
                        this.ejecutarPasivasAlJugarCarta(victima, carta)
                     }
@@ -1598,9 +1580,6 @@ export class MyRoom extends Room implements IMyRoom{
             }
             if (this.state.jugadorDebeDescartar === client.sessionId) {
                 this.state.jugadorDebeDescartar = "";
-            }
-            if (this.state.jugadorBajoAtaqueIndio === client.sessionId) {
-                this.avanzarColaIndios();
             }
             if (this.state.jugadorEligiendoTienda === client.sessionId) {
                 this.avanzarColaTienda();
@@ -1941,7 +1920,6 @@ export class MyRoom extends Room implements IMyRoom{
         return (this.state.faseTransicion ||
                 this.state.jugadorEnPeligro !== "" || 
                 this.state.jugadorDebeDescartar !== "" || 
-                this.state.jugadorBajoAtaqueIndio !== "" ||
                 this.state.jugadorEligiendoTienda !== "" ||
                 this.state.jugadorDesenfundando !== "" ||
                 this.state.interaccionActiva.idJugadorObjetivo !== "");

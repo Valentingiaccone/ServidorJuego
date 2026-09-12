@@ -129,7 +129,6 @@ export class EfectoTiratachuela implements IEfectoCarta {
 
         if (sala.colaDePeligro.length > 0) {
             jugadorQueJuega.mano.splice(indiceCarta, 1);
-            sala.agregarAlDescarte(cartaJugada);
             sala.state.atacanteActual = client.sessionId;
 
             // --- LA CORRECCIÓN ACÁ ---
@@ -138,6 +137,7 @@ export class EfectoTiratachuela implements IEfectoCarta {
             
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
             sala.ejecutarAnimacionCarta(client, cartaJugada)
+            sala.agregarAlDescarte(cartaJugada);
             sala.broadcast("musica", "tiratachueladaOst")
             
             sala.avanzarColaDePeligro();
@@ -159,10 +159,10 @@ export class EfectoIndios implements IEfectoCarta {
 
         if (victimasIds.length > 0) {
             jugadorQueJuega.mano.splice(indiceCarta, 1);
-            sala.agregarAlDescarte(cartaJugada);
             
             sala.broadcast("notificacion_turno", `🔥 ¡${jugadorQueJuega.personaje} lanzó un ataque de ¡Indios!`);
             sala.ejecutarAnimacionCarta(client, cartaJugada)
+            sala.agregarAlDescarte(cartaJugada);
             sala.broadcast("musica", "indiadaOst")
             sala.state.atacanteActual = client.sessionId;
             
@@ -220,8 +220,8 @@ export class EfectoTiendaGriff implements IEfectoCarta {
 
         // 3. Consumir la carta e iniciar la tienda
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.agregarAlDescarte(cartaJugada);
         
         sala.avanzarColaTienda();
         return true
@@ -261,9 +261,9 @@ export class EfectoTiendaJuju implements IEfectoCarta {
 
         // 3. Consumir la carta e iniciar la tienda
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada);
         sala.broadcast("sfx", "sfxJujuTienda");
         sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.agregarAlDescarte(cartaJugada);
         
         // Llamamos a la función unificada
         sala.avanzarColaTienda();
@@ -479,7 +479,6 @@ export class EfectoRayo implements IEfectoCarta {
         // ¡LA MAGIA ACÁ! 1. Consumimos la carta ANTES de hacer cualquier cálculo.
         // Así el índice nunca se rompe por recompensas, robos pasivos o muertes.
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         // 2. Buscamos cuál es la salud más alta
         let maximaSalud = -1;
@@ -506,6 +505,7 @@ export class EfectoRayo implements IEfectoCarta {
 
         sala.broadcast("notificacion_turno", `⚡ ¡${jugadorQueJuega.nombre} invocó un Rayo sobre los jugadores con más salud!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         sala.broadcast("sfx", "rayo")
 
         // 4. Aplicamos el daño
@@ -595,7 +595,6 @@ export class EfectoClonarMano implements IEfectoCarta {
         }
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         let indiceAleatorio = Math.floor(Math.random() * cartasOriginalesEnMano.length);
         let cartaAClonar = cartasOriginalesEnMano[indiceAleatorio];
@@ -622,6 +621,7 @@ export class EfectoClonarMano implements IEfectoCarta {
 
         sala.broadcast("notificacion_turno", `🪞 ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre}, sacrificó una carta original y fabricó 2 clones!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         sala.broadcast("sfx", "tilinkPasiva");
 
         return true;
@@ -648,10 +648,10 @@ export class EfectoValerieLadrona implements IEfectoCarta {
         jugadorQueJuega.mano.push(cartaRobada);
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         sala.broadcast("notificacion_turno", `🐸 ¡${jugadorQueJuega.personaje} jugó ${cartaJugada.nombre} y le robó una carta a ${victima.personaje}!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         sala.broadcast("sfx", "sfxLesly"); 
 
         return true; 
@@ -749,7 +749,6 @@ export class EfectoImitadora implements IEfectoCarta {
         }
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         let indiceAleatorio = Math.floor(Math.random() * cartasPlanta.length);
         let cartaAClonar = cartasPlanta[indiceAleatorio];
@@ -769,6 +768,7 @@ export class EfectoImitadora implements IEfectoCarta {
 
         sala.broadcast("notificacion_turno", `🌱 ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre} y creó un clon de una planta!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         
         sala.broadcast("sfx", "tilinkPasiva");
 
@@ -822,7 +822,6 @@ export class EfectoTrebolador implements IEfectoCarta {
 export class EfectoPetaseta implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         let idsJugadores = Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
@@ -840,6 +839,7 @@ export class EfectoPetaseta implements IEfectoCarta {
 
         sala.broadcast("notificacion_turno", `🌋 ¡${jugadorQueJuega.nombre} invocó una Petaseta!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         victimasIds.forEach(id => {
             let victima = sala.state.jugadores.get(id);
@@ -896,7 +896,9 @@ export class EfectoGranDesaparicion implements IEfectoCarta {
                 jugadorQueJuega.mano.splice(indiceCarta, 1);
                 Utilidades.destruirTodosLosEquipamientos(sala, jugadorVinculado)
                 sala.agregarRegistro(`🎩 ${jugadorQueJuega.personaje} le hace desaparecer todo el equipamiento a ${jugadorVinculado.personaje}`)
-            
+                sala.ejecutarAnimacionCarta(client, cartaJugada)
+                sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+                
                 return true
             }
         }
@@ -917,10 +919,10 @@ export class EfectoHordaBloons implements IEfectoCarta {
 
         // 2. Consumimos la carta
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         sala.broadcast("notificacion_turno", `🎈 ¡${jugadorQueJuega.personaje} le mandó una Horda de Bloons a ${victima.personaje}!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         sala.state.atacanteActual = client.sessionId;
 
@@ -951,16 +953,16 @@ export class EfectoDuelo implements IEfectoCarta {
         }
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
         sala.broadcast("notificacion_turno", `⚔️ ¡${jugadorQueJuega.nombre} retó a duelo a ${victima.nombre}!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         
         sala.state.atacanteActual = client.sessionId; 
 
         let tieneBang = victima.mano.some((c: any) => c.nombre === "BANG!");
 
-        sala.encolarInteraccion(idObjetivo, `¡${jugadorQueJuega.nombre} te retó a un Duelo!\nDescartá un BANG! o perdé 1 vida:`, "duelo", [
+        sala.encolarInteraccion(idObjetivo, `¡${jugadorQueJuega.nombre} te retó a un Duelo!`, "duelo", [
             { idAccion: "duelo_descartar", texto: "Descartar BANG!", habilitado: tieneBang, color: "verde" },
             { idAccion: "duelo_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
         ]);
@@ -1006,6 +1008,7 @@ export class DespachadorDeCartas {
         "humoseta": new EfectoHumoseta(),
         "granDesaparicion": new EfectoGranDesaparicion(),
         "hordaBloons": new EfectoHordaBloons(),
+        "duelo": new EfectoDuelo(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
