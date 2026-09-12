@@ -940,6 +940,36 @@ export class EfectoHordaBloons implements IEfectoCarta {
     }
 }
 
+export class EfectoDuelo implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
+            return false;
+        }
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        sala.broadcast("notificacion_turno", `⚔️ ¡${jugadorQueJuega.nombre} retó a duelo a ${victima.nombre}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        
+        sala.state.atacanteActual = client.sessionId; 
+
+        let tieneBang = victima.mano.some((c: any) => c.nombre === "BANG!");
+
+        sala.encolarInteraccion(idObjetivo, `¡${jugadorQueJuega.nombre} te retó a un Duelo!\nDescartá un BANG! o perdé 1 vida:`, "duelo", [
+            { idAccion: "duelo_descartar", texto: "Descartar BANG!", habilitado: tieneBang, color: "verde" },
+            { idAccion: "duelo_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
+        ]);
+
+        sala.procesarSiguienteInteraccion();
+        return true;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {

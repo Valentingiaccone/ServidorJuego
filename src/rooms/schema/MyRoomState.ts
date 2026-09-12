@@ -112,8 +112,6 @@ export class MyRoomState extends Schema {
     @type([Carta]) descarte = new ArraySchema<Carta>();
     @type([Carta]) cartasTienda = new ArraySchema<Carta>();
     @type("string") jugadorEligiendoTienda: string = "";
-    @type("string") jugadorEnDuelo: string = "";
-    @type("string") oponenteDuelo: string = "";
     @type("string") jugadorDesenfundando: string = "";
     @type("string") motivoDesenfundar: string = ""; 
     @type(Carta) cartaDesenfundada: Carta = new Carta();
