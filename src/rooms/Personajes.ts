@@ -2563,7 +2563,7 @@ export class KarateKillo implements IPersonaje {
             jugador.mano.push(nuevaCarta);
             
             sala.agregarRegistro(`🥋 ¡${jugador.personaje} sacrificó un BANG! para preparar una Patada Killo!`);
-
+            jugador.number.set("killoRecargaPatada", 1)
         } 
         else if (jugador.estaVivo && idHabilidad === "killo_maceta") {
             
