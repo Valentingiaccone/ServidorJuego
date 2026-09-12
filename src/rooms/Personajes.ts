@@ -2329,7 +2329,7 @@ export class PerroNinja implements IPersonaje {
 
 export class Monito implements IPersonaje {
     nombre = "Monito";
-    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano, roba una carta.";
+    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano, roba una carta, para pasar el turno debe tener su salud -1 cartas en mano.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMonito", false];
@@ -2364,6 +2364,10 @@ export class Monito implements IPersonaje {
                 sala.reproducirSfx("sfxMonito");
             }
         }
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return -1
     }
 }
 
