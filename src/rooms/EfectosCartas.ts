@@ -140,6 +140,7 @@ export class EfectoTiratachuela implements IEfectoCarta {
             sala.agregarAlDescarte(cartaJugada);
             sala.broadcast("musica", "tiratachueladaOst")
             
+            sala.state.spriteFlecha = "tiratachuela"
             sala.avanzarColaDePeligro();
             return true
         } else {
@@ -179,6 +180,7 @@ export class EfectoIndios implements IEfectoCarta {
             });
             
             // Disparamos el primer panel
+            sala.state.spriteFlecha = "indio"
             sala.procesarSiguienteInteraccion();
             return true;
         } else {
@@ -967,6 +969,79 @@ export class EfectoDuelo implements IEfectoCarta {
             { idAccion: "duelo_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
         ]);
 
+        sala.state.spriteFlecha = "duelo"
+        sala.procesarSiguienteInteraccion();
+        return true;
+    }
+}
+
+export class EfectoPatadaKillo implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
+            return false;
+        }
+
+        // Consumimos la carta
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+
+        sala.broadcast("notificacion_turno", `🦶 ¡${jugadorQueJuega.personaje} le dio una Patada Killo a ${victima.personaje}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+        sala.state.atacanteActual = client.sessionId;
+
+        // Evaluamos qué tiene la víctima (le sumamos la validación de Mikotoba para el Fallo)
+        let tieneFallo = victima.mano.some((c: any) => c.efecto === "esquivar") && victima.puedeUsarFallo;
+        let tieneBarril = victima.equipamiento.has("barril");
+        let tieneCaballo = victima.equipamiento.has("mustang");
+
+        // Armamos los 4 botones
+        sala.encolarInteraccion(idObjetivo, `¡${jugadorQueJuega.personaje} te dio una Patada Killo!`, "patadaKillo", [
+            { idAccion: "patada_fallo", texto: "Esquivar (Usa ¡Fallo!)", habilitado: tieneFallo, color: "verde" },
+            { idAccion: "patada_barril", texto: "Cubrirse (Pierde Barril)", habilitado: tieneBarril, color: "azul" },
+            { idAccion: "patada_caballo", texto: "Alejarse (Pierde Caballo)", habilitado: tieneCaballo, color: "azul" },
+            { idAccion: "patada_dano", texto: "Recibir 2 de Daño", habilitado: true, color: "rojo" }
+        ]);
+
+        sala.state.spriteFlecha = "patadaKillo"
+        sala.procesarSiguienteInteraccion();
+        return true;
+    }
+}
+
+export class EfectoMacetaKillo implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
+            return false;
+        }
+
+        // Consumimos la carta
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+
+        sala.broadcast("notificacion_turno", `🪴 ¡${jugadorQueJuega.personaje} le arrojó una Maceta Killo a ${victima.personaje}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+        sala.state.atacanteActual = client.sessionId;
+
+        // Evaluamos
+        let tieneBang = victima.mano.some((c: any) => c.nombre === "BANG!");
+        let tieneFallo = victima.mano.some((c: any) => c.efecto === "esquivar") && victima.puedeUsarFallo;
+
+        // Armamos los 3 botones
+        sala.encolarInteraccion(idObjetivo, `¡${jugadorQueJuega.nombre} te arrojó una Maceta Killo!`, "macetaKillo", [
+            { idAccion: "maceta_fallo", texto: "Esquivar (Usa ¡Fallo!)", habilitado: tieneFallo, color: "verde" },
+            { idAccion: "maceta_bang", texto: "Destruirla (Descartar BANG!)", habilitado: tieneBang, color: "azul" },
+            { idAccion: "maceta_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
+        ]);
+
+        sala.state.spriteFlecha = "macetaKillo"
         sala.procesarSiguienteInteraccion();
         return true;
     }
@@ -1009,6 +1084,8 @@ export class DespachadorDeCartas {
         "granDesaparicion": new EfectoGranDesaparicion(),
         "hordaBloons": new EfectoHordaBloons(),
         "duelo": new EfectoDuelo(),
+        "patadaKillo": new EfectoPatadaKillo(),
+        "macetaKillo": new EfectoMacetaKillo(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

@@ -237,6 +237,30 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearPatadaKillo(): Carta {
+        let clon = new Carta();
+        clon.id = `patada_killo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Patada Killo";
+        clon.descripcion = "2 de daño a un vecino. Se puede defender descartando Caballo o Barril, puede esquivar con ¡Fallo!.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoVecino"; 
+        clon.efecto = "patadaKillo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearMacetaKillo(): Carta {
+        let clon = new Carta();
+        clon.id = `maceta_killo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Maceta Killo";
+        clon.descripcion = "1 de daño a quien quieras. Se puede evadir con BANG! o ¡Fallo!.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoUniversal"; 
+        clon.efecto = "macetaKillo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [

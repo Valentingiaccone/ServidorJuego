@@ -55,6 +55,7 @@ export class MyRoom extends Room implements IMyRoom{
             // Terminó la cadena de interacciones
             this.state.interaccionActiva.idJugadorObjetivo = "";
             this.state.atacanteActual = "";
+            this.state.spriteFlecha = ""
             this.actualizarMusicaAutomatica(); 
         }
     }
@@ -73,6 +74,7 @@ export class MyRoom extends Room implements IMyRoom{
         } else {
             this.state.jugadorEnPeligro = "";
             this.state.atacanteActual = "";
+            this.state.spriteFlecha = ""
             this.broadcast("notificacion_turno", `💨 El ataque de Tiratachuela ha terminado.`);
             this.actualizarMusicaAutomatica();
         }
@@ -1233,6 +1235,66 @@ export class MyRoom extends Room implements IMyRoom{
                     this.procesarSiguienteInteraccion();
                 }
             }
+
+
+            // --- PATADA KILLO Y MACETA KILLO (Comparten la misma acción para el Fallo) ---
+            else if (idAccion === "patada_fallo" || idAccion === "maceta_fallo") {
+                let indiceFallo = victima.mano.findIndex((c: any) => c.efecto === "esquivar");
+                if (indiceFallo !== -1) {
+                    let cartaJugada = victima.mano.splice(indiceFallo, 1)[0];
+                    this.agregarAlDescarte(cartaJugada);
+                    
+                    this.broadcast("notificacion_turno", `🛡️ ¡${victima.nombre} usó un ¡Fallo! para esquivar hábilmente!`);
+                    this.ejecutarAnimacionCarta(client, cartaJugada);
+                    
+                    // ACÁ LA MAGIA: ¡Hacemos que usar el Fallo cuente como "Jugar" una carta!
+                    this.ejecutarPasivasAlJugarCarta(victima, cartaJugada);
+                }
+                this.procesarSiguienteInteraccion(); 
+            }
+            
+            // --- EXCLUSIVOS DE PATADA KILLO ---
+            else if (idAccion === "patada_barril") {
+                let barril = Utilidades.quitarEquipamiento(victima, "barril");
+                if (barril) {
+                    this.agregarAlDescarte(barril, victima, client);
+                    this.broadcast("notificacion_turno", `💥 ¡${victima.personaje} sacrificó su Barril para cubrirse de la Patada!`);
+                }
+                this.procesarSiguienteInteraccion();
+            }
+            else if (idAccion === "patada_caballo") {
+                let caballo = Utilidades.quitarEquipamiento(victima, "mustang");
+                if (caballo) {
+                    this.agregarAlDescarte(caballo, victima, client);
+                    this.broadcast("notificacion_turno", `🐎 ¡${victima.personaje} sacrificó su Caballo para huir a tiempo de la Patada!`);
+                }
+                this.procesarSiguienteInteraccion();
+            }
+            else if (idAccion === "patada_dano") {
+                this.broadcast("notificacion_turno", `🩸 ¡${victima.personaje} recibió de lleno la Patada Killo! (2 de daño)`);
+                let asesino = this.state.jugadores.get(this.state.atacanteActual);
+                Utilidades.procesarDano(this, victima, asesino, 2, "PATADA");
+                
+                if (victima.vidas > 0) this.procesarSiguienteInteraccion();
+            }
+            
+            // --- EXCLUSIVOS DE MACETA KILLO ---
+            else if (idAccion === "maceta_bang") {
+                let indiceBang = victima.mano.findIndex((c: any) => c.nombre === "BANG!");
+                if (indiceBang !== -1) {
+                    let cartaDescartada = victima.mano.splice(indiceBang, 1)[0];
+                    this.agregarAlDescarte(cartaDescartada);
+                    this.broadcast("notificacion_turno", `🪴 ¡${victima.personaje} descartó un BANG! para destruir la Maceta Killo en el aire!`);
+                }
+                this.procesarSiguienteInteraccion();
+            }
+            else if (idAccion === "maceta_dano") {
+                this.broadcast("notificacion_turno", `🩸 ¡${victima.personaje} recibió un macetazo en la cabeza! (1 de daño)`);
+                let asesino = this.state.jugadores.get(this.state.atacanteActual);
+                Utilidades.procesarDano(this, victima, asesino, 1, "MACETA");
+                
+                if (victima.vidas > 0) this.procesarSiguienteInteraccion();
+            }
         });
 
         this.onMessage("disparar_jugador", (client, datosDelDisparo) => {
@@ -1434,6 +1496,7 @@ export class MyRoom extends Room implements IMyRoom{
                 } else {
                     this.state.jugadorEnPeligro = "";
                     this.state.atacanteActual = "";
+                    this.state.spriteFlecha = ""
                     this.state.usosBarril = 0;
                     this.actualizarMusicaAutomatica()
                 }

@@ -2371,56 +2371,272 @@ export class Monito implements IPersonaje {
     }
 }
 
+export class KarateKillo implements IPersonaje {
+    nombre = "Karate Killo";
+    habilidad = "Oh yeah:\nPara entrar en modo FLOW, antes de pasar el turno debe jugar una carta, golpear un jugador y descartar una carta, en el modo FLOW puede descartar su BANG! de la izquierda para obtener una patada (1 por turno)(daño 2, vecino, pueden asumir caballo o barril, o usar fallo) o una maceta (ilimitado por turno)(daño 1, global, se evade con bang o fallo), al inicio del turno si estás en modo FLOW roba 1 carta extra, perder vida te quita de este modo.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteKillo", false];
+    sfxDefault = "sfxKillo"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onIniciarPartida en karate killo")
+            return
+        }
+
+        jugador.boolean.set("killoJugar", false)
+        jugador.boolean.set("killoGolpear", false)
+        jugador.boolean.set("killoDescartar", false)
+
+        let boton = new HabilidadActiva();
+        boton.id = "killo_patada";
+        boton.textoBoton = "Patada";
+        boton.tooltip = "Descarta bang, gana patada";
+        boton.spriteBoton = "botonKilloPatada";
+        jugador.habilidadesActivas.push(boton);
+
+        jugador.number.set("killoRecargaPatada", 0)
+
+        let boton2 = new HabilidadActiva();
+        boton2.id = "killo_maceta";
+        boton2.textoBoton = "Maceta";
+        boton2.tooltip = "Descarta bang, gana maceta";
+        boton2.spriteBoton = "botonKilloMaceta";
+        jugador.habilidadesActivas.push(boton2);
+
+        jugador.boolean.set("modoFlow", false)
+    }
+
+    private actualizarModoFlow(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador.boolean.get("killoJugar") || !jugador.boolean.get("killoGolpear") || !jugador.boolean.get("killoDescartar")){
+            jugador.spriteAvatarOpcional = ""
+            if (jugador.boolean.get("modoFlow")){
+                sala.reproducirSfx("killoPierdeFlow")
+                jugador.boolean.set("modoFlow", false)
+            }
+            return
+        }
+
+        if (!jugador.boolean.get("modoFlow")){
+            sala.reproducirSfx("killoEntraFlow")
+            jugador.boolean.set("modoFlow", true)
+        }
+        jugador.spriteAvatarOpcional = "Karate Killo flow"
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onPasarTurno en karate killo")
+            return
+        }
+
+        if (!jugador.boolean.get("killoJugar") || !jugador.boolean.get("killoGolpear") || !jugador.boolean.get("killoDescartar")){
+            jugador.boolean.set("killoJugar", false)
+            jugador.boolean.set("killoGolpear", false)
+            jugador.boolean.set("killoDescartar", false)
+        }
+
+        this.actualizarModoFlow(sala, jugador)
+    }
+
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
+        if (causa !== "turno"){
+            return 0
+        }
+
+        if (!jugador.boolean.get("killoJugar") || !jugador.boolean.get("killoGolpear") || !jugador.boolean.get("killoDescartar")){
+            return 0
+        } else {
+            return 1
+        }
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onJugarCarta en karate killo")
+            return
+        }
+        if (!jugador.estaVivo){
+            return
+        }
+
+        jugador.boolean.set("killoJugar", true)
+
+        this.actualizarModoFlow(sala, jugador)
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (!victima){
+            console.error("ERROR: victima es null en onGolpear en karate killo")
+            return
+        }
+        if (!victima.estaVivo){
+            return
+        }
+
+        if (danoCuerpo > 0){
+            victima.boolean.set("killoJugar", false)
+            victima.boolean.set("killoGolpear", false)
+            victima.boolean.set("killoDescartar", false)
+
+            this.actualizarModoFlow(sala, victima)
+        }
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+        if (!miJugador){
+            console.error("ERROR: miJugador es null en onGolpear en karate killo")
+            return
+        }
+        if (!miJugador.estaVivo){
+            return
+        }
+
+        miJugador.boolean.set("killoGolpear", true)
+
+        this.actualizarModoFlow(sala, miJugador)
+    }
+
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onJugarCarta en karate killo")
+            return
+        }
+        if (!jugador.estaVivo){
+            return
+        }
+
+        jugador.boolean.set("killoDescartar", true)
+
+        this.actualizarModoFlow(sala, jugador)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (!miJugador){
+            console.error("ERROR: miJugador es null en onInicarTurno en karate killo")
+            return
+        }
+        if (!miJugador.estaVivo){
+            return
+        }
+        
+        miJugador.number.set("killoRecargaPatada", miJugador.number.get("killoRecargaPatada") - 1)
+
+        this.actualizarModoFlow(sala, miJugador)
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Killo");
+            return;
+        }
+        if (!sala){
+            console.error("ERROR: sala es null en ejecutarHabilidadActiva de Killo");
+            return;
+        }
+
+        if (!jugador.boolean.get("killoJugar") || !jugador.boolean.get("killoGolpear") || !jugador.boolean.get("killoDescartar")){
+            client.send("alerta_personal", "Necesitás estar en modo flow para usar las habilidades.")
+            return
+        }
+
+        if (jugador.estaVivo && idHabilidad === "killo_patada") {
+
+            if (jugador.boolean.get("killoRecargaPatada") > 0){
+                client.send("alerta_personal", `Esta habilidad se está recargando, faltan ${jugador.number.get("killoRecargaPatada")} rondas.`)
+                return
+            }
+            
+            let indiceBang = jugador.mano.findIndex((c: any) => c.nombre === "BANG!");
+
+            if (indiceBang === -1) {
+                client.send("alerta_personal", "Necesitás tener al menos un BANG! en la mano para preparar la Patada Killo.");
+                return;
+            }
+
+            let cartaDescartada = jugador.mano.splice(indiceBang, 1)[0];
+            sala.descartarCarta(cartaDescartada, jugador, "HABILIDAD"); 
+
+            let nuevaCarta = CatalogoCartasEspeciales.crearPatadaKillo();
+            nuevaCarta.esConjurada = true; 
+            jugador.mano.push(nuevaCarta);
+            
+            sala.agregarRegistro(`🥋 ¡${jugador.personaje} sacrificó un BANG! para preparar una Patada Killo!`);
+
+        } 
+        else if (jugador.estaVivo && idHabilidad === "killo_maceta") {
+            
+            let indiceBang = jugador.mano.findIndex((c: any) => c.nombre === "BANG!");
+
+            if (indiceBang === -1) {
+                client.send("alerta_personal", "Necesitás tener al menos un BANG! en la mano para preparar la Maceta Killo.");
+                return;
+            }
+
+            let cartaDescartada = jugador.mano.splice(indiceBang, 1)[0];
+            sala.descartarCarta(cartaDescartada, jugador, "HABILIDAD"); 
+
+            let nuevaCarta = CatalogoCartasEspeciales.crearMacetaKillo();
+            nuevaCarta.esConjurada = true; 
+            jugador.mano.push(nuevaCarta);
+            
+            sala.agregarRegistro(`🪴 ¡${jugador.personaje} sacrificó un BANG! para preparar una Maceta Killo!`);
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
-        this.registrar(new Perro())
-        this.registrar(new DaveElLoco())
-        this.registrar(new Junkrat())
-        this.registrar(new Max())
-        this.registrar(new Pedro())
-        this.registrar(new Amelia())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
+        // this.registrar(new Perro())
+        // this.registrar(new DaveElLoco())
+        // this.registrar(new Junkrat())
+        // this.registrar(new Max())
+        // this.registrar(new Pedro())
+        // this.registrar(new Amelia())
         this.registrar(new Microbios())
         this.registrar(new PerroNinja())
         this.registrar(new Monito())
+        this.registrar(new KarateKillo())
 
 
 
