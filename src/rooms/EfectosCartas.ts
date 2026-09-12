@@ -937,7 +937,7 @@ export class EfectoHordaBloons implements IEfectoCarta {
             { idAccion: "bloons_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
         ]);
 
-        // 6. Disparamos la cola
+        sala.state.spriteFlecha = "bloon"
         sala.procesarSiguienteInteraccion();
         
         return true;
@@ -1047,6 +1047,27 @@ export class EfectoMacetaKillo implements IEfectoCarta {
     }
 }
 
+export class EfectoNutriente implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        let textoMejora = Utilidades.mejorarEquipamientoAleatorio(sala, jugadorQueJuega);
+
+        if (textoMejora !== "") {
+            jugadorQueJuega.mano.splice(indiceCarta, 1);
+
+            sala.broadcast("notificacion_turno", `🌱 ¡${jugadorQueJuega.personaje} usó un Nutriente y mejoró ${textoMejora}!`);
+            sala.ejecutarAnimacionCarta(client, cartaJugada);
+            sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+            sala.reproducirSfx("robinMejora");
+            
+            return true;
+        } else {
+            client.send("alerta_personal", "No tenés ningún equipamiento que se pueda seguir mejorando.");
+            return false;
+        }
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -1086,6 +1107,7 @@ export class DespachadorDeCartas {
         "duelo": new EfectoDuelo(),
         "patadaKillo": new EfectoPatadaKillo(),
         "macetaKillo": new EfectoMacetaKillo(),
+        "nutriente": new EfectoNutriente(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

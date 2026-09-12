@@ -380,7 +380,7 @@ export class CatalogoCartasEspeciales {
     }
 
     public static crearCartaPlantaAleatoria(): Carta | null {
-        const numero: number = Math.floor(Math.random() * 13)
+        const numero: number = Math.floor(Math.random() * 15)
         switch (numero){
             case 0:
                 return this.crearPapapum()
@@ -409,8 +409,9 @@ export class CatalogoCartasEspeciales {
             case 12:
                 return this.crearPetaseta()
             case 13:
-                // funciona mal
                 return this.crearPlantaCarnivora()
+            case 14:
+                return this.crearNutriente()
             default: 
                 return null
         }
@@ -596,5 +597,18 @@ export class CatalogoCartasEspeciales {
         clon.esConjurada = false;
         clon.esPlanta = true
         return clon
+    }
+
+    public static crearNutriente(): Carta {
+        let clon = new Carta();
+        clon.id = `nutriente_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Nutriente";
+        clon.descripcion = "Mejora un equipamiento aleatorio. Las armas evolucionan y el resto se vuelve versión 'Pro'.";
+        clon.descripcionEnCatalan = "Millora un equipament aleatori. Les armes evolucionen i la resta es converteix en versió 'Pro'.";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "nutriente";
+        clon.esConjurada = false;
+        clon.esPlanta = true;
+        return clon;
     }
 }
