@@ -2543,7 +2543,7 @@ export class KarateKillo implements IPersonaje {
 
         if (jugador.estaVivo && idHabilidad === "killo_patada") {
 
-            if (jugador.boolean.get("killoRecargaPatada") > 0){
+            if (jugador.number.get("killoRecargaPatada") > 0){
                 client.send("alerta_personal", `Esta habilidad se está recargando, faltan ${jugador.number.get("killoRecargaPatada")} rondas.`)
                 return
             }
