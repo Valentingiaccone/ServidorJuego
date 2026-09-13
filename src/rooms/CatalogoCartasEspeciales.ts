@@ -297,6 +297,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearEscopetazo(): Carta {
+        let clon = new Carta();
+        clon.id = `escopetazo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Escopetazo BANG!";
+        clon.descripcion = "No deberias ver esto.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivo";
+        clon.efecto = "dano_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [

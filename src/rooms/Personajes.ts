@@ -2757,6 +2757,81 @@ export class Tripulante implements IPersonaje {
     }
 }
 
+export class Shelly implements IPersonaje {
+    nombre = "Shelly";
+    habilidad = "Escopetazo:\nUna vez por turno puede descartar automaticamente hasta 3 Bangs! para obtener un Escopetazo Bang! que hace igual daño a Bangs! descartados.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onIniciarPartida de Shelly")
+            return
+        }
+
+        let boton = new HabilidadActiva();
+        boton.id = "shellyEscopeta";
+        boton.textoBoton = "Carga una escopeta";
+        boton.tooltip = "Carga escopeta descartando Bang!";
+        boton.spriteBoton = "botonShellyEscopeta";
+        jugador.habilidadesActivas.push(boton);
+        
+        jugador.number.set("shellyRecarga", 0)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        miJugador.number.set("shellyRecarga", miJugador.number.get("shellyRecarga") - 1)
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en ejecutarHabilidadActiva en shelly");
+            return;
+        }
+        if (!sala){
+            console.error("ERROR: sala es null en ejecutarHabilidadActiva en shelly");
+            return;
+        }
+
+        if (jugador.estaVivo && idHabilidad === "shellyEscopeta") {
+
+            if (jugador.number.get("shellyRecarga") > 0){
+                client.send("alerta_personal", `Esta habilidad se está recargando, faltan ${jugador.number.get("shellyRecarga")} rondas.`);
+                return;
+            }
+            
+            let cantidadBangs = jugador.mano.filter((c: any) => c.nombre === "BANG!").length;
+
+            if (cantidadBangs < 1) {
+                client.send("alerta_personal", "Necesitás tener al menos un BANG! en tu mano para usar esta habilidad.");
+                return;
+            }
+
+            let descartados = 0;
+            for (let i = jugador.mano.length - 1; i >= 0; i--) {
+                if (jugador.mano[i].nombre === "BANG!" && descartados < 3) {
+                    let cartaExtraida = jugador.mano.splice(i, 1)[0];
+                    sala.descartarCarta(cartaExtraida, jugador, "HABILIDAD");
+                    descartados++;
+                }
+            }
+
+            if (descartados > 0){
+                let carta: Carta = CatalogoCartasEspeciales.crearEscopetazo(); 
+                if (carta){
+                    carta.descripcion = `Hace ${descartados} de daño a un jugador a tu alcance.`;
+                    carta.efecto = `dano_${descartados}`;
+                    carta.esConjurada = true;
+                    jugador.mano.push(carta);
+                    jugador.number.set("shellyRecarga", 1);
+
+                    sala.agregarRegistro(`🔫 ¡${jugador.personaje} cargó su Escopetazo descartando ${descartados} BANG!`);
+                }
+            }
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -2809,7 +2884,7 @@ export class GestorPersonajes {
         this.registrar(new Monito())
         this.registrar(new KarateKillo())
         this.registrar(new Tripulante())
-        this.registrar(new Robin())
+        this.registrar(new Shelly())
 
 
 

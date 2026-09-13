@@ -1363,7 +1363,7 @@ export class MyRoom extends Room implements IMyRoom{
                     return; 
                 }
                 
-                if (cartaUsada && (cartaUsada.efecto === "dano_1" || cartaUsada.efecto === "dano_2")) {
+                if (cartaUsada && (cartaUsada.efecto === "dano_1" || cartaUsada.efecto === "dano_2" || cartaUsada.efecto === "dano_3")) {
                     atacante.yaDisparo = true;
                     atacante.mano.splice(indiceCarta, 1);
                     this.ejecutarAnimacionCarta(client, cartaUsada);
@@ -1372,7 +1372,15 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.jugadorEnPeligro = datosDelDisparo.objetivoId;
                     this.state.atacanteActual = client.sessionId;
                     
-                    let danoBase = (cartaUsada.efecto === "dano_2") ? 2 : 1;
+                    let danoBase = 0
+                    if (cartaUsada.efecto === "dano_1"){
+                        danoBase = 1
+                    } else if (cartaUsada.efecto === "dano_2"){
+                        danoBase = 2
+                    } else if (cartaUsada.efecto === "dano_3"){
+                        danoBase = 3
+                    }
+                    
                     let bonusDano = (cartaUsada.efecto === "dano_1") ? statsArma.danoExtra : 0;
                     
                     this.state.danoPendiente = danoBase + bonusDano; 
