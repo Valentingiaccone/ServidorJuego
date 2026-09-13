@@ -385,4 +385,31 @@ export class Utilidades {
 
         return null; // Nadie vivo para intercambiar
     }
+
+    /**
+     * Crea una copia exacta de una carta, generándole un ID único para evitar problemas de renderizado o base de datos.
+     */
+    public static clonarCarta(cartaOriginal: Carta, prefijoId: string = "clon"): Carta {
+        if (!cartaOriginal) return null;
+
+        let clon = new Carta();
+        
+        // Generamos un ID único absoluto
+        clon.id = `${prefijoId}_${cartaOriginal.id}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        
+        // Copiamos todas las propiedades actuales del Schema
+        clon.nombre = cartaOriginal.nombre;
+        clon.descripcion = cartaOriginal.descripcion;
+        clon.descripcionEnCatalan = cartaOriginal.descripcionEnCatalan;
+        clon.tipoDeUso = cartaOriginal.tipoDeUso;
+        clon.efecto = cartaOriginal.efecto;
+        clon.esConjurada = true; 
+        clon.tipoEmbrujo = cartaOriginal.tipoEmbrujo;
+        clon.prioridadBang = cartaOriginal.prioridadBang;
+        clon.idDuenoDelPerro = cartaOriginal.idDuenoDelPerro;
+        clon.idGranDesaparicion = cartaOriginal.idGranDesaparicion;
+        clon.esPlanta = cartaOriginal.esPlanta;
+
+        return clon;
+    }
 }

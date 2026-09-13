@@ -2228,7 +2228,7 @@ export class Amelia implements IPersonaje {
 
 export class Microbios implements IPersonaje {
     nombre = "Microbios";
-    habilidad = "Microbios traviesos:\nAl jugar una carta se mueve a antihorario. A los jugadores que sobrepasa les roba una carta aleatoria (2 veces, se recarga al inicio del turno). Para pasar el turno deben tener su salud - 1 cartas en mano.";
+    habilidad = "Microbios traviesos:\nAl jugar una carta se mueve a antihorario. Gana un clon de una carta aleatoria que tenga en la mano del jugador que sobrepasa (2 veces, se recarga al inicio del turno). Para pasar el turno deben tener su salud - 1 cartas en mano.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxDefault = "sfxMicrobios"
@@ -2265,16 +2265,20 @@ export class Microbios implements IPersonaje {
             return
         }
 
-        let jugadorSobrepasado: Jugador = Utilidades.moverPosicionFisica(sala, jugador, "antihorario")
+        let jugadorSobrepasado = Utilidades.moverPosicionFisica(sala, jugador, "antihorario")
 
         jugador.number.set("microbio", jugador.number.get("microbio") + 1)
 
         if (jugadorSobrepasado && jugadorSobrepasado.mano.length > 0 && jugadorSobrepasado.estaVivo && jugador.number.get("microbio") <= 2) {
             let indiceAleatorio = Math.floor(Math.random() * jugadorSobrepasado.mano.length);
-            let cartaRobada = jugadorSobrepasado.mano.splice(indiceAleatorio, 1)[0];
-            jugador.mano.push(cartaRobada);
             
-            sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario y robó ${cartaRobada.nombre} a ${jugadorSobrepasado.personaje} (${jugador.number.get("microbio")}/2)!`);
+            let cartaOriginal = jugadorSobrepasado.mano[indiceAleatorio];
+            
+            let clon = Utilidades.clonarCarta(cartaOriginal, "microbio");
+            
+            jugador.mano.push(clon);
+            
+            sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario y copió un ${clon.nombre} de ${jugadorSobrepasado.personaje} (${jugador.number.get("microbio")}/2)!`);
             sala.reproducirSfx("microbioMovimiento")
         } else {
             sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario!`);
@@ -2724,49 +2728,49 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy())
-        // this.registrar(new Berry())
-        // this.registrar(new Maton())
-        // this.registrar(new Mandy())
-        // this.registrar(new Tralalero())
-        // this.registrar(new Darryl())
-        // this.registrar(new JetpackCat())
-        // this.registrar(new KayFaraday())
-        // this.registrar(new Chester())
-        // this.registrar(new Frank())
-        // this.registrar(new Pam())
-        // this.registrar(new Trucy())
-        // this.registrar(new Luigi())
-        // this.registrar(new Mario())
-        // this.registrar(new Lesly())
-        // this.registrar(new Mikotoba())
-        // this.registrar(new Domino())
-        // this.registrar(new Tilink())
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
-        // this.registrar(new Haley())
-        // this.registrar(new Maggey())
-        // this.registrar(new Mortis())
-        // this.registrar(new Maya())
-        // this.registrar(new Geraldo())
-        // this.registrar(new RaymundoEscudos())
-        // this.registrar(new Cubo())
-        // this.registrar(new VonKarma())
-        // this.registrar(new Mercy())
-        // this.registrar(new Chispitas())
-        // this.registrar(new Dahlia())
-        // this.registrar(new Meg())
-        // this.registrar(new Perro())
-        // this.registrar(new DaveElLoco())
-        // this.registrar(new Junkrat())
-        // this.registrar(new Max())
-        // this.registrar(new Pedro())
-        // this.registrar(new Amelia())
-        // this.registrar(new Microbios())
+        this.registrar(new ColeCasiddy())
+        this.registrar(new Berry())
+        this.registrar(new Maton())
+        this.registrar(new Mandy())
+        this.registrar(new Tralalero())
+        this.registrar(new Darryl())
+        this.registrar(new JetpackCat())
+        this.registrar(new KayFaraday())
+        this.registrar(new Chester())
+        this.registrar(new Frank())
+        this.registrar(new Pam())
+        this.registrar(new Trucy())
+        this.registrar(new Luigi())
+        this.registrar(new Mario())
+        this.registrar(new Lesly())
+        this.registrar(new Mikotoba())
+        this.registrar(new Domino())
+        this.registrar(new Tilink())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
+        this.registrar(new Haley())
+        this.registrar(new Maggey())
+        this.registrar(new Mortis())
+        this.registrar(new Maya())
+        this.registrar(new Geraldo())
+        this.registrar(new RaymundoEscudos())
+        this.registrar(new Cubo())
+        this.registrar(new VonKarma())
+        this.registrar(new Mercy())
+        this.registrar(new Chispitas())
+        this.registrar(new Dahlia())
+        this.registrar(new Meg())
+        this.registrar(new Perro())
+        this.registrar(new DaveElLoco())
+        this.registrar(new Junkrat())
+        this.registrar(new Max())
+        this.registrar(new Pedro())
+        this.registrar(new Amelia())
+        this.registrar(new Microbios())
         this.registrar(new PerroNinja())
         this.registrar(new Monito())
         this.registrar(new KarateKillo())
