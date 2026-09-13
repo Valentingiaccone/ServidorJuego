@@ -33,8 +33,7 @@ export class Utilidades {
                     atacante.boolean.set("chispitasCargado", false);
                     cantidad = 999;
                 }
-                // --- SISTEMA NUEVO: PLANTORCHA ---
-                if (atacante.equipamiento.has("plantorcha")){
+                if (atacante.equipamiento.has("plantorcha") && (this.getDatosArma(atacante).nombre == "Lanzaguisantes" || this.getDatosArma(atacante).nombre == "Repetidora")){
                     cantidad += 1;
                 }
                 if (atacante.boolean.get("mercyActivada")){
@@ -232,7 +231,17 @@ export class Utilidades {
 
         let datosArmaActual = this.getDatosArma(jugador);
         let siguienteArma = this.obtenerSiguienteArma(datosArmaActual.nombre);
-        if (siguienteArma) opcionesDeMejora.push("arma");
+        if (siguienteArma) {
+            // es un arma basica de alcance
+            opcionesDeMejora.push("arma");
+        } else {
+            // es un arma especial
+            if (datosArmaActual.nombre == "Pistola de Tracer"){
+                opcionesDeMejora.push("tracer")
+            } else if (datosArmaActual.nombre == "Escopetas de Reaper"){
+                opcionesDeMejora.push("reaper")
+            }
+        }
 
         if (opcionesDeMejora.length === 0) return "";
 
@@ -263,6 +272,18 @@ export class Utilidades {
             let cartaArmaNueva = CatalogoCartasEspeciales.crearArma(datosNuevaArma.nombre, datosNuevaArma.alcance);
             this.equiparCarta(sala, jugador, cartaArmaNueva, "arma");
             textoMejora = `su arma a ${datosNuevaArma.nombre}`;
+        }
+        else if (hueco === "tracer"){
+            let cartaNueva: Carta = CatalogoCartasEspeciales.crearPistolaDeTracerPro()
+            cartaNueva.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaNueva, "arma")
+            textoMejora = `su arma a ${cartaNueva.nombre}`
+        }
+        else if (hueco === "reaper"){
+            let cartaNueva: Carta = CatalogoCartasEspeciales.crearEscopetasReaperPro()
+            cartaNueva.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaNueva, "arma")
+            textoMejora = `su arma a ${cartaNueva.nombre}`
         }
 
         return textoMejora;

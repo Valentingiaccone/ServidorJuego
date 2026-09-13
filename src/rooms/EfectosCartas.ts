@@ -812,7 +812,7 @@ export class EfectoTrebolador implements IEfectoCarta {
         }
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.descartarCarta(carta, victima, "ATAQUE")
 
         sala.agregarRegistro(`☘️ ${jugadorQueJuega.personaje} jugó un Trebolador y le descartó a ${victima.personaje} un ${carta.nombre}`)
@@ -839,7 +839,7 @@ export class EfectoPetaseta implements IEfectoCarta {
             return j && j.estaVivo;
         });
 
-        sala.broadcast("notificacion_turno", `🌋 ¡${jugadorQueJuega.nombre} invocó una Petaseta!`);
+        sala.broadcast("notificacion_turno", `🌋 ¡${jugadorQueJuega.personaje} invocó una Petaseta!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
@@ -1049,7 +1049,7 @@ export class EfectoMacetaKillo implements IEfectoCarta {
 
 export class EfectoNutriente implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
-        
+
         let textoMejora = Utilidades.mejorarEquipamientoAleatorio(sala, jugadorQueJuega);
 
         if (textoMejora !== "") {
@@ -1065,6 +1065,39 @@ export class EfectoNutriente implements IEfectoCarta {
             client.send("alerta_personal", "No tenés ningún equipamiento que se pueda seguir mejorando.");
             return false;
         }
+    }
+}
+
+export class EfectoDomoProtector implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+
+        let idsJugadores = Array.from(sala.state.jugadores.keys());
+        let indiceInicial = idsJugadores.indexOf(client.sessionId);
+        let ordenMesa: string[] = [];
+        
+        for (let i = 0; i < idsJugadores.length; i++) {
+            let idx = (indiceInicial + i) % idsJugadores.length;
+            ordenMesa.push(idsJugadores[idx] as string);
+        }
+
+        let victimasIds = ordenMesa.filter(id => {
+            let j = sala.state.jugadores.get(id);
+            return j && j.estaVivo;
+        });
+
+        sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.personaje} les dió a todos 1 de escudo!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        victimasIds.forEach(id => {
+            let victima = sala.state.jugadores.get(id);
+            if (victima && victima.estaVivo) {
+                Utilidades.agregarEscudos(sala, victima, 1, 1, "carta")
+            }
+        });
+
+        return true
     }
 }
 
@@ -1108,6 +1141,7 @@ export class DespachadorDeCartas {
         "patadaKillo": new EfectoPatadaKillo(),
         "macetaKillo": new EfectoMacetaKillo(),
         "nutriente": new EfectoNutriente(),
+        "domoProtector": new EfectoDomoProtector(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

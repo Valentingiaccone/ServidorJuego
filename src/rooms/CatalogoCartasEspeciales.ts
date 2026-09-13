@@ -164,6 +164,30 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearEscopetasReaperPro(): Carta {
+        let clon = new Carta();
+        clon.id = `arma_reaper_pro_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Escopetas de Reaper Pro";
+        clon.descripcion = "Alcance: 2. Tus BANG! comunes infligen el doble de daño.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = `equipar_arma_2_1_0`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearPistolaDeTracerPro(): Carta {
+        let clon = new Carta();
+        clon.id = `pistola_de_tracer_pro_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Pistola de Tracer Pro";
+        clon.descripcion = "Alcance 2. No tenes limites de Bang!.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = `equipar_arma_2`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
     public static crearMortero(): Carta {
         let clon = new Carta();
         clon.id = `arma_mortero_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
@@ -261,6 +285,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearDomoProtector(): Carta {
+        let clon = new Carta();
+        clon.id = `domo_protector_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Domo protector";
+        clon.descripcion = "Todos los jugadores ganan 1 de escudo.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "domoProtector";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
@@ -273,6 +309,7 @@ export class CatalogoCartasEspeciales {
             { id: "clon", copias: 2 },
             { id: "escopetasReaper", copias: 1 },
             { id: "hordaDeBloons", copias: 3 },
+            { id : "domoProtector", copias: 1 },
            // { id: "mortero", copias: 1 },
         ];
     }
@@ -290,6 +327,7 @@ export class CatalogoCartasEspeciales {
             case "escopetasReaper": return this.crearEscopetasReaper();
             case "mortero": return this.crearMortero();
             case "hordaDeBloons": return this.crearHordaDeBloons()
+            case "domoProtector": return this.crearDomoProtector()
 
             default: return null;
         }

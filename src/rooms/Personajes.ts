@@ -2333,11 +2333,20 @@ export class PerroNinja implements IPersonaje {
 
 export class Monito implements IPersonaje {
     nombre = "Monito";
-    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano, roba una carta, para pasar el turno debe tener su salud -1 cartas en mano.";
+    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano, roba una carta, (5 usos, se recarga al pasar turno) para pasar el turno debe tener su salud -1 cartas en mano.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMonito", false];
     sfxDefault = "sfxMonito"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onIniciarPartida de monito")
+            return
+        }
+
+        jugador.number.set("monito", 0)
+    }
 
     onJugarCartaGlobal(sala: IMyRoom, miJugador: Jugador, jugadorQueJuega: Jugador, cartaJugada: Carta): void {
         if (!miJugador){
@@ -2361,17 +2370,29 @@ export class Monito implements IPersonaje {
             let tieneCopia = miJugador.mano.some((c: Carta) => c.nombre === cartaJugada.nombre);
 
             if (tieneCopia) {
-                sala.repartirCartas(miJugador, 1, "pasiva");
+                if (miJugador.number.get("monito") <= 5){
+                    miJugador.number.set("monito", miJugador.number.get("monito") + 1)
+                    sala.repartirCartas(miJugador, 1, "pasiva");
                 
-                sala.agregarRegistro(`🐒 ¡${miJugador.personaje} copió a ${jugadorQueJuega.personaje}! Como tiene un ${cartaJugada.nombre} en mano, roba 1 carta.`);
-                
-                sala.reproducirSfx("sfxMonito");
+                    sala.agregarRegistro(`🐒 ¡${miJugador.personaje} copió a ${jugadorQueJuega.personaje}! Como tiene un ${cartaJugada.nombre} en mano, roba 1 carta. (${miJugador.number.get("monito")}/5)`);
+                    
+                    sala.reproducirSfx("sfxMonito");
+                }
             }
         }
     }
 
     modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
         return -1
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onPasarTurno de monito")
+            return
+        }
+
+        jugador.number.set("monito", 0)
     }
 }
 
@@ -2592,7 +2613,7 @@ export class KarateKillo implements IPersonaje {
 
 export class Tripulante implements IPersonaje {
     nombre = "Tripulante";
-    habilidad = "Tripulante ejemplar:\nAl pasar el turno se pone a hacer una de 4 tareas que quieras para beneficiarte al inicio de tu turno. CABLES: mejora equipamiento aleatorio. ARCHIVOS: +2 cartas. PESCADOS: +1 vida. ESCUDOS: +2 escudos de 1 turno, perder vida te cancela una tarea.";
+    habilidad = "Tripulante ejemplar:\nAl pasar el turno se pone a hacer una de 4 tareas que quieras para beneficiarte al inicio de tu turno. CABLES: mejora equipamiento aleatorio. ARCHIVOS: +2 cartas. PESCADOS: +1 vida. ESCUDOS: +2 escudos de 1 turno, perder vida te cancela una tarea, repetir tu ultima tarea cambia automaticamente a la siguiente.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
@@ -2603,6 +2624,7 @@ export class Tripulante implements IPersonaje {
         }
 
         jugador.string.set("tripulanteModo", "cables")
+        jugador.string.set("tripulanteUltimaTarea", "")
         jugador.boolean.set("tripulanteHaciendoTarea", false)
 
         let boton = new HabilidadActiva();
@@ -2622,6 +2644,13 @@ export class Tripulante implements IPersonaje {
             console.error("ERROR: sala es null en onPasarTurno en Tripulante")
             return
         }
+        
+
+        if (jugador.string.get("tripulanteModo") == jugador.string.get("tripulanteUltimaTarea")){
+            let boton: HabilidadActiva = jugador.habilidadesActivas.find((hab: any) => hab.id === "tripulante");
+            this.cambiarALaSiguienteTarea(jugador, boton, jugador.string.get("tripulanteModo"))
+            sala.agregarRegistro(`ඞා ${jugador.personaje} repitió tarea y cambia de ${jugador.string.get("tripulanteUltimaTarea").toUpperCase()} a ${jugador.string.get("tripulanteModo").toUpperCase()}.`)
+        }
 
         const modoActual: string = jugador.string.get("tripulanteModo")
 
@@ -2630,6 +2659,7 @@ export class Tripulante implements IPersonaje {
         }
 
         jugador.boolean.set("tripulanteHaciendoTarea", true)
+        jugador.string.set("tripulanteUltimaTarea", modoActual)
 
         sala.agregarRegistro(`ඞා ${jugador.personaje} empezó a hacer la tarea ${modoActual.toUpperCase()}.`)
     }
@@ -2705,18 +2735,22 @@ export class Tripulante implements IPersonaje {
 
         const modoActual: string = jugador.string.get("tripulanteModo")
 
+        this.cambiarALaSiguienteTarea(jugador, boton, modoActual)        
+    }
+
+    private cambiarALaSiguienteTarea(miJugador: Jugador, boton: HabilidadActiva, modoActual: string): void {
         if (modoActual){
             if (modoActual == "cables"){
-                jugador.string.set("tripulanteModo", "archivos")
+                miJugador.string.set("tripulanteModo", "archivos")
                 boton.spriteBoton = "botonTripulanteArchivos"
             } else if (modoActual == "archivos"){
-                jugador.string.set("tripulanteModo", "pescados")
+                miJugador.string.set("tripulanteModo", "pescados")
                 boton.spriteBoton = "botonTripulantePescados"
             } else if (modoActual == "pescados"){
-                jugador.string.set("tripulanteModo", "escudos")
+                miJugador.string.set("tripulanteModo", "escudos")
                 boton.spriteBoton = "botonTripulanteEscudos"
             } else {
-                jugador.string.set("tripulanteModo", "cables")
+                miJugador.string.set("tripulanteModo", "cables")
                 boton.spriteBoton = "botonTripulanteCables"
             }
         }
@@ -2775,6 +2809,7 @@ export class GestorPersonajes {
         this.registrar(new Monito())
         this.registrar(new KarateKillo())
         this.registrar(new Tripulante())
+        this.registrar(new Robin())
 
 
 

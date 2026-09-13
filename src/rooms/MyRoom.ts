@@ -581,7 +581,7 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.mazo.push(nuevaCarta);
                 });
 
-                let cantidadDeCartasExtension = 9
+                let cantidadDeCartasExtension = 10
                 
                 let poolRaras = CatalogoCartasEspeciales.obtenerPoolExtensiones();
                 
@@ -1308,7 +1308,7 @@ export class MyRoom extends Room implements IMyRoom{
 
                 let statsArma = Utilidades.getDatosArma(atacante);
 
-                if (atacante.yaDisparo && !puedeDispararExtra && statsArma.nombre !== "Pistola de Tracer") {
+                if (atacante.yaDisparo && !puedeDispararExtra && statsArma.nombre !== "Pistola de Tracer" && statsArma.nombre !== "Pistola de Tracer Pro") {
                     client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
                     return; 
                 }
