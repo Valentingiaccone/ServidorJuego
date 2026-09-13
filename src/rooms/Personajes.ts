@@ -2373,7 +2373,7 @@ export class Monito implements IPersonaje {
 
 export class KarateKillo implements IPersonaje {
     nombre = "Karate Killo";
-    habilidad = "Oh yeah:\nPara entrar en modo FLOW, antes de pasar el turno debe jugar una carta, golpear un jugador y descartar una carta, en el modo FLOW puede descartar su BANG! de la izquierda para obtener una patada (1 por turno)(daño 2, vecino, pueden asumir caballo o barril, o usar fallo) o una maceta (ilimitado por turno)(daño 1, global, se evade con bang o fallo), al inicio del turno si estás en modo FLOW roba 1 carta extra, perder vida te quita de este modo.";
+    habilidad = "Oh yeah:\nPara entrar en modo FLOW, antes de pasar el turno debe jugar una carta, golpear un jugador y descartar una carta, en el modo FLOW puede descartar su BANG! de la izquierda para obtener una patada (1 por turno)(daño 2, vecino, pueden asumir caballo o barril, o usar fallo) o una maceta (ilimitado por turno)(daño 1, global, se evade con bang o fallo), al inicio del turno si estás en modo FLOW roba 1 carta extra, perder vida te quita de este modo y rompe tu combo.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteKillo", false];
@@ -2586,57 +2586,191 @@ export class KarateKillo implements IPersonaje {
     }
 }
 
+export class Tripulante implements IPersonaje {
+    nombre = "Tripulante";
+    habilidad = "Tripulante ejemplar:\nAl pasar el turno se pone a hacer una de 4 tareas que quieras para beneficiarte al inicio de tu turno. CABLES: mejora equipamiento aleatorio. ARCHIVOS: +2 cartas. PESCADOS: +1 vida. ESCUDOS: +2 escudos de 1 turno, perder vida te cancela una tarea.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onIniciarPartida en Tripulante")
+            return
+        }
+
+        jugador.string.set("tripulanteModo", "cables")
+        jugador.boolean.set("tripulanteHaciendoTarea", false)
+
+        let boton = new HabilidadActiva();
+        boton.id = "tripulante";
+        boton.textoBoton = "Cambiar tarea";
+        boton.tooltip = "Cambia tu tarea";
+        boton.spriteBoton = "botonTripulanteCables";
+        jugador.habilidadesActivas.push(boton);
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en onPasarTurno en Tripulante")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala es null en onPasarTurno en Tripulante")
+            return
+        }
+
+        const modoActual: string = jugador.string.get("tripulanteModo")
+
+        if (modoActual){
+            jugador.spriteAvatarOpcional = "Tripulante " + modoActual
+        }
+
+        jugador.boolean.set("tripulanteHaciendoTarea", true)
+
+        sala.agregarRegistro(`ඞා ${jugador.personaje} empezó a hacer la tarea ${modoActual.toUpperCase()}.`)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (!miJugador){
+            console.error("ERROR: miJugador es null en onIniciarTurno en Tripulante")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala es null en onIniciarTurno en Tripulante")
+            return
+        }
+
+        if (!miJugador.boolean.get("tripulanteHaciendoTarea")){
+            return
+        }
+
+        const modoActual: string = miJugador.string.get("tripulanteModo")
+
+        if (modoActual == "cables"){
+            let textoMejora = Utilidades.mejorarEquipamientoAleatorio(sala, miJugador);
+
+            if (textoMejora !== "") {
+                sala.reproducirSfx("robinMejora");
+                sala.agregarRegistro(`ඞා ${miJugador.personaje} mejoró ${textoMejora}`)
+            } else {
+                sala.agregarRegistro(`ඞා ${miJugador.personaje} no pudo mejorar nada.`)
+            }
+        } else if (modoActual == "archivos"){
+            sala.repartirCartas(miJugador, 2, "pasiva")
+            sala.agregarRegistro(`ඞා ${miJugador.personaje} robó 2 cartas.`)
+        } else if (modoActual == "pescados"){
+            if (Utilidades.puedeRecibirCuracion(sala, miJugador)){
+                Utilidades.aplicarCuracion(sala, miJugador, 1, "pasiva", false)
+                sala.agregarRegistro(`ඞා ${miJugador.personaje} se cura.`)
+            } else {
+                sala.agregarRegistro(`ඞා ${miJugador.personaje} no se pudo curar.`)
+            }
+        } else {
+            Utilidades.agregarEscudos(sala, miJugador, 2, 1, "pasiva")
+            sala.agregarRegistro(`ඞා ${miJugador.personaje} obtuvo 2 escudos.`)
+        }
+
+        miJugador.boolean.set("tripulanteHaciendoTarea", false)
+        miJugador.spriteAvatarOpcional = ""
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (!victima){
+            console.error("ERROR: victima es null en onPasarTurno en Tripulante")
+            return
+        }
+        if (!sala){
+            console.error("ERROR: sala es null en onPasarTurno en Tripulante")
+            return
+        }
+
+        if (danoCuerpo > 0 && victima.boolean.get("tripulanteHaciendoTarea")){
+            victima.boolean.set("tripulanteHaciendoTarea", false)
+            victima.spriteAvatarOpcional = ""
+            sala.agregarRegistro(`ඞා ${victima.personaje} dejó de hacer la tarea.`)
+        }
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (!jugador){
+            console.error("ERROR: jugador es null en ejecutarHabilidadActiva en Tripulante")
+            return
+        }
+
+        let boton: HabilidadActiva = jugador.habilidadesActivas.find((hab: any) => hab.id === "tripulante");
+
+        const modoActual: string = jugador.string.get("tripulanteModo")
+
+        if (modoActual){
+            if (modoActual == "cables"){
+                jugador.string.set("tripulanteModo", "archivos")
+                boton.spriteBoton = "botonTripulanteArchivos"
+            } else if (modoActual == "archivos"){
+                jugador.string.set("tripulanteModo", "pescados")
+                boton.spriteBoton = "botonTripulantePescados"
+            } else if (modoActual == "pescados"){
+                jugador.string.set("tripulanteModo", "escudos")
+                boton.spriteBoton = "botonTripulanteEscudos"
+            } else {
+                jugador.string.set("tripulanteModo", "cables")
+                boton.spriteBoton = "botonTripulanteCables"
+            }
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
-        this.registrar(new Perro())
-        this.registrar(new DaveElLoco())
-        this.registrar(new Junkrat())
-        this.registrar(new Max())
-        this.registrar(new Pedro())
-        this.registrar(new Amelia())
-        this.registrar(new Microbios())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
+        // this.registrar(new Perro())
+        // this.registrar(new DaveElLoco())
+        // this.registrar(new Junkrat())
+        // this.registrar(new Max())
+        // this.registrar(new Pedro())
+        // this.registrar(new Amelia())
+        // this.registrar(new Microbios())
         this.registrar(new PerroNinja())
         this.registrar(new Monito())
         this.registrar(new KarateKillo())
+        this.registrar(new Tripulante())
 
 
 
