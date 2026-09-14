@@ -297,6 +297,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearBotiquin(): Carta {
+        let clon = new Carta();
+        clon.id = `botiquin_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Botiquín";
+        clon.descripcion = "+1 vida, te salva de morir.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "curar_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     public static crearEscopetazo(): Carta {
         let clon = new Carta();
         clon.id = `escopetazo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;

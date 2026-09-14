@@ -22,7 +22,7 @@ export class EfectoCurar implements IEfectoCarta {
             sala.agregarAlDescarte(cartaJugada);
             return true;
         } else {
-            client.send("alerta_personal", "Tu salud ya está al máximo.");
+            client.send("alerta_personal", "No podes curarte ahora mismo.");
             return false;
         }
     }

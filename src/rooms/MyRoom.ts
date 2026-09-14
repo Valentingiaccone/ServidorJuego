@@ -166,6 +166,9 @@ export class MyRoom extends Room implements IMyRoom{
         // --- 1. INTENTO DE SUPERVIVENCIA ---
         while (victima.vidas <= 0 && totalVivos !== 2 && !victima.estaDesconectado) {
             if (victima.transformarCuraEnEscudo) break; 
+            if (victima.efecto.has("malestar")){
+                break
+            }
 
             let indiceBotiquin = victima.mano.findIndex((c: any) => c.nombre === "Botiquín");
             if (indiceBotiquin !== -1) {
@@ -364,14 +367,7 @@ export class MyRoom extends Room implements IMyRoom{
                 }
                 
                 for (let c = 0; c < 5; c++) { // originalmente 6
-                    const nuevaCarta = new Carta();
-                    nuevaCarta.id = `botiquin_${c}`;
-                    nuevaCarta.nombre = "Botiquín";
-                    nuevaCarta.descripcion = "+1 vida, te salva de morir.";
-                    nuevaCarta.descripcionEnCatalan = "+1 vida, et salva de morir."
-                    nuevaCarta.tipoDeUso = "instantanea";
-                    nuevaCarta.efecto = "curar_1";
-                    this.state.mazo.push(nuevaCarta);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearBotiquin());
                 }
 
                 for (let c = 0; c < 8; c++) { // originalmente 12
@@ -743,10 +739,7 @@ export class MyRoom extends Room implements IMyRoom{
                         return; 
                     }
 
-                    // --- HOOK PASAR TURNO ---
-                    if (pasivaJugadorActual && pasivaJugadorActual.onPasarTurno) {
-                        pasivaJugadorActual.onPasarTurno(this, jugadorActual);
-                    }
+                    this.ejecutarAccionesAlPasarTurno(jugadorActual)
                 }
 
                 //this.broadcast("notificacion_turno", `¡El jugador ${jugadorActual?.nombre} ha pasado su turno!`);
@@ -1074,10 +1067,7 @@ export class MyRoom extends Room implements IMyRoom{
                             this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
                         } else {
                             this.broadcast("notificacion_turno", `⛓️ ¡Salió Rojo! ${victima?.nombre} se queda encerrado.`);
-                            let pasiva = this.gestorPersonajes.obtener(victima?.personaje);
-                            if (pasiva && pasiva.onPasarTurno) {
-                                pasiva.onPasarTurno(this, victima);
-                            }
+                            this.ejecutarAccionesAlPasarTurno(victima)
                             this.avanzarAlSiguienteTurno(client.sessionId);
                         }
                         Utilidades.quitarEquipamiento(victima, "prision");
@@ -1380,7 +1370,7 @@ export class MyRoom extends Room implements IMyRoom{
                     } else if (cartaUsada.efecto === "dano_3"){
                         danoBase = 3
                     }
-                    
+
                     let bonusDano = (cartaUsada.efecto === "dano_1") ? statsArma.danoExtra : 0;
                     
                     this.state.danoPendiente = danoBase + bonusDano; 
@@ -2077,5 +2067,19 @@ export class MyRoom extends Room implements IMyRoom{
                 }
             }
         });
+    }
+
+    private ejecutarAccionesAlPasarTurno(jugadorQuePasaElTurno: Jugador){
+        let pasiva = this.gestorPersonajes.obtener(jugadorQuePasaElTurno.personaje)
+        if (pasiva && pasiva.onPasarTurno){
+            pasiva.onPasarTurno(this, jugadorQuePasaElTurno)
+        }
+
+        if (jugadorQuePasaElTurno.efecto.has("malestar")){
+            jugadorQuePasaElTurno.efecto.set("malestar", jugadorQuePasaElTurno.efecto.get("malestar") - 1)
+            if (jugadorQuePasaElTurno.efecto.get("malestar") <= 0){
+                jugadorQuePasaElTurno.efecto.delete("malestar")
+            }
+        }
     }
 }

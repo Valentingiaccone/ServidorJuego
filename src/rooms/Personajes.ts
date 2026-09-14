@@ -357,6 +357,7 @@ export class Mikotoba implements IPersonaje {
     sfxDefault = "mikotobaDeGordoAFlaco"
 
     onIniciarPartida(sala: any, jugador: any): void {
+        jugador.boolean.set("mikotobaEstaGordo", true)
         this.actualizarNombre(jugador, sala)
     }
 
@@ -369,7 +370,7 @@ export class Mikotoba implements IPersonaje {
             return 0
         }
 
-        if (jugador.mikotobaEstaGordo){
+        if (jugador.boolean.get("mikotobaEstaGordo")){
             return 1
         } else {
             return 0
@@ -377,7 +378,7 @@ export class Mikotoba implements IPersonaje {
     }
 
     modificarCuraBotiquin(sala: IMyRoom, jugador: Jugador): number {
-        if (jugador.mikotobaEstaGordo){
+        if (jugador.boolean.get("mikotobaEstaGordo")){
             return 0
         } else {
             return 1
@@ -386,7 +387,7 @@ export class Mikotoba implements IPersonaje {
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
         this.actualizarNombre(victima, sala)
-        if (victima.mikotobaEstaGordo){
+        if (victima.boolean.get("mikotobaEstaGordo")){
             return
         } else {
             if (victima.vidas > 0) {
@@ -398,20 +399,20 @@ export class Mikotoba implements IPersonaje {
 
     private actualizarNombre(jugador: any, sala: any): void {
         if (jugador.vidas >= 3){
-            jugador.mikotobaEstaGordo = true
+            jugador.boolean.set("mikotobaEstaGordo", true)
             jugador.spriteAvatarOpcional = ""
         } else {
-            if (jugador.mikotobaEstaGordo){
-                jugador.mikotobaEstaGordo = false
+            if (jugador.boolean.get("mikotobaEstaGordo")){
+                jugador.booolean.set("mikotobaEstaGordo", false)
                 jugador.spriteAvatarOpcional = "Mikotoba flaco"
                 sala.broadcast("sfx", "mikotobaDeGordoAFlaco")
             } else {
-                jugador.mikotobaEstaGordo = false
+                jugador.boolean.set("mikotobaEstaGordo", false)
                 jugador.spriteAvatarOpcional = "Mikotoba flaco"
             }
         }
 
-        jugador.puedeUsarFallo = !jugador.mikotobaEstaGordo
+        jugador.puedeUsarFallo = !jugador.boolean.get("mikotobaEstaGordo")
     }
 }
 
@@ -2832,59 +2833,130 @@ export class Shelly implements IPersonaje {
     }
 }
 
+export class Byron implements IPersonaje {
+    nombre = "Byron";
+    habilidad = "Malestar:\nUna vez por turno puede descartar el Bang! de mas a la izquierda y obtener un Botiquin. Al golpear agrega 1 de efecto Malestar (impide curacion).";
+    habilidadEnCatalan = "..";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        let botonTransmutar = new HabilidadActiva();
+        botonTransmutar.id = "byron_botiquin";
+        botonTransmutar.textoBoton = "Transmutar";
+        botonTransmutar.tooltip = "Transforma tu BANG! de más a la izquierda en un Botiquín.";
+        botonTransmutar.spriteBoton = "botonByron";
+        jugador.habilidadesActivas.push(botonTransmutar);
+
+        jugador.boolean.set("byronUsado", false);
+    }
+
+    onIniciarTurno(sala: any, jugador: any): void {
+        jugador.boolean.set("byronUsado", false);
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (!jugador) {
+            console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Byron");
+            return;
+        }
+        if (!sala) {
+            console.error("ERROR: sala es null en ejecutarHabilidadActiva de Byron");
+            return;
+        }
+
+        if (jugador.estaVivo && idHabilidad === "byron_botiquin") {
+            
+            if (jugador.boolean.get("byronUsado") === true) {
+                client.send("alerta_personal", "Ya usaste tu habilidad en este turno.");
+                return;
+            }
+
+            let indiceBang = jugador.mano.findIndex((c: any) => c.nombre === "BANG!");
+
+            if (indiceBang === -1) {
+                client.send("alerta_personal", "Necesitás tener al menos un BANG! en la mano.");
+                return;
+            }
+
+            let cartaExtraida = jugador.mano.splice(indiceBang, 1)[0];
+            sala.descartarCarta(cartaExtraida, jugador, "HABILIDAD");
+
+            let nuevoBotiquin = CatalogoCartasEspeciales.crearBotiquin();
+            
+            if (nuevoBotiquin) {
+                nuevoBotiquin.esConjurada = true;
+                jugador.mano.push(nuevoBotiquin);
+
+                jugador.boolean.set("byronUsado", true);
+
+                sala.agregarRegistro(`🧪 ¡${jugador.personaje} convirtió un BANG! en un Botiquín!`);
+            }
+        }
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+        if (jugadorGolpeado.efecto.has("malestar")){
+            jugadorGolpeado.efecto.set("malestar", jugadorGolpeado.efecto.get("malestar") + 1)
+        } else {
+            jugadorGolpeado.efecto.set("malestar", 1)
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
-        this.registrar(new Perro())
-        this.registrar(new DaveElLoco())
-        this.registrar(new Junkrat())
-        this.registrar(new Max())
-        this.registrar(new Pedro())
-        this.registrar(new Amelia())
-        this.registrar(new Microbios())
-        this.registrar(new PerroNinja())
-        this.registrar(new Monito())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
+        // this.registrar(new Perro())
+        // this.registrar(new DaveElLoco())
+        // this.registrar(new Junkrat())
+        // this.registrar(new Max())
+        // this.registrar(new Pedro())
+        // this.registrar(new Amelia())
+        // this.registrar(new Microbios())
+        // this.registrar(new PerroNinja())
+        // this.registrar(new Monito())
         this.registrar(new KarateKillo())
         this.registrar(new Tripulante())
         this.registrar(new Shelly())
+        this.registrar(new Byron())
 
 
 

@@ -87,7 +87,6 @@ export class Jugador extends Schema {
     @type("number") usosArtesanaEsteTurno: number = 0;
     @type("number") clonesCreadosEsteTurno: number = 0;
     @type("number") robinDescartes: number = 0;
-    @type("boolean") mikotobaEstaGordo: boolean = false
     @type("boolean") transformarCuraEnEscudo: boolean = false
     @type("string") geometryDashModo: string = ""
     @type("number") usosBallEsteTurno: number = 0;
@@ -98,6 +97,7 @@ export class Jugador extends Schema {
     @type({ map: "boolean" }) boolean = new MapSchema<boolean>();
     @type({ map: "string" }) string = new MapSchema<string>();
     @type({ map: Jugador }) jugador = new MapSchema<Jugador>();
+    @type({ map: "number" }) efecto = new MapSchema<number>();
 }
 
 export class MyRoomState extends Schema {

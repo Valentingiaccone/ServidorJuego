@@ -101,7 +101,14 @@ export class Utilidades {
             if (j && j.estaVivo) totalVivos++;
         });
 
-        if (totalVivos === 2) return true;
+        if (jugador.efecto.has("malestar")){
+            return false
+        }
+
+        if (totalVivos === 2) {
+            return true;
+        }
+
         return jugador.vidas < jugador.vidasMaximas;
     }
 
