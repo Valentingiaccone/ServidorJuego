@@ -39,11 +39,11 @@ export class EfectoCurarDuo implements IEfectoCarta {
         }
 
         if (!Utilidades.puedeRecibirCuracion(sala, jugadorQueJuega)) {
-            client.send("alerta_personal", "Tu salud ya está al máximo.");
+            client.send("alerta_personal", "No podes curarte ahora mismo.");
             return false;
         }
         if (!Utilidades.puedeRecibirCuracion(sala, victima)) {
-            client.send("alerta_personal", "El objetivo ya tiene la salud al máximo.");
+            client.send("alerta_personal", "El objetivo no puede curarse ahora mismo.");
             return false;
         }
 
@@ -97,7 +97,7 @@ export class EfectoCurarATodos implements IEfectoCarta {
         });
 
         if (!alguienNecesitaCura) {
-            client.send("alerta_personal", "Todos los jugadores vivos ya tienen la salud al máximo.");
+            client.send("alerta_personal", "No hay ningun jugador que se pueda curar ahora mismo.");
             return false;
         }
 
@@ -608,16 +608,8 @@ export class EfectoClonarMano implements IEfectoCarta {
         }
 
         for (let i = 0; i < 2; i++) {
-            let clon = new Carta();
-            clon.id = `clon_${i}_${cartaAClonar.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-            clon.nombre = cartaAClonar.nombre;
-            clon.descripcion = cartaAClonar.descripcion;
-            clon.descripcionEnCatalan = cartaAClonar.descripcionEnCatalan;
-            clon.tipoDeUso = cartaAClonar.tipoDeUso;
-            clon.efecto = cartaAClonar.efecto;
-            
+            let clon = Utilidades.clonarCarta(cartaAClonar, "clon");
             clon.esConjurada = true; 
-            
             jugadorQueJuega.mano.push(clon);
         }
 

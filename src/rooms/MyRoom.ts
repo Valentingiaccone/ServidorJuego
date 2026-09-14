@@ -947,6 +947,7 @@ export class MyRoom extends Room implements IMyRoom{
                 if (fueExitoStr === "vacio") { textoVisual = "¡SE SALVÓ!"; colorVerde = true; }
                 else if (fueExitoStr === "curar") { textoVisual = "¡CURACIÓN!"; colorVerde = true; }
                 else if (fueExitoStr === "robar") { textoVisual = "¡ROBO!"; colorVerde = true; }
+                else if (fueExitoStr === "libro") { textoVisual = "¡MEJORA!"; colorVerde = true; }
                 else if (fueExitoStr === "dano") { textoVisual = "¡DAÑO!"; colorVerde = false; }
                 else if (fueExitoStr === "descartar") { textoVisual = "¡DESCARTE!"; colorVerde = false; }
                 else if (fueExitoStr === "comilon") { textoVisual = "¡COMILON!"; colorVerde = false; }

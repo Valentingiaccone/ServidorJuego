@@ -524,54 +524,34 @@ export class Tilink implements IPersonaje {
     sfxDefault= "sfxTilink"
 
     onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string) {
-        // Solo cuenta si lo hace en su turno voluntariamente (no si le tiran un Cocoroch)
         if (motivo !== "VOLUNTARIO") return;
         
-        // 1. Inicializamos el contador del turno si no existe
         if (!jugador.clonesCreadosEsteTurno) {
             jugador.clonesCreadosEsteTurno = 0;
         }
 
-        // 2. Freno de seguridad: Límite de 2 por turno
         if (jugador.clonesCreadosEsteTurno >= 2) {
             return;
         }
         
-        // 3. Verificamos que la carta descartada inicialmente sea original
         if (!cartaDescartada.esConjurada) {
             
-            // 4. Filtramos la mano para quedarnos solo con las cartas que NO son clones
             let cartasOriginalesEnMano = jugador.mano.filter((c: any) => !c.esConjurada);
             
-            // 5. Si tiene al menos una carta original para clonar...
             if (cartasOriginalesEnMano.length > 0) {
                 
-                // Elegimos una al azar
                 let indiceAleatorio = Math.floor(Math.random() * cartasOriginalesEnMano.length);
                 let cartaAClonar = cartasOriginalesEnMano[indiceAleatorio];
                 
-                // --- NUEVO SISTEMA ANTI-EXPLOIT ---
-                // Eliminamos la carta original de la mano y la mandamos al descarte real
                 let indiceEnMano = jugador.mano.findIndex((c: any) => c.id === cartaAClonar.id);
                 if (indiceEnMano !== -1) {
                     jugador.mano.splice(indiceEnMano, 1);
                     sala.agregarAlDescarte(cartaAClonar, jugador, null); 
                 }
                 
-                // Creamos EXACTAMENTE 2 CLONES para reemplazarla
                 for (let i = 0; i < 2; i++) {
-                    let clon = new Carta();
+                    let clon = Utilidades.clonarCarta(cartaAClonar, "clon");
                     
-                    // ID único por cada clon generado
-                    clon.id = `clon_${i}_${cartaAClonar.id}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-                    
-                    clon.nombre = cartaAClonar.nombre;
-                    clon.descripcion = cartaAClonar.descripcion;
-                    clon.descripcionEnCatalan = cartaAClonar.descripcionEnCatalan;
-                    clon.tipoDeUso = cartaAClonar.tipoDeUso;
-                    clon.efecto = cartaAClonar.efecto;
-                    
-                    // Al marcarlos como conjuradas, nunca más podrán ser seleccionados por este filtro
                     clon.esConjurada = true; 
                     
                     jugador.mano.push(clon);
@@ -579,9 +559,8 @@ export class Tilink implements IPersonaje {
                 
                 jugador.clonesCreadosEsteTurno++;
                 
-                // Actualizamos la notificación para que la mesa entienda el sacrificio
                 sala.agregarRegistro(`🪞 ¡${jugador.personaje} sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/2)`);
-                sala.reproducirSfx("tilinkPasiva")
+                sala.reproducirSfx("tilinkPasiva");
             }
         }
     }
@@ -2908,51 +2887,51 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy())
-        // this.registrar(new Berry())
-        // this.registrar(new Maton())
-        // this.registrar(new Mandy())
-        // this.registrar(new Tralalero())
-        // this.registrar(new Darryl())
-        // this.registrar(new JetpackCat())
-        // this.registrar(new KayFaraday())
-        // this.registrar(new Chester())
-        // this.registrar(new Frank())
-        // this.registrar(new Pam())
-        // this.registrar(new Trucy())
-        // this.registrar(new Luigi())
-        // this.registrar(new Mario())
-        // this.registrar(new Lesly())
-        // this.registrar(new Mikotoba())
-        // this.registrar(new Domino())
-        // this.registrar(new Tilink())
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
-        // this.registrar(new Haley())
-        // this.registrar(new Maggey())
-        // this.registrar(new Mortis())
-        // this.registrar(new Maya())
-        // this.registrar(new Geraldo())
-        // this.registrar(new RaymundoEscudos())
-        // this.registrar(new Cubo())
-        // this.registrar(new VonKarma())
-        // this.registrar(new Mercy())
-        // this.registrar(new Chispitas())
-        // this.registrar(new Dahlia())
-        // this.registrar(new Meg())
-        // this.registrar(new Perro())
-        // this.registrar(new DaveElLoco())
-        // this.registrar(new Junkrat())
-        // this.registrar(new Max())
-        // this.registrar(new Pedro())
-        // this.registrar(new Amelia())
-        // this.registrar(new Microbios())
-        // this.registrar(new PerroNinja())
-        // this.registrar(new Monito())
+        this.registrar(new ColeCasiddy())
+        this.registrar(new Berry())
+        this.registrar(new Maton())
+        this.registrar(new Mandy())
+        this.registrar(new Tralalero())
+        this.registrar(new Darryl())
+        this.registrar(new JetpackCat())
+        this.registrar(new KayFaraday())
+        this.registrar(new Chester())
+        this.registrar(new Frank())
+        this.registrar(new Pam())
+        this.registrar(new Trucy())
+        this.registrar(new Luigi())
+        this.registrar(new Mario())
+        this.registrar(new Lesly())
+        this.registrar(new Mikotoba())
+        this.registrar(new Domino())
+        this.registrar(new Tilink())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
+        this.registrar(new Haley())
+        this.registrar(new Maggey())
+        this.registrar(new Mortis())
+        this.registrar(new Maya())
+        this.registrar(new Geraldo())
+        this.registrar(new RaymundoEscudos())
+        this.registrar(new Cubo())
+        this.registrar(new VonKarma())
+        this.registrar(new Mercy())
+        this.registrar(new Chispitas())
+        this.registrar(new Dahlia())
+        this.registrar(new Meg())
+        this.registrar(new Perro())
+        this.registrar(new DaveElLoco())
+        this.registrar(new Junkrat())
+        this.registrar(new Max())
+        this.registrar(new Pedro())
+        this.registrar(new Amelia())
+        this.registrar(new Microbios())
+        this.registrar(new PerroNinja())
+        this.registrar(new Monito())
         this.registrar(new KarateKillo())
         this.registrar(new Tripulante())
         this.registrar(new Shelly())
