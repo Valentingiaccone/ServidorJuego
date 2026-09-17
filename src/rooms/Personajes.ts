@@ -768,7 +768,7 @@ export class Robin implements IPersonaje {
 export class Luciergana implements IPersonaje {
     
     nombre = "Luciergana";
-    habilidad = "Reflejo:\nAl perder vida: empieza a brillar\nAl final del turno: se apaga\nTiene 1 vida menos.";
+    habilidad = "Reflejo:\nAl perder vida: empieza a brillar.\nAl final del turno: se apaga.\nTiene 1 vida menos.";
     habilidadEnCatalan = "Reflex:\nEn perdre vida, comença a brillar. Mentre brilla, si l ataquen, la seva salut no es veu afectada i retorna el dany a l atacant. Després s apaga. Al final del seu torn s apaga i té 1 vida menys.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLuciernaga", true];
@@ -1468,7 +1468,7 @@ export class VonKarma implements IPersonaje {
 
 export class Mercy implements IPersonaje {
     nombre = "Mercy";
-    habilidad = "Los heroes nunca mueren:\nBoton intercambio: podes intercambiar entre que tus Bang! hagan daño o curen\nLos demas no saben si el Bang! hará daño o curará.\nCurar con un Bang! a otro jugador te cura 1.";
+    habilidad = "Los heroes nunca mueren:\nBoton intercambio: podes intercambiar entre que tus Bang! hagan daño o curen.\nLos demas no saben si el Bang! hará daño o curará.\nCurar con un Bang! a otro jugador te cura 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
