@@ -892,6 +892,7 @@ export class EfectoGranDesaparicion implements IEfectoCarta {
                 sala.agregarRegistro(`🎩 ${jugadorQueJuega.personaje} le hace desaparecer todo el equipamiento a ${jugadorVinculado.personaje}`)
                 sala.ejecutarAnimacionCarta(client, cartaJugada)
                 sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+                sala.reproducirSfx("granDesaparicion")
                 
                 return true
             }

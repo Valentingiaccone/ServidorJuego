@@ -857,6 +857,7 @@ export class Maggey implements IPersonaje {
     habilidad = "Ay! pero que mala suerte...:\nEl resto de los jugadores tiene mas mala suerte y les agrega en su ruleta tres puntos para robar una carta.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAceAttorney", false];
 
     private aplicarMalaSuerte(jugadorQueTira: any, miJugador: any) {
         if (jugadorQueTira.nombre !== miJugador.nombre && jugadorQueTira.personaje !== miJugador.personaje) {
@@ -921,6 +922,7 @@ export class Maya implements IPersonaje {
     habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos.\nPenalizacion 1.\n(seguramente no funcione con flowery y Haley).";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteAceAttorney", false];
 
     // =================================================================
     // EL MOTOR CENTRAL: Acá ocurre toda la lógica repetitiva
@@ -1435,8 +1437,7 @@ export class VonKarma implements IPersonaje {
     habilidad = "Falsificación de evidencia:\nBoton la bala: te quita 1 vida y roba 2 cartas.";
     habilidadEnCatalan = "Falsificació d'evidència:\nPots perdre 1 de vida per robar 2 cartes.";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
-    sfxDefault = "sfxMensaje";
+    sfxMuerte: [string, boolean] = ["muerteAceAttorney", false];
 
     onIniciarPartida(sala: any, jugador: any) {
         let boton = new HabilidadActiva();
@@ -1510,8 +1511,8 @@ export class Mercy implements IPersonaje {
 
 export class Chispitas implements IPersonaje {
     nombre = "Chispitas";
-    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas: se carga y gana 1 escudo, cuando está cargado, su Bang! tiene daño infinito, jugar o descartar cartas lo descarga excepto disparar Bangs!, puede almacenar 1 carta extra a su vida.";
-    habilidadEnCatalan = "Destrucció:\nSi durant el seu torn no juga ni descarta cap carta, es carrega i guanya 1 escut. Quan està carregat, el seu Bang! fa dany infinit, jugar o descartar cartes el descarrega, pot emmagatzemar 1 carta extra a la seva vida.";
+    habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas: se carga y gana 1 escudo.\nJugar o descartar cartas lo descarga excepto disparar Bangs!\nAlmacenamiento 1.";
+    habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
@@ -1567,8 +1568,8 @@ export class Chispitas implements IPersonaje {
 
 export class Dahlia implements IPersonaje {
     nombre = "Dahlia e Iris";
-    habilidad = "Hermanas gemelas:\nSi no es SHERIFF es Dahlia, al morir, sus embrujos colocan un 150% mas de puntos, pero si es SHERIFF es Iris, no le afectan los embrujos negativos y potencia los positivos.";
-    habilidadEnCatalan = "Germanes bessones:\nSi no és XÈRIF, és Dahlia: en morir, els seus encanteris atorguen un 150% més de punts. Però si és XÈRIF, és Iris: no l’afecten els encanteris negatius i potencia els positius.";
+    habilidad = "Hermanas gemelas:\nSi no es SHERIFF es Dahlia: Al embrujar: coloca un +150% de puntos.\nSi es SHERIFF es Iris: no le afectan los embrujos negativos y potencia los positivos.";
+    habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
@@ -1581,7 +1582,11 @@ export class Dahlia implements IPersonaje {
     }
 
     modificarPuntosAlEmbrujar(sala: any, miJugador: Jugador, victima: Jugador, embrujo: string, puntos: number): number {
-        return puntos * 1.5
+        if (miJugador.boolean.get("dahliaSheriff")){
+            return 0
+        } else {
+            return puntos * 1.5
+        }
     }
 
     onSacarEmbrujoEnRuleta(sala: any, miJugador: Jugador, tipo: string): void {
@@ -1592,6 +1597,13 @@ export class Dahlia implements IPersonaje {
             } else if (tipo == "curar"){
                 Utilidades.aplicarCuracion(sala, miJugador, 1, "embrujo", true)
                 sala.agregarRegistro(`🔮 ${miJugador.personaje} se curá 1 de vida extra por su pasiva.`)
+            } else if (tipo == "libro"){
+                let textoMejora: string = Utilidades.mejorarEquipamientoAleatorio(sala, miJugador)
+                if (textoMejora != "") {
+                    sala.agregarRegistro(`🔮 ${miJugador.personaje} mejora ${textoMejora} por su pasiva.`);
+                } else {
+                    sala.agregarRegistro(`🔮 ${miJugador.personaje} trata de mejorar un equipamiento por su pasiva pero no tiene nada que se pueda mejorar.`);
+                }
             }
         }
     }
@@ -1599,7 +1611,7 @@ export class Dahlia implements IPersonaje {
 
 export class Meg implements IPersonaje {
     nombre = "Meg";
-    habilidad = "Robot:\nTiene 3 vidas. Empieza en modo ROBOT, al morir sobrevive con 1 vida, 1 escudo y pasa al modo CHIQUITA, en este modo roba una carta extra en su turno y usar un Fallo te da otro Fallo, al pasar el turno se pone modo CONSTRUCTORA, en este modo al inicio del turno vuelve al modo ROBOT.";
+    habilidad = "Megamaquina:\nTiene 3 vidas.\nTiene 3 modos: MECA, CHIQUITA y CONSTRUCTORA.\nEmpieza la partida en el modo MECA.";
     habilidadEnCatalan = "Robot:\nTé 3 vides. Comença en mode ROBOT. En morir, sobreviu amb 1 vida i 1 escut, i passa al mode XIQUETA. En aquest mode, roba una carta extra durant el seu torn i utilitzar un Fall et dona un altre Fall. En passar el torn, passa al mode CONSTRUCTORA. En aquest mode, a l’inici del torn torna al mode ROBOT.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
@@ -1662,11 +1674,11 @@ export class Meg implements IPersonaje {
 
 export class Perro implements IPersonaje {
     nombre = "Perro";
-    habilidad = "La casa del perro:\nAl golpear a alguien o al recibir daño, le coloca un perro en una carta aleatoria del otro jugador, si un jugador descarta una carta con un perro, este recibe 1 de daño.";
+    habilidad = "La casa del perro:\nAl golpear o al recibir daño: le coloca un perro con hueso en una carta aleatoria del otro jugador.";
     habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
-    sfxDefault = "sfxMensaje";
+    sfxMuerte: [string, boolean] = ["sfxPerroMuerte", true];
+    sfxDefault = "sfxPerro"
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         if (atacante && atacante.mano.length > 0) {
@@ -1702,7 +1714,7 @@ export class Perro implements IPersonaje {
 
 export class DaveElLoco implements IPersonaje {
     nombre = "Dave el loco";
-    habilidad = "Plantas:\nCuando roba cartas roba 1 menos pero a cambio te da una planta entre 15 posibles.";
+    habilidad = "Plantas:\nCuando roba: roba 1 menos pero a cambio te da una planta entre 15 posibles.";
     habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["sfxCrazyDaveMuerte", false];
@@ -1737,7 +1749,7 @@ export class DaveElLoco implements IPersonaje {
 
 export class Junkrat implements IPersonaje {
     nombre = "Junkrat";
-    habilidad = "Demolicion:\nAl inicio de su turno roba tantas cartas como salud tenga y luego recibe 1 de daño asi mismo, despues de eso roba las 2 de su turno.";
+    habilidad = "Demolicion:\nAl inicio del turno: roba tantas cartas como salud tenga y luego recibe 1 de daño asi mismo, despues de eso roba las 2 de su turno\nPenalizacion 1.";
     habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
@@ -1760,6 +1772,10 @@ export class Junkrat implements IPersonaje {
             sala.repartirCartas(miJugador, miJugador.vidas, "pasiva")
             Utilidades.procesarDano(sala, miJugador, miJugador, 1, "pasiva", false)
         }
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return -1
     }
 }
 
@@ -1804,7 +1820,7 @@ export class Max implements IPersonaje {
 
 export class Tracer implements IPersonaje {
     nombre = "Tracer";
-    habilidad = "Lo intentaremos otra vez:\nTiene 2 vidas menos, si no es Sheriff, comienza con 3 escudos temporales, durante su turno puede guardar su estado, las proximas 2 veces que muera, volverá a su ultimo estado guardado (guardar un estado sobreescribe el ultimo guardado).";
+    habilidad = "Lo intentaremos otra vez:\nTiene 2 vidas menos, si no es Sheriff, comienza con 3 escudo temporal, durante su turno puede guardar su estado, las proximas 2 veces que muera, volverá a su ultimo estado guardado (guardar un estado sobreescribe el ultimo guardado).";
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
@@ -1908,10 +1924,12 @@ export class Tracer implements IPersonaje {
 
 export class Pedro implements IPersonaje {
     nombre = "Pedro";
-    habilidad = "Alimentame:\nAl golpear a un enemigo, le descarta un equipamiento aleatorio y pedro crece, puede crecer hasta 5 veces, cada crecimiento le da 1 de alcance, el crecimiento 1, 3 y 5 le permite almacenar una carta extra, recibir daño le provoca decrecer con un 50% de que ocurra.";
+    habilidad = "Alimentame:\nAl golpear: le descarta un equipamiento aleatorio y pedro crece.\nAl recibir daño: pedro decrece.\nCada nivel de crecimiento le da 1 de alcance.\nEl nivel de crecimiento 1, 3 y 5 le da almacenamiento +1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     spriteFueraDeJuego: boolean = true
+    sfxMuerte: [string, boolean] = ["muertePedro", true];
+    sfxDefault = "sfxPedro"
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.number.set("pedroCrecimiento", 0)
@@ -1938,6 +1956,7 @@ export class Pedro implements IPersonaje {
             if (miJugador.number.get("pedroCrecimiento") < 5){
                 miJugador.number.set("pedroCrecimiento", miJugador.number.get("pedroCrecimiento") + 1)
                 sala.agregarRegistro(`🌿 ${miJugador.personaje} crece ${miJugador.number.get("pedroCrecimiento")}/5`)
+                sala.reproducirSfx("sfxPedroCreciendo")
             }
         }
     }
@@ -1980,6 +1999,7 @@ export class Pedro implements IPersonaje {
                 if (numero == 1){
                     victima.number.set("pedroCrecimiento", victima.number.get("pedroCrecimiento") - 1)
                     sala.agregarRegistro(`🌿 ${victima.personaje} decrece ${victima.number.get("pedroCrecimiento")}/5`)
+                    sala.reproducirSfx("sfxPedroEncogiendose")
                 }
             }
         }
@@ -1988,7 +2008,7 @@ export class Pedro implements IPersonaje {
 
 export class Amelia implements IPersonaje {
     nombre = "Amelia";
-    habilidad = "Amelia la asombrosa:\nAl pasar el turno gana un escudo (no sirve en 1vs1), cada 4 cartas que juega gana un escudo, cada vez que roba, roba una extra, cada 2 vidas que pierde por culpa de otro jugador, gana una Gran desaparicion (hace desaparecer todo el equipamiento, va dirigido al jugador que la golpeó), puede descartar sus 2 cartas de la izquierda para ganar tantos escudos como cartas en mano tenga luego del descarte (recarga 3 rondas), puede perder 1 vida para que sus escudos actuales duren un turno mas (recarga 2 rondas), para pasar el turno debe tener su salud -2 cartas en mano.";
+    habilidad = "Amelia la asombrosa:\nAl final del turno: gana un escudo (no sirve en 1vs1).\nCada 4 cartas que juega: gana un escudo.\nAl perder 2 vidas por otro jugador: conjura una Gran desaparicion.\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmelia", false];
@@ -2002,24 +2022,6 @@ export class Amelia implements IPersonaje {
 
         jugador.number.set("ameliaJugadas", 0)
         jugador.number.set("ameliaVidasPerdias", 0)
-
-        let boton = new HabilidadActiva();
-        boton.id = "amelia_agregarEscudo";
-        boton.textoBoton = "Agregar escudo";
-        boton.tooltip = "Descarta 2 cartas, te da escudo segun tus cartas";
-        boton.spriteBoton = "botonAmeliaAgregarEscudo";
-        jugador.habilidadesActivas.push(boton);
-
-        jugador.number.set("ameliaRecargaAgregarEscudo", 0)
-
-        let boton2 = new HabilidadActiva();
-        boton2.id = "amelia_aumentarDuracionEscudo";
-        boton2.textoBoton = "Aumentar duracion";
-        boton2.tooltip = "Pierde vida, aumenta duracion escudo";
-        boton2.spriteBoton = "botonAmeliaAumentarDuracion";
-        jugador.habilidadesActivas.push(boton2);
-
-        jugador.number.set("ameliaRecargaDuracionEscudo", 0)
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
@@ -2044,10 +2046,10 @@ export class Amelia implements IPersonaje {
         if (totalVivos > 2){
             Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
             sala.agregarRegistro(`🎩 ${jugador.personaje} obtuvo un escudo por pasar su turno.`)
+            const numero: number = Math.floor(Math.random() * 2);
+            const sfx: string = "ameliaHabilidadAgregarEscudo" + numero
+            sala.reproducirSfx(sfx)
         }
-
-        jugador.number.set("ameliaRecargaAgregarEscudo", jugador.number.get("ameliaRecargaAgregarEscudo") - 1)
-        jugador.number.set("ameliaRecargaDuracionEscudo", jugador.number.get("ameliaRecargaDuracionEscudo") - 1)
     }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
@@ -2070,12 +2072,11 @@ export class Amelia implements IPersonaje {
             jugador.number.set("ameliaJugadas", 0)
 
             Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
-            sala.agregarRegistro(`🎩 ${jugador.personaje} obtuvo un escudo por jugar 3 cartas`)
+            sala.agregarRegistro(`🎩 ${jugador.personaje} obtuvo un escudo por jugar 4 cartas`)
+            const numero: number = Math.floor(Math.random() * 2);
+            const sfx: string = "ameliaHabilidadAgregarEscudo" + numero
+            sala.reproducirSfx(sfx)
         }
-    }
-
-    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
-        return 1
     }
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
@@ -2125,90 +2126,14 @@ export class Amelia implements IPersonaje {
         }
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
-        if (!jugador){
-            console.error("ERROR: jugador es null en ejecutarHabilidadActiva en Amelia")
-            return
-        }
-        if (!sala){
-            console.error("ERROR: sala es null en ejecutarHabilidadActiva en Amelia")
-            return
-        }
-
-        if (jugador.estaVivo && idHabilidad == "amelia_agregarEscudo"){
-
-            if (jugador.number.get("ameliaRecargaAgregarEscudo") > 0){
-                client.send("alerta_personal", `Esta habilidad se está recargando, faltan ${jugador.number.get("ameliaRecargaAgregarEscudo")} rondas.`)
-                return
-            }
-
-            if (jugador.mano.length < 2) {
-                client.send("alerta_personal", "Necesitás al menos 2 cartas para poder usar esta habilidad.");
-                return;
-            }
-            
-            if (jugador.mano.length === 2) {
-                client.send("alerta_personal", "Si descartás tus únicas 2 cartas, te quedarías con 0 en la mano y no ganarías ningún escudo.");
-                return;
-            }
-
-            let cartasADescartar = jugador.mano.splice(0, 2);
-
-            sala.descartarCarta(cartasADescartar[0], jugador, "pasiva");
-            sala.descartarCarta(cartasADescartar[1], jugador, "pasiva");
-
-            let escudosGanados = jugador.mano.length;
-            Utilidades.agregarEscudos(sala, jugador, escudosGanados, 1, "pasiva");
-
-            sala.agregarRegistro(`🎩 ¡${jugador.personaje} descartó 2 cartas y generó ${escudosGanados} escudos temporales!`);
-            const numero: number = Math.floor(Math.random() * 2);
-            const sfx: string = "ameliaHabilidadAgregarEscudo" + numero
-            sala.reproducirSfx(sfx)
-
-            jugador.number.set("ameliaRecargaAgregarEscudo", 3)
-        } 
-        else if (jugador.estaVivo && idHabilidad == "amelia_aumentarDuracionEscudo"){
-
-            if (jugador.number.get("ameliaRecargaDuracionEscudo") > 0){
-                client.send("alerta_personal", `Esta habilidad se está recargando, faltan ${jugador.number.get("ameliaRecargaDuracionEscudo")} rondas.`)
-                return
-            }
-            
-            if (jugador.vidas <= 1) {
-                client.send("alerta_personal", "No podés usar esta habilidad porque te costaría la vida.");
-                return;
-            }
-
-            if (!jugador.turnosEscudos || jugador.turnosEscudos.length === 0) {
-                client.send("alerta_personal", "No tenés ningún escudo activo para extender su duración.");
-                return;
-            }
-
-            Utilidades.procesarDano(sala, jugador, jugador, 1, "pasiva", true);
-
-            if (jugador.estaVivo) {
-                for (let i = 0; i < jugador.turnosEscudos.length; i++) {
-                    jugador.turnosEscudos[i]++;
-                }
-
-                sala.agregarRegistro(`🎩 ¡${jugador.personaje} sacrificó 1 de vida para extender la duración de todos sus escudos 1 turno más!`);
-                // const numero: number = Math.floor(Math.random() * 2);
-                // const sfx: string = "ameliaHabilidadAgregarEscudo" + numero
-                sala.reproducirSfx("ameliaHabilidadRecargaDuracionEscudo0")
-
-                jugador.number.set("ameliaRecargaDuracionEscudo", 2)
-            }
-        }
-    }
-
     modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
-        return -2
+        return -1
     }
 }
 
 export class Microbios implements IPersonaje {
     nombre = "Microbios";
-    habilidad = "Microbios traviesos:\nAl jugar una carta se mueve a antihorario. Gana un clon de una carta aleatoria que tenga en la mano del jugador que sobrepasa (2 veces, se recarga al inicio del turno). Para pasar el turno deben tener su salud - 1 cartas en mano.";
+    habilidad = "Microbios traviesos:\nAl jugar una carta: se mueve a antihorario.\nConjura una carta aleatoria que tenga en la mano del jugador que sobrepasa (2 veces, se recarga al inicio del turno).\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxDefault = "sfxMicrobios"
@@ -2273,7 +2198,7 @@ export class Microbios implements IPersonaje {
 
 export class PerroNinja implements IPersonaje {
     nombre = "Perro Ninja";
-    habilidad = "Corte preciso:\nPor cada vida que vaya a perder, si puede descarta tu Bang! de la izquierda para defenderse.";
+    habilidad = "Corte preciso:\nPor cada vida que vaya a perder: descarta tu Bang! de la izquierda para defenderse.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muertePerroNinja", false];
@@ -2313,7 +2238,7 @@ export class PerroNinja implements IPersonaje {
 
 export class Monito implements IPersonaje {
     nombre = "Monito";
-    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano, roba una carta, (5 usos, se recarga al pasar turno) para pasar el turno debe tener su salud -1 cartas en mano.";
+    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano: roba una carta (4 usos, se recarga al final del turno).\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMonito", false];
@@ -2350,11 +2275,11 @@ export class Monito implements IPersonaje {
             let tieneCopia = miJugador.mano.some((c: Carta) => c.nombre === cartaJugada.nombre);
 
             if (tieneCopia) {
-                if (miJugador.number.get("monito") <= 5){
+                if (miJugador.number.get("monito") <= 4){
                     miJugador.number.set("monito", miJugador.number.get("monito") + 1)
                     sala.repartirCartas(miJugador, 1, "pasiva");
                 
-                    sala.agregarRegistro(`🐒 ¡${miJugador.personaje} copió a ${jugadorQueJuega.personaje}! Como tiene un ${cartaJugada.nombre} en mano, roba 1 carta. (${miJugador.number.get("monito")}/5)`);
+                    sala.agregarRegistro(`🐒 ¡${miJugador.personaje} copió a ${jugadorQueJuega.personaje}! Como tiene un ${cartaJugada.nombre} en mano, roba 1 carta. (${miJugador.number.get("monito")}/4)`);
                     
                     sala.reproducirSfx("sfxMonito");
                 }
@@ -2378,7 +2303,7 @@ export class Monito implements IPersonaje {
 
 export class KarateKillo implements IPersonaje {
     nombre = "Karate Killo";
-    habilidad = "Oh yeah:\nPara entrar en modo FLOW, antes de pasar el turno debe jugar una carta, golpear un jugador y descartar una carta, en el modo FLOW puede descartar su BANG! de la izquierda para obtener una patada (1 por turno)(daño 2, vecino, pueden asumir caballo o barril, o usar fallo) o una maceta (ilimitado por turno)(daño 1, global, se evade con bang o fallo), al inicio del turno si estás en modo FLOW roba 1 carta extra, perder vida te quita de este modo y rompe tu combo.";
+    habilidad = "Oh yeah:\nSi juega 3 cartas antes del final del turno: entra en modo FLOW.\nBoton 1: descarta un Bang! y conjura una patada (1 por turno).\nBoton 2: descarta un Bang! y conjura una maceta.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteKillo", false];
@@ -2389,10 +2314,6 @@ export class KarateKillo implements IPersonaje {
             console.error("ERROR: jugador es null en onIniciarPartida en karate killo")
             return
         }
-
-        jugador.boolean.set("killoJugar", false)
-        jugador.boolean.set("killoGolpear", false)
-        jugador.boolean.set("killoDescartar", false)
 
         let boton = new HabilidadActiva();
         boton.id = "killo_patada";
@@ -2410,24 +2331,7 @@ export class KarateKillo implements IPersonaje {
         boton2.spriteBoton = "botonKilloMaceta";
         jugador.habilidadesActivas.push(boton2);
 
-        jugador.boolean.set("modoFlow", false)
-    }
-
-    private actualizarModoFlow(sala: IMyRoom, jugador: Jugador): void {
-        if (!jugador.boolean.get("killoJugar") || !jugador.boolean.get("killoGolpear") || !jugador.boolean.get("killoDescartar")){
-            jugador.spriteAvatarOpcional = ""
-            if (jugador.boolean.get("modoFlow")){
-                sala.reproducirSfx("killoPierdeFlow")
-                jugador.boolean.set("modoFlow", false)
-            }
-            return
-        }
-
-        if (!jugador.boolean.get("modoFlow")){
-            sala.reproducirSfx("killoEntraFlow")
-            jugador.boolean.set("modoFlow", true)
-        }
-        jugador.spriteAvatarOpcional = "Karate Killo flow"
+        jugador.number.set("karateKilloCombo", 0)
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
@@ -2436,25 +2340,9 @@ export class KarateKillo implements IPersonaje {
             return
         }
 
-        if (!jugador.boolean.get("killoJugar") || !jugador.boolean.get("killoGolpear") || !jugador.boolean.get("killoDescartar")){
-            jugador.boolean.set("killoJugar", false)
-            jugador.boolean.set("killoGolpear", false)
-            jugador.boolean.set("killoDescartar", false)
-        }
-
-        this.actualizarModoFlow(sala, jugador)
-    }
-
-    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
-        if (causa !== "turno"){
-            return 0
-        }
-
-        if (!jugador.boolean.get("killoJugar") || !jugador.boolean.get("killoGolpear") || !jugador.boolean.get("killoDescartar")){
-            return 0
-        } else {
-            return 1
-        }
+        if (jugador.number.get("karateKilloCombo") < 3){
+            jugador.number.set("karateKilloCombo", 0)
+        }        
     }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
@@ -2466,9 +2354,13 @@ export class KarateKillo implements IPersonaje {
             return
         }
 
-        jugador.boolean.set("killoJugar", true)
-
-        this.actualizarModoFlow(sala, jugador)
+        if (jugador.number.get("karateKilloCombo") < 3){
+            jugador.number.set("karateKilloCombo", jugador.number.get("karateKilloCombo") + 1)
+            if (jugador.number.get("karateKilloCombo") >= 3){
+                sala.reproducirSfx("killoEntraFlow")
+                jugador.spriteAvatarOpcional = "Karate Killo flow"
+            }
+        }
     }
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
@@ -2481,40 +2373,12 @@ export class KarateKillo implements IPersonaje {
         }
 
         if (danoCuerpo > 0){
-            victima.boolean.set("killoJugar", false)
-            victima.boolean.set("killoGolpear", false)
-            victima.boolean.set("killoDescartar", false)
-
-            this.actualizarModoFlow(sala, victima)
+            if (victima.number.get("karateKilloCombo") >= 3){
+                victima.number.set("karateKilloCombo", 0)
+                sala.reproducirSfx("killoPierdeFlow")
+                victima.spriteAvatarOpcional = ""
+            }
         }
-    }
-
-    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
-        if (!miJugador){
-            console.error("ERROR: miJugador es null en onGolpear en karate killo")
-            return
-        }
-        if (!miJugador.estaVivo){
-            return
-        }
-
-        miJugador.boolean.set("killoGolpear", true)
-
-        this.actualizarModoFlow(sala, miJugador)
-    }
-
-    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
-        if (!jugador){
-            console.error("ERROR: jugador es null en onJugarCarta en karate killo")
-            return
-        }
-        if (!jugador.estaVivo){
-            return
-        }
-
-        jugador.boolean.set("killoDescartar", true)
-
-        this.actualizarModoFlow(sala, jugador)
     }
 
     onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
@@ -2527,8 +2391,6 @@ export class KarateKillo implements IPersonaje {
         }
         
         miJugador.number.set("killoRecargaPatada", miJugador.number.get("killoRecargaPatada") - 1)
-
-        this.actualizarModoFlow(sala, miJugador)
     }
 
     ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
@@ -2541,7 +2403,7 @@ export class KarateKillo implements IPersonaje {
             return;
         }
 
-        if (!jugador.boolean.get("killoJugar") || !jugador.boolean.get("killoGolpear") || !jugador.boolean.get("killoDescartar")){
+        if (jugador.number.get("karateKilloCombo") < 3){
             client.send("alerta_personal", "Necesitás estar en modo flow para usar las habilidades.")
             return
         }
@@ -2593,7 +2455,7 @@ export class KarateKillo implements IPersonaje {
 
 export class Tripulante implements IPersonaje {
     nombre = "Tripulante";
-    habilidad = "Tripulante ejemplar:\nAl pasar el turno se pone a hacer una de 4 tareas que quieras para beneficiarte al inicio de tu turno. CABLES: mejora equipamiento aleatorio. ARCHIVOS: +2 cartas. PESCADOS: +1 vida. ESCUDOS: +2 escudos de 1 turno, perder vida te cancela una tarea, repetir tu ultima tarea cambia automaticamente a la siguiente.";
+    habilidad = "Tripulante ejemplar:\nAl final del turno: se pone a hacer una de 4 tareas que quieras: CABLES, ARCHIVOS, PESCADOS, ESCUDOS.\nPerder vida te cancela una tarea.\nRepetir tu ultima tarea cambia automaticamente a la siguiente.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
@@ -2739,7 +2601,7 @@ export class Tripulante implements IPersonaje {
 
 export class Shelly implements IPersonaje {
     nombre = "Shelly";
-    habilidad = "Escopetazo:\nUna vez por turno puede descartar automaticamente hasta 3 Bangs! para obtener un Escopetazo Bang! que hace igual daño a Bangs! descartados.";
+    habilidad = "Escopetazo:\nBoton (1 por turno): descarta hasta 3 Bangs! y conjura un Escopetazo Bang!.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
@@ -2814,7 +2676,7 @@ export class Shelly implements IPersonaje {
 
 export class Byron implements IPersonaje {
     nombre = "Byron";
-    habilidad = "Malestar:\nUna vez por turno puede descartar el Bang! de mas a la izquierda y obtener un Botiquin. Al golpear agrega 1 de efecto Malestar (impide curacion).";
+    habilidad = "Tratamiento completo:\nBoton (1 por turno): descarta un Bang! y conjura un Botiquin.\nAl golpear: agrega 1 de efecto Malestar.";
     habilidadEnCatalan = "..";
     vidasBase = 4;
 
@@ -2936,6 +2798,7 @@ export class GestorPersonajes {
         this.registrar(new Tripulante())
         this.registrar(new Shelly())
         this.registrar(new Byron())
+        this.registrar(new KarateKillo())
 
 
 

@@ -1015,8 +1015,7 @@ export class MyRoom extends Room implements IMyRoom{
                     else if (motivoActual === "Dinamita") {
                         if (fueExitoStr !== "exito") { 
                             this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió Rojo. La dinamita explotó en la cara de ${victima?.nombre}.`);
-                            const numero = Math.floor(Math.random() * 3);
-                            this.broadcast("sfx", "explosion" + numero);
+                            this.broadcast("sfx", "explosion");
                             
                             Utilidades.quitarEquipamiento(victima, "dinamita");
                             Utilidades.procesarDano(this, victima, null, 3, "DINAMITA");
@@ -1038,8 +1037,7 @@ export class MyRoom extends Room implements IMyRoom{
                     else if (motivoActual === "Papa") {
                         if (fueExitoStr !== "exito") { 
                             this.broadcast("notificacion_turno", `💥 ¡PAPA PAPA PAPAPUM, BOOOM! Salió Rojo. El Papapum explotó encima de ${victima?.nombre}.`);
-                            const numero = Math.floor(Math.random() * 3);
-                            this.broadcast("sfx", "explosion" + numero);
+                            this.broadcast("sfx", "explosion");
                             
                             Utilidades.quitarEquipamiento(victima, "papa");
                             this.state.probabilidadPapa = 1; 
@@ -2012,6 +2010,7 @@ export class MyRoom extends Room implements IMyRoom{
             } else {
                 Utilidades.procesarDano(this, jugador, atacante, 1, "DESCARTE", false)
             }
+            this.reproducirSfx("sfxPerroAtacando")
         }
 
         this.agregarAlDescarte(cartaDescartada, jugador, null)
