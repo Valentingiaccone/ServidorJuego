@@ -1595,9 +1595,28 @@ export class MyRoom extends Room implements IMyRoom{
                 }
             }
         });
+
+        this.onMessage("solicitar_wiki", (client, message) => {
+            let lista = this.gestorPersonajes.obtenerTodosParaRepartir();
+            
+            // Empaquetamos solo los datos visuales para no enviar funciones complejas
+            let datosWiki = lista.map((p: any) => ({
+                nombre: p.nombre,
+                habilidad: p.habilidad,
+                habilidadEnCatalan: p.habilidadEnCatalan,
+                sfxDefault: p.sfxDefault || "sfxMensaje"
+            }));
+            
+            client.send("datos_wiki", datosWiki);
+        });
     }
 
     onJoin (client: Client, options: any) {
+        if (options.esWiki) {
+            console.log(`📖 Un lector abrió la Wiki: ${client.sessionId}`);
+            return; 
+        }
+
         const nuevoJugador = new Jugador();
         if (options.nombre && options.nombre.trim() !== "") nuevoJugador.nombre = options.nombre;
         if (options.avatar) nuevoJugador.avatar = options.avatar;
