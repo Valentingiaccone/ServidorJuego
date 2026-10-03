@@ -139,6 +139,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearBang(): Carta {
+        let clon = new Carta();
+        clon.id = `bang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "BANG!";
+        clon.descripcion = "Quita 1 vida a un jugador a tu alcance.";
+        clon.descripcionEnCatalan = "";
+        clon.tipoDeUso = "objetivo";
+        clon.efecto = "dano_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     public static crearClon(): Carta {
         let clon = new Carta();
         clon.id = `clon_card_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -220,7 +232,7 @@ export class CatalogoCartasEspeciales {
         clon.descripcion = "Roba una carta de la mano o equipada a un jugador vecino.";
         clon.descripcionEnCatalan = "Roba una carta de la mà o equipada d un jugador veïns.";
         clon.tipoDeUso = "objetivoVecino";
-        clon.efecto = "robar_enemigo";
+        clon.efecto = "robarEnemigo";
         clon.esConjurada = false;
         return clon
     }
@@ -321,6 +333,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearSecador(): Carta {
+        let clon = new Carta();
+        clon.id = `secador_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Secador";
+        clon.descripcion = "Da 1 escudo a otro jugador.";
+        clon.descripcionEnCatalan = "";
+        clon.tipoDeUso = "objetivo";
+        clon.efecto = "secador";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     // EL MAPA (Pool de expansiones)
     public static obtenerPoolExtensiones(): Array<{ id: string, copias: number }> {
         return [
@@ -409,7 +433,7 @@ export class CatalogoCartasEspeciales {
             clon.tipoEmbrujo = "malo"
         } else if (elegida === "curar") {
             clon.nombre = "Milagro";
-            clon.descripcion = "Agrega 2 espacios de curación en la ruleta de un jugador vivo.";
+            clon.descripcion = "Agrega 2 espacios de +1 vida en la ruleta de un jugador vivo.";
             clon.descripcionEnCatalan = "Afegeix 2 espais de curació a la ruleta d'un jugador viu.";
             clon.efecto = "embrujar_curar_2";
             clon.tipoEmbrujo = "bueno"
@@ -486,7 +510,7 @@ export class CatalogoCartasEspeciales {
         clon.descripcion = "Equipa esta arma para obtener alcance 3 o mejorar a alcance 5 tu lanzaguisantes.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "equipamiento";
-        clon.efecto = "lanzaguisantes";
+        clon.efecto = "lanzaguisantes_arma_3";
         clon.esConjurada = false;
         clon.esPlanta = true
         return clon
@@ -499,7 +523,7 @@ export class CatalogoCartasEspeciales {
         clon.descripcion = "Equipa esta arma para obtener alcance 5.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "equipamiento";
-        clon.efecto = "lanzaguisantes";
+        clon.efecto = "lanzaguisantes_arma_5";
         clon.esConjurada = false;
         clon.esPlanta = true
         return clon

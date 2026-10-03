@@ -1,5 +1,22 @@
 import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
+export class OpcionCartaSeleccion extends Schema {
+    @type("string") idRespuesta: string = ""; // Lo que el cliente enviará al elegir (Ej: "tienda_123", "mano_0", "equip_arma")
+    @type("string") nombreVisual: string = ""; // Ej: "BANG!", "Carta Oculta", "Caballo"
+    @type("string") descripcionVisual: string = ""; // El texto descriptivo (o vacío si es oculta)
+    @type("string") spriteReferencia: string = ""; // Para saber qué arte cargar ("BANG", "CartaOculta")
+    @type("boolean") esConjurada: boolean = false; // Para pintar el borde celeste
+    @type("boolean") tienePerro: boolean = false; // Para ponerle el perrito si lo tiene
+}
+
+export class SeleccionCartasRequest extends Schema {
+    @type("string") idJugadorObjetivo: string = ""; // A quién le toca elegir
+    @type("string") titulo: string = ""; // Ej: "¡Elegí una carta para robar!"
+    @type("string") temaVisual: string = "normal"; // Ej: "juju", "griff", "robo" (para cambiar fondos o colores)
+    @type("string") tipoAccion: string = ""; // Ej: "panico", "tienda", "cocoroch". Para que el servidor sepa qué hacer con la respuesta.
+    @type([OpcionCartaSeleccion]) opciones = new ArraySchema<OpcionCartaSeleccion>();
+}
+
 export class OpcionInteraccion extends Schema {
     @type("string") idAccion: string = "";
     @type("string") texto: string = "";
@@ -126,5 +143,6 @@ export class MyRoomState extends Schema {
     @type("boolean") faseTransicion: boolean = false; 
     @type(["string"]) ordenSillasFisicas = new ArraySchema<string>();
     @type(InteraccionRequest) interaccionActiva = new InteraccionRequest();
+    @type(SeleccionCartasRequest) seleccionCartasActiva = new SeleccionCartasRequest();
     @type("string") spriteFlecha: string = "";
 }

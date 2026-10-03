@@ -1,4 +1,4 @@
-import { MapSchema } from "@colyseus/schema"
+import { ArraySchema, MapSchema } from "@colyseus/schema"
 import { Carta, Jugador } from "./schema/MyRoomState.js"
 
 export interface IMyRoom {
@@ -15,4 +15,7 @@ export interface IMyRoom {
     reproducirSfx(sfx: string): void
 
     getJugadores(): MapSchema<Jugador>
+
+    getSillasFisicas(): ArraySchema<string>
+    
 }

@@ -440,4 +440,13 @@ export class Utilidades {
 
         return clon;
     }
+
+    /**
+     * Elimina todos los efectos de un jugador.
+     */
+    public static eliminarTodosLosEfectos(sala: IMyRoom, jugador: Jugador){
+        if (jugador.efecto.has("malestar")){
+            jugador.efecto.delete("malestar")
+        }
+    }
 }

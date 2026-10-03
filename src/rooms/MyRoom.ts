@@ -1,11 +1,11 @@
 import { Room, Client } from "colyseus";
-import { Carta, HabilidadActiva, Jugador, MyRoomState, OpcionInteraccion, OpcionPersonaje } from "./schema/MyRoomState.js";
+import { Carta, HabilidadActiva, Jugador, MyRoomState, OpcionCartaSeleccion, OpcionInteraccion, OpcionPersonaje } from "./schema/MyRoomState.js";
 import { DespachadorDeCartas } from "./EfectosCartas.js";
 import { GestorPersonajes } from "./Personajes.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { Utilidades } from "./Utilidades.js";
 import { IMyRoom } from "./IMyRoom.js";
-import { MapSchema } from "@colyseus/schema";
+import { ArraySchema, MapSchema } from "@colyseus/schema";
 
 export class MyRoom extends Room implements IMyRoom{
     maxClients = 15;
@@ -85,18 +85,32 @@ export class MyRoom extends Room implements IMyRoom{
             this.state.jugadorEligiendoTienda = this.colaTienda.shift();
             let jugador = this.state.jugadores.get(this.state.jugadorEligiendoTienda);
             
-            if (jugador && jugador.estaVivo){
+            if (jugador && jugador.estaVivo) {
                 let nombreTienda = this.state.tipoTiendaActual === "Juju" ? "Juju" : "Griff";
-                this.broadcast("notificacion_turno", `🏪 ${jugador?.nombre} está eligiendo en La tienda de ${nombreTienda}.`);
+                let tema = this.state.tipoTiendaActual === "Juju" ? "juju" : "griff";
                 
-                let musica = this.state.tipoTiendaActual === "Juju" ? "tiendaDeJuju" : "tiendaDeGriff";
-                this.broadcast("musica", musica);
+                this.broadcast("notificacion_turno", `🏪 ${jugador.nombre} está eligiendo en La tienda de ${nombreTienda}.`);
+                this.broadcast("musica", this.state.tipoTiendaActual === "Juju" ? "tiendaDeJuju" : "tiendaDeGriff");
+                
+                // 1. Armamos el panel universal apuntando a este jugador
+                this.armarPanelSeleccion(this.state.jugadorEligiendoTienda, `¡La tienda de ${nombreTienda} está abierta!\nElegí una carta para llevarte:`, tema, "tienda");
+                
+                // 2. Llenamos el panel con las cartas disponibles en la mesa
+                this.state.cartasTienda.forEach((carta: any) => {
+                    this.agregarOpcionSeleccion(`tienda|${carta.id}`, carta, "", ""); // USAR |
+                });
+                
             } else {
+                // Si el jugador murió o se desconectó, pasamos automáticamente al siguiente
                 this.avanzarColaTienda();
             }
         } else {
+            // Ya todos eligieron, cerramos la tienda
             this.state.jugadorEligiendoTienda = "";
             this.state.cartasTienda.clear(); 
+            
+            // Apagamos el panel universal
+            this.state.seleccionCartasActiva.idJugadorObjetivo = ""; 
             
             let nombreTienda = this.state.tipoTiendaActual === "Juju" ? "Juju" : "Griff";
             this.broadcast("notificacion_turno", `🏪 La tienda de ${nombreTienda} ha cerrado.`);
@@ -233,6 +247,7 @@ export class MyRoom extends Room implements IMyRoom{
             victima.vidasEscudo = 0;
             victima.turnosEscudos = [];
             Utilidades.destruirTodosLosEquipamientos(this, victima);
+            Utilidades.eliminarTodosLosEfectos(this, victima)
             victima.embrujos.clear();
 
             let idVictima = "";
@@ -356,14 +371,7 @@ export class MyRoom extends Room implements IMyRoom{
                 
                 // Creación del mazo...
                 for (let c = 0; c < 26; c++) { // originalmente 25
-                    const nuevaCarta = new Carta();
-                    nuevaCarta.id = `bang_${c}`;
-                    nuevaCarta.nombre = "BANG!";
-                    nuevaCarta.descripcion = "Quita 1 vida a un jugador a tu alcance.";
-                    nuevaCarta.descripcionEnCatalan = "Treu 1 vida a un jugador al teu abast."
-                    nuevaCarta.tipoDeUso = "objetivo";
-                    nuevaCarta.efecto = "dano_1";
-                    this.state.mazo.push(nuevaCarta);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearBang());
                 }
                 
                 for (let c = 0; c < 5; c++) { // originalmente 6
@@ -407,7 +415,7 @@ export class MyRoom extends Room implements IMyRoom{
                     cat.descripcion = "Un jugador descarta una carta de la mano o equipada.";
                     cat.descripcionEnCatalan = "Un jugador descarta una carta de la mà o que tingui equipada."
                     cat.tipoDeUso = "objetivoGlobal";
-                    cat.efecto = "forzar_enemigo"; 
+                    cat.efecto = "forzar"; 
                     this.state.mazo.push(cat);
 
                     this.state.mazo.push(CatalogoCartasEspeciales.crearPanico());
@@ -799,89 +807,6 @@ export class MyRoom extends Room implements IMyRoom{
             }
         })
 
-        this.onMessage("panico", (client, datos) => {
-            if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.juegoPausado()) return;
-            let atacante = this.state.jugadores.get(client.sessionId);
-            let victima = this.state.jugadores.get(datos.idObjetivo);
-            
-            if (!atacante || !victima || !victima.estaVivo) return;
-
-            let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
-            if (indiceCartaJugada === -1) return;
-            
-            let cartaSabotaje = atacante.mano[indiceCartaJugada];
-            let accion = cartaSabotaje.efecto.split("_")[0]; 
-            let cartaAfectada = null;
-
-            if (datos.zonaObjetivo === "mano" && datos.indiceCarta >= 0 && datos.indiceCarta < victima.mano.length) {
-                cartaAfectada = victima.mano.splice(datos.indiceCarta, 1)[0];
-            } else {
-                // Gracias a la refactorización, el robo de CUALQUIER equipamiento es 1 sola línea
-                cartaAfectada = Utilidades.quitarEquipamiento(victima, datos.zonaObjetivo);
-            }
-
-            if (!cartaAfectada) return; 
-
-            if (accion === "robar") {
-                atacante.mano.push(cartaAfectada);
-                this.ejecutarAnimacionCarta(client, cartaSabotaje);
-                this.broadcast("notificacion_turno", `🕵️ ${atacante.nombre} le robó una carta a ${victima.nombre}.`);
-                this.broadcast("sfx", "panico");
-
-                this.ejecutarPasivasAlJugarCarta(atacante, cartaSabotaje)
-            }
-
-            atacante.mano.splice(indiceCartaJugada, 1);
-            this.agregarAlDescarte(cartaSabotaje);
-        });
-
-        this.onMessage("lanzar_cocoroch", (client, datos) => {
-            if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId || this.juegoPausado()) return;
-
-            let atacante = this.state.jugadores.get(client.sessionId);
-            let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
-            
-            if (indiceCartaJugada !== -1) {
-                let cartaUsada = atacante.mano.splice(indiceCartaJugada, 1)[0];
-                this.ejecutarAnimacionCarta(client, cartaUsada)
-                this.agregarAlDescarte(cartaUsada)
-
-                this.state.jugadorDebeDescartar = datos.idObjetivo;
-                this.broadcast("notificacion_turno", `🪳 ¡${atacante.nombre} le jugó un Cocoroch a alguien!`);
-                const numero: number = Math.floor(Math.random() * 2);
-                const sfx: string = "cocoroch" + numero
-                this.broadcast("sfx", sfx)
-
-                this.ejecutarPasivasAlJugarCarta(atacante, cartaUsada)
-            }
-        });
-
-        this.onMessage("responder_descarte", (client, datos) => {
-            if (this.state.jugadorDebeDescartar !== client.sessionId) return; 
-
-            let victima = this.state.jugadores.get(client.sessionId);
-            let cartaAfectada = null;
-
-            if (datos.zona === "mano") {
-                cartaAfectada = victima.mano.splice(datos.indice, 1)[0];
-            } else {
-                // Mágicamente abstraído
-                cartaAfectada = Utilidades.quitarEquipamiento(victima, datos.zona);
-            }
-
-            if (cartaAfectada) {
-                this.agregarAlDescarte(cartaAfectada, victima, client);
-                this.broadcast("notificacion_turno", `🗑️ ${victima.nombre} decidió descartar su ${cartaAfectada.nombre}.`);
-                
-                let pasivaVictima = this.gestorPersonajes.obtener(victima.personaje);
-                if (pasivaVictima && pasivaVictima.onDescartarCarta) {
-                    pasivaVictima.onDescartarCarta(this, victima, cartaAfectada, "COCOROCH");
-                }
-            }
-
-            this.state.jugadorDebeDescartar = "";
-        });
-
         this.onMessage("intentar_barril", (client, datos) => {
             if (client.sessionId !== this.state.jugadorEnPeligro) return;
             
@@ -1057,15 +982,15 @@ export class MyRoom extends Room implements IMyRoom{
                     }
                     else if (motivoActual === "Prision") {
                         if (fueExitoStr === "exito") {
-                            this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.nombre} escapó de la cárcel.`);
+                            this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.personaje} escapó de la cárcel.`);
                             let pasiva = this.gestorPersonajes.obtener(victima.personaje);
                             if (pasiva && pasiva.onIniciarTurno){
                                 pasiva.onIniciarTurno(this, victima);
                             }
                             this.repartirCartas(victima, 2, "turno");
-                            this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.nombre}!`);
+                            this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.personaje}!`);
                         } else {
-                            this.broadcast("notificacion_turno", `⛓️ ¡Salió Rojo! ${victima?.nombre} se queda encerrado.`);
+                            this.broadcast("notificacion_turno", `⛓️ ¡Salió Rojo! ${victima?.personaje} se queda encerrado.`);
                             this.ejecutarAccionesAlPasarTurno(victima)
                             this.avanzarAlSiguienteTurno(client.sessionId);
                         }
@@ -1143,12 +1068,12 @@ export class MyRoom extends Room implements IMyRoom{
                 if (indiceBang !== -1) {
                     let cartaDescartada = victima.mano.splice(indiceBang, 1)[0];
                     this.agregarAlDescarte(cartaDescartada);
-                    this.broadcast("notificacion_turno", `🛡️ ${victima.nombre} descartó un BANG! y ahuyentó a los Indios.`);
+                    this.broadcast("notificacion_turno", `🛡️ ${victima.personaje} descartó un BANG! y ahuyentó a los Indios.`);
                 }
                 this.procesarSiguienteInteraccion(); 
             } 
             else if (idAccion === "indios_dano") {
-                this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por los Indios!`);
+                this.broadcast("notificacion_turno", `🩸 ¡${victima.personaje} recibió 1 de daño por los Indios!`);
                 let asesino = this.state.jugadores.get(this.state.atacanteActual);
                 Utilidades.procesarDano(this, victima, asesino, 1, "INDIOS");
                 
@@ -1163,7 +1088,7 @@ export class MyRoom extends Room implements IMyRoom{
                 if (indiceBang !== -1) {
                     let cartaDescartada = victima.mano.splice(indiceBang, 1)[0];
                     this.agregarAlDescarte(cartaDescartada);
-                    this.broadcast("notificacion_turno", `🎈 ¡${victima.nombre} disparó un BANG! y reventó la horda de Bloons!`);
+                    this.broadcast("notificacion_turno", `🎈 ¡${victima.personaje} disparó un BANG! y reventó la horda de Bloons!`);
                 }
                 this.procesarSiguienteInteraccion(); 
             }
@@ -1171,12 +1096,12 @@ export class MyRoom extends Room implements IMyRoom{
                 let barril = Utilidades.quitarEquipamiento(victima, "barril");
                 if (barril) {
                     this.agregarAlDescarte(barril, victima, client);
-                    this.broadcast("notificacion_turno", `🎈 ¡${victima.nombre} se escondió en su Barril pero los Bloons lo destruyeron! (Salió ileso)`);
+                    this.broadcast("notificacion_turno", `🎈 ¡${victima.personaje} se escondió en su Barril pero los Bloons lo destruyeron! (Salió ileso)`);
                 }
                 this.procesarSiguienteInteraccion();
             }
             else if (idAccion === "bloons_dano") {
-                this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} recibió 1 de daño por la horda de Bloons!`);
+                this.broadcast("notificacion_turno", `🩸 ¡${victima.personaje} recibió 1 de daño por la horda de Bloons!`);
                 let asesino = this.state.jugadores.get(this.state.atacanteActual);
                 Utilidades.procesarDano(this, victima, asesino, 1, "BLOONS");
                 
@@ -1191,7 +1116,7 @@ export class MyRoom extends Room implements IMyRoom{
                 if (indiceBang !== -1) {
                     let cartaDescartada = victima.mano.splice(indiceBang, 1)[0];
                     this.agregarAlDescarte(cartaDescartada);
-                    this.broadcast("notificacion_turno", `🛡️ ${victima.nombre} descartó un BANG! ¡El duelo vuelve!`);
+                    this.broadcast("notificacion_turno", `🛡️ ${victima.personaje} descartó un BANG! ¡El duelo vuelve!`);
                     
                     // EFECTO PING-PONG: El que descartó ahora es el atacante
                     let nuevoObjetivoId = this.state.atacanteActual;
@@ -1214,7 +1139,7 @@ export class MyRoom extends Room implements IMyRoom{
             else if (idAccion === "duelo_dano") {
                 let ganadorDuelo = this.state.jugadores.get(this.state.atacanteActual);
                 let nombreGanador = ganadorDuelo ? ganadorDuelo.nombre : "Alguien";
-                this.broadcast("notificacion_turno", `🩸 ¡${victima.nombre} no pudo defenderse y perdió el duelo contra ${nombreGanador}!`);
+                this.broadcast("notificacion_turno", `🩸 ¡${victima.personaje} no pudo defenderse y perdió el duelo contra ${nombreGanador}!`);
                 
                 Utilidades.procesarDano(this, victima, ganadorDuelo, 1, "DUELO");
                 
@@ -1233,7 +1158,7 @@ export class MyRoom extends Room implements IMyRoom{
                     let cartaJugada = victima.mano.splice(indiceFallo, 1)[0];
                     this.agregarAlDescarte(cartaJugada);
                     
-                    this.broadcast("notificacion_turno", `🛡️ ¡${victima.nombre} usó un ¡Fallo! para esquivar hábilmente!`);
+                    this.broadcast("notificacion_turno", `🛡️ ¡${victima.personaje} usó un ¡Fallo! para esquivar hábilmente!`);
                     this.ejecutarAnimacionCarta(client, cartaJugada);
                     
                     // ACÁ LA MAGIA: ¡Hacemos que usar el Fallo cuente como "Jugar" una carta!
@@ -1511,23 +1436,8 @@ export class MyRoom extends Room implements IMyRoom{
                     jugador.mano.splice(indiceCarta, 1);
                     this.descartarCarta(cartaDescartada, jugador, "VOLUNTARIO")
 
-                    this.agregarRegistro(`🗑️ ${jugador.nombre} descartó una carta.`)
+                    this.agregarRegistro(`🗑️ ${jugador.personaje} descartó una carta.`)
                 }
-            }
-        });
-
-        this.onMessage("elegir_carta_tienda", (client, idCarta) => {
-            if (this.state.jugadorEligiendoTienda !== client.sessionId) return;
-
-            let jugador = this.state.jugadores.get(client.sessionId);
-            let indiceCarta = this.state.cartasTienda.findIndex((c: any) => c.id === idCarta);
-
-            if (jugador && indiceCarta !== -1) {
-                let cartaElegida = this.state.cartasTienda.splice(indiceCarta, 1)[0];
-                jugador.mano.push(cartaElegida);
-
-                this.broadcast("notificacion_turno", `🛍️ ${jugador.nombre} agarró una carta.`);
-                this.avanzarColaTienda();
             }
         });
 
@@ -1608,6 +1518,87 @@ export class MyRoom extends Room implements IMyRoom{
             }));
             
             client.send("datos_wiki", datosWiki);
+        });
+
+        this.onMessage("respuesta_seleccion_carta", (client, idRespuesta) => {
+            if (idRespuesta === "cancelar") {
+                this.state.seleccionCartasActiva.idJugadorObjetivo = "";
+                return;
+            }
+
+            if (this.state.seleccionCartasActiva.idJugadorObjetivo !== client.sessionId) return;
+            
+            let jugador = this.state.jugadores.get(client.sessionId);
+            if (!jugador || !jugador.estaVivo) return;
+
+            let tipoAccion = this.state.seleccionCartasActiva.tipoAccion;
+            
+            // LA CLAVE: Separamos por el palito vertical (Nuestros IDs de carta jamas lo usan)
+            let partes = idRespuesta.split("|");
+
+            if (tipoAccion === "tienda") {
+                // Al usar tienda|1234, extraemos todo lo que hay despues de "tienda|"
+                let idCartaReal = idRespuesta.substring(7); 
+                let indiceCarta = this.state.cartasTienda.findIndex((c: any) => c.id === idCartaReal);
+                
+                if (indiceCarta !== -1) {
+                    let cartaElegida = this.state.cartasTienda.splice(indiceCarta, 1)[0];
+                    jugador.mano.push(cartaElegida);
+                    this.broadcast("notificacion_turno", `🛍️ ${jugador.nombre} agarró una carta.`);
+                    this.avanzarColaTienda();
+                }
+            } 
+            else if (tipoAccion === "cocoroch") {
+                let zona = partes[0]; // mano o equip
+                let cartaAfectada = null;
+
+                if (zona === "mano") {
+                    cartaAfectada = jugador.mano.splice(parseInt(partes[1]), 1)[0];
+                } else if (zona === "equip") {
+                    cartaAfectada = Utilidades.quitarEquipamiento(jugador, partes[1]);
+                }
+
+                if (cartaAfectada) {
+                    this.descartarCarta(cartaAfectada, jugador, "cocoroch");
+                    this.broadcast("notificacion_turno", `🗑️ ${jugador.nombre} descartó ${cartaAfectada.nombre}.`);
+                }
+                this.state.seleccionCartasActiva.idJugadorObjetivo = "";
+            }
+            else if (tipoAccion === "panico") {
+                let zona = partes[0]; // mano o equip
+                let indiceOClave = partes[1];
+                let idVictima = partes[2];
+                // Como el ID de la carta es lo último y puede tener _, juntamos lo que sobra por las dudas
+                let idCartaPanico = partes.slice(3).join("|"); 
+
+                let victima = this.state.jugadores.get(idVictima);
+                if (!victima || !victima.estaVivo) return;
+
+                let cartaAfectada = null;
+                if (zona === "mano") {
+                    cartaAfectada = victima.mano.splice(parseInt(indiceOClave), 1)[0];
+                } else if (zona === "equip") {
+                    cartaAfectada = Utilidades.quitarEquipamiento(victima, indiceOClave);
+                }
+
+                if (cartaAfectada) {
+                    jugador.mano.push(cartaAfectada);
+                    this.broadcast("notificacion_turno", `🕵️ ${jugador.nombre} le robó una carta a ${victima.nombre}.`);
+                    this.broadcast("sfx", "panico");
+
+                    // Ahora sí buscará perfecto y la eliminará de la mano
+                    let idxPanico = jugador.mano.findIndex((c: any) => c.id === idCartaPanico);
+                    if (idxPanico !== -1) {
+                        let cartaUsada = jugador.mano.splice(idxPanico, 1)[0];
+                        this.ejecutarAnimacionCarta(client, cartaUsada);
+                        this.agregarAlDescarte(cartaUsada);
+                        
+                        let pasivaAtacante = this.gestorPersonajes.obtener(jugador.personaje);
+                        if (pasivaAtacante && pasivaAtacante.onJugarCarta) pasivaAtacante.onJugarCarta(this, jugador, cartaUsada);
+                    }
+                }
+                this.state.seleccionCartasActiva.idJugadorObjetivo = "";
+            }
         });
     }
 
@@ -1809,7 +1800,7 @@ export class MyRoom extends Room implements IMyRoom{
         if (!jugador) return;
 
         if (jugador.equipamiento.has("dinamita")) {
-            this.broadcast("notificacion_turno", `🧨 ¡La Dinamita arde frente a ${jugador.nombre}! Debe desenfundar...`);
+            this.broadcast("notificacion_turno", `🧨 ¡La Dinamita arde frente a ${jugador.personaje}! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Dinamita");
         } else {
             this.evaluarFasePapa(idJugador);
@@ -1821,7 +1812,7 @@ export class MyRoom extends Room implements IMyRoom{
         if (!jugador) return;
 
         if (jugador.equipamiento.has("papa")) {
-            this.broadcast("notificacion_turno", `🥔 ¡El Papapum quema en las manos de ${jugador.nombre}! Debe desenfundar...`);
+            this.broadcast("notificacion_turno", `🥔 ¡El Papapum quema en las manos de ${jugador.personaje}! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Papa");
         } else {
             this.evaluarFasePrision(idJugador);
@@ -1833,7 +1824,7 @@ export class MyRoom extends Room implements IMyRoom{
         if (!jugador) return;
 
         if (jugador.equipamiento.has("prision")) {
-            this.broadcast("notificacion_turno", `⚖️ ¡${jugador.nombre} está en Prisión! Debe desenfundar...`);
+            this.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} está en Prisión! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Prision");
         } else {
             if (!jugador.estaVivo) {
@@ -1842,14 +1833,14 @@ export class MyRoom extends Room implements IMyRoom{
                     let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria();
                     if (cartaFantasma) jugador.mano.push(cartaFantasma);
                 }
-                this.broadcast("notificacion_turno", `👻 ¡Es el turno del espíritu de ${jugador.nombre}!`);
+                this.broadcast("notificacion_turno", `👻 ¡Es el turno del espíritu de ${jugador.personaje}!`);
             } else {
                 let pasiva = this.gestorPersonajes.obtener(jugador.personaje)
                 if (pasiva && pasiva.onIniciarTurno){
                     pasiva.onIniciarTurno(this, jugador)
                 }
                 this.repartirCartas(jugador, 2, "turno");
-                this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.nombre}!`);
+                this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.personaje}!`);
             }
         }
     }
@@ -2100,5 +2091,28 @@ export class MyRoom extends Room implements IMyRoom{
                 jugadorQuePasaElTurno.efecto.delete("malestar")
             }
         }
+    }
+
+    public getSillasFisicas(): ArraySchema<string> {
+        return this.state.ordenSillasFisicas
+    }
+
+    public armarPanelSeleccion(idObjetivo: string, titulo: string, tema: string, tipoAccion: string) {
+        this.state.seleccionCartasActiva.idJugadorObjetivo = idObjetivo;
+        this.state.seleccionCartasActiva.titulo = titulo;
+        this.state.seleccionCartasActiva.temaVisual = tema;
+        this.state.seleccionCartasActiva.tipoAccion = tipoAccion;
+        this.state.seleccionCartasActiva.opciones.clear();
+    }
+
+    public agregarOpcionSeleccion(idRespuesta: string, carta: any, descVis: string, descCat: string, customName?: string, customSprite?: string) {
+        let op = new OpcionCartaSeleccion();
+        op.idRespuesta = idRespuesta;
+        op.nombreVisual = customName || carta.nombre;
+        op.descripcionVisual = descVis || carta.descripcion;
+        op.spriteReferencia = customSprite || carta.nombre;
+        op.esConjurada = carta.esConjurada || false;
+        op.tienePerro = (carta.idDuenoDelPerro && carta.idDuenoDelPerro !== "");
+        this.state.seleccionCartasActiva.opciones.push(op);
     }
 }

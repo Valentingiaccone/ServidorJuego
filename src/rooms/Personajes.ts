@@ -72,7 +72,7 @@ export interface IPersonaje {
 
 export class ColeCasiddy implements IPersonaje {
     nombre = "Cole Casiddy";
-    habilidad = "Recarga en la recámara:\nAl recibir daño: roba 2 cartas.";
+    habilidad = "Recarga en la recámara:\nAl perder vida: roba 2 cartas.";
     habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteCasiddy", false];
@@ -80,16 +80,17 @@ export class ColeCasiddy implements IPersonaje {
 
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
-        if (victima.vidas > 0) {
+        if (victima.vidas > 0 && danoCuerpo > 0) {
             sala.repartirCartas(victima, 2, "pasiva");
-            sala.agregarRegistro(`🤠 ${victima.personaje} robó 2 cartas tras recibir daño por ${causa}.`);
+            sala.agregarRegistro(`🤠 ${victima.personaje} robó 2 cartas por su pasiva.`);
+            sala.reproducirSfx("habilidadColeCasiddy")
         }
     }
 }
 
 export class Berry implements IPersonaje {
     nombre = "Berry";
-    habilidad = "Cartas curativas:\nEn su turno: cada 2 cartas que descarta, se cura 1 y roba una carta.";
+    habilidad = "Cartas curativas:\nCada 2 cartas que descarta de forma voluntaria, se cura 1 y roba una carta.";
     habilidadEnCatalan: string = "Cartes curatives:\nEn el seu torn, per cada 2 cartes que descarta, recupera 1 vida i roba 1 carta."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteBerry", false];
@@ -110,6 +111,9 @@ export class Berry implements IPersonaje {
             }
             texto += ` por su pasiva.`;
             sala.agregarRegistro(texto);
+            const numero: number = Math.floor(Math.random() * 2);
+            const sfx: string = "habilidadBerry" + numero
+            sala.reproducirSfx(sfx)
         }
     }
 
@@ -199,7 +203,7 @@ export class JetpackCat implements IPersonaje {
 
 export class KayFaraday implements IPersonaje {
     nombre = "Kay Faraday";
-    habilidad = "La ladrona:\nAl perder vida por otro jugador: roba una carta al azar de la mano de ese jugador.";
+    habilidad = "La ladrona:\nAl perder vida por otro jugador: le quita una carta al azar de la mano de ese jugador\nPenalizacion 1.";
     habilidadEnCatalan: string = "La lladre:\nCada vegada que perd una vida a causa d'un jugador, roba una carta a l'atzar de la mà d'aquest jugador."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteKay", true];
@@ -211,7 +215,12 @@ export class KayFaraday implements IPersonaje {
             victima.mano.push(cartaRobada);
             
             sala.agregarRegistro(`🎭 ¡Kay Faraday perdió vida pero le robó una carta ${cartaRobada.nombre} a ${atacante.nombre}!`);
+            sala.reproducirSfx("habilidadKayFaraday")
         }
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return -1
     }
 }
 
@@ -397,15 +406,15 @@ export class Mikotoba implements IPersonaje {
         }
     }
 
-    private actualizarNombre(jugador: any, sala: any): void {
+    private actualizarNombre(jugador: Jugador, sala: IMyRoom): void {
         if (jugador.vidas >= 3){
             jugador.boolean.set("mikotobaEstaGordo", true)
             jugador.spriteAvatarOpcional = ""
         } else {
             if (jugador.boolean.get("mikotobaEstaGordo")){
-                jugador.booolean.set("mikotobaEstaGordo", false)
+                jugador.boolean.set("mikotobaEstaGordo", false)
                 jugador.spriteAvatarOpcional = "Mikotoba flaco"
-                sala.broadcast("sfx", "mikotobaDeGordoAFlaco")
+                sala.reproducirSfx("mikotobaDeGordoAFlaco")
             } else {
                 jugador.boolean.set("mikotobaEstaGordo", false)
                 jugador.spriteAvatarOpcional = "Mikotoba flaco"
@@ -576,7 +585,7 @@ export class Tilink implements IPersonaje {
 
 export class Flowery implements IPersonaje {
     nombre = "Flowery";
-    habilidad = "Tu padre es mi mejor amigo:\nAl jugar carta: crece aleatoriamente entre 0.25 y 0.30 metros.\nCuando descarta: decrece entre 0.20 y 0.25 metros.\nAl llegar a 3.00 metros: inflige 1 de daño a todos de forma inesquivable, los mete a la cárcel (menos al Sheriff), y luego roba 3 cartas del mazo.";
+    habilidad = "Tu padre es mi mejor amigo:\nAl jugar carta: crece aleatoriamente entre 0.26 y 0.31 metros.\nCuando descarta: decrece entre 0.20 y 0.25 metros.\nAl llegar a 3.00 metros: inflige 1 de daño a todos de forma inesquivable, los mete a la cárcel (menos al Sheriff), y luego roba 3 cartas del mazo.";
     habilidadEnCatalan = "El teu pare és el meu millor amic:\nPer cada carta jugada creix aleatòriament entre 0,25 i 0,30 metres. En descartar decreix entre 0,20 i 0,25 metres. En arribar a 3,00, infligeix 1 de dany a tots de forma inesquivable, els posa a la presó (excepte al Sheriff), i després roba 3 cartes de la baralla.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteFlowery", true];
@@ -596,8 +605,8 @@ export class Flowery implements IPersonaje {
         if (!jugador.estaVivo){
             return
         }
-        // Genera un número aleatorio entre 28 y 33, luego lo divide por 100
-        let crecimiento = (Math.floor(Math.random() * 6) + 28) / 100;
+        // Genera un número aleatorio entre 26 y 31, luego lo divide por 100
+        let crecimiento = (Math.floor(Math.random() * 6) + 26) / 100;
         jugador.alturaFlowery += crecimiento;
         
         this.evaluarCrecimiento(sala, jugador);
@@ -1820,9 +1829,11 @@ export class Max implements IPersonaje {
 
 export class Tracer implements IPersonaje {
     nombre = "Tracer";
-    habilidad = "Lo intentaremos otra vez:\nTiene 2 vidas menos, si no es Sheriff, comienza con 3 escudo temporal, durante su turno puede guardar su estado, las proximas 2 veces que muera, volverá a su ultimo estado guardado (guardar un estado sobreescribe el ultimo guardado).";
+    habilidad = "Lo intentaremos otra vez:\nTiene 2 vidas menos.\nSi no es Sheriff: comienza con 3 escudo temporal.\nBoton: guarda tu estado.\nAl morir: vuelve a su ultimo estado guardado (1 vez si es Sheriff, si no 2 veces).";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteTracer", false];
+    sfxDefault = "sfxTracer";
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.number.set("tracerVecesMuerta", 0);
@@ -1843,21 +1854,6 @@ export class Tracer implements IPersonaje {
         }
     }
 
-    private clonarCartaSegura(cartaOriginal: any): any {
-        if (!cartaOriginal) return null;
-        let clon = new Carta(); 
-        clon.id = `tracer_${cartaOriginal.id}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        clon.nombre = cartaOriginal.nombre;
-        clon.descripcion = cartaOriginal.descripcion;
-        clon.descripcionEnCatalan = cartaOriginal.descripcionEnCatalan;
-        clon.tipoDeUso = cartaOriginal.tipoDeUso;
-        clon.efecto = cartaOriginal.efecto;
-        clon.esConjurada = true; 
-        clon.tipoEmbrujo = cartaOriginal.tipoEmbrujo;
-        if (cartaOriginal.esPlanta) (clon as any).esPlanta = cartaOriginal.esPlanta;
-        return clon;
-    }
-
     ejecutarHabilidadActiva(sala: any, jugador: Jugador, client: any, idHabilidad: string): void {
         if (jugador.estaVivo && idHabilidad == "tracer_guardarEstado"){
 
@@ -1867,13 +1863,14 @@ export class Tracer implements IPersonaje {
                 vidasEscudo: jugador.vidasEscudo,
                 turnosEscudos: [...jugador.turnosEscudos], 
                 
-                // Guardamos el mapa dinámico completo
+                efectosJugador: Array.from(jugador.efecto.entries()),
+                
                 equipamiento: Array.from(jugador.equipamiento.entries()).map(([clave, carta]) => ({
                     clave: clave,
-                    carta: this.clonarCartaSegura(carta)
+                    carta: Utilidades.clonarCarta(carta, "tracer")
                 })),
 
-                mano: Array.from(jugador.mano).map((c: any) => this.clonarCartaSegura(c)) 
+                mano: Array.from(jugador.mano).map((c: any) => Utilidades.clonarCarta(c, "tracer")) 
             };
 
             (jugador as any).tracerSnapshot = snapshot;
@@ -1886,7 +1883,12 @@ export class Tracer implements IPersonaje {
     onRecibirDano(sala: any, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         if (!victima || !sala) return;
 
-        if (victima.vidas <= 0 && (victima as any).tracerSnapshot && victima.number.get("tracerVecesMuerta") < 2) {
+        let limite: number = 2
+        if (victima.rol == "Sheriff"){
+            limite = 1
+        }
+
+        if (victima.vidas <= 0 && (victima as any).tracerSnapshot && victima.number.get("tracerVecesMuerta") < limite) {
             
             victima.number.set("tracerVecesMuerta", victima.number.get("tracerVecesMuerta") + 1);
             let snap = (victima as any).tracerSnapshot;
@@ -1902,22 +1904,27 @@ export class Tracer implements IPersonaje {
             victima.vidasEscudo = snap.vidasEscudo;
             victima.turnosEscudos = [...snap.turnosEscudos];
 
-            // C) Inyectamos el equipamiento clonado fresco
+            victima.efecto.clear();
+            snap.efectosJugador.forEach(([clave, valor]: [string, number]) => {
+                victima.efecto.set(clave, valor);
+            });
+
+            // C) Inyectamos el equipamiento clonado fresco (de nuevo, pasando por la Utilidad)
             snap.equipamiento.forEach((item: any) => {
-                let cartaFresca = this.clonarCartaSegura(item.carta);
+                let cartaFresca = Utilidades.clonarCarta(item.carta, "tracer");
                 if (cartaFresca) {
                     victima.equipamiento.set(item.clave, cartaFresca);
                 }
             });
 
-            // D) Inyectamos la mano
+            // D) Inyectamos la mano fresca
             snap.mano.forEach((c: any) => {
-                let cartaFresca = this.clonarCartaSegura(c);
+                let cartaFresca = Utilidades.clonarCarta(c, "tracer");
                 if (cartaFresca) victima.mano.push(cartaFresca);
             });
 
-            sala.agregarRegistro(`⏪ ¡TRACER MURIÓ PERO RETROCEDIÓ EN EL TIEMPO! (${victima.number.get("tracerVecesMuerta")}/2)`);
-            sala.reproducirSfx("sfxTilink");
+            sala.agregarRegistro(`⏪ ¡TRACER MURIÓ PERO RETROCEDIÓ EN EL TIEMPO! (${victima.number.get("tracerVecesMuerta")}/${limite})`);
+            sala.reproducirSfx("sfxTracerHabilidad");
         }
     }
 }
@@ -2174,20 +2181,25 @@ export class Microbios implements IPersonaje {
 
         jugador.number.set("microbio", jugador.number.get("microbio") + 1)
 
-        if (jugadorSobrepasado && jugadorSobrepasado.mano.length > 0 && jugadorSobrepasado.estaVivo && jugador.number.get("microbio") <= 2) {
-            let indiceAleatorio = Math.floor(Math.random() * jugadorSobrepasado.mano.length);
+        let cartasOriginales: Carta[] = [];
+        if (jugadorSobrepasado && jugadorSobrepasado.mano) {
+            cartasOriginales = jugadorSobrepasado.mano.filter((c: any) => !c.esConjurada);
+        }
+
+        if (jugadorSobrepasado && cartasOriginales.length > 0 && jugadorSobrepasado.estaVivo && jugador.number.get("microbio") <= 2) {
+            let indiceAleatorio = Math.floor(Math.random() * cartasOriginales.length);
             
-            let cartaOriginal = jugadorSobrepasado.mano[indiceAleatorio];
+            let cartaOriginal = cartasOriginales[indiceAleatorio];
             
             let clon = Utilidades.clonarCarta(cartaOriginal, "microbio");
             
             jugador.mano.push(clon);
             
             sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario y copió un ${clon.nombre} de ${jugadorSobrepasado.personaje} (${jugador.number.get("microbio")}/2)!`);
-            sala.reproducirSfx("microbioMovimiento")
+            sala.reproducirSfx("microbioMovimiento");
         } else {
             sala.agregarRegistro(`🦠 ¡${jugador.personaje} se movió a antihorario!`);
-            sala.reproducirSfx("microbioMovimiento")
+            sala.reproducirSfx("microbioMovimiento");
         }
     }
 
@@ -2238,7 +2250,7 @@ export class PerroNinja implements IPersonaje {
 
 export class Monito implements IPersonaje {
     nombre = "Monito";
-    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano: roba una carta (4 usos, se recarga al final del turno).\nPenalizacion 1.";
+    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano: roba una carta (3 usos, se recarga al final del turno).\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMonito", false];
@@ -2275,11 +2287,11 @@ export class Monito implements IPersonaje {
             let tieneCopia = miJugador.mano.some((c: Carta) => c.nombre === cartaJugada.nombre);
 
             if (tieneCopia) {
-                if (miJugador.number.get("monito") <= 4){
+                if (miJugador.number.get("monito") <= 3){
                     miJugador.number.set("monito", miJugador.number.get("monito") + 1)
                     sala.repartirCartas(miJugador, 1, "pasiva");
                 
-                    sala.agregarRegistro(`🐒 ¡${miJugador.personaje} copió a ${jugadorQueJuega.personaje}! Como tiene un ${cartaJugada.nombre} en mano, roba 1 carta. (${miJugador.number.get("monito")}/4)`);
+                    sala.agregarRegistro(`🐒 ¡${miJugador.personaje} copió a ${jugadorQueJuega.personaje}! Como tiene un ${cartaJugada.nombre} en mano, roba 1 carta. (${miJugador.number.get("monito")}/3)`);
                     
                     sala.reproducirSfx("sfxMonito");
                 }
@@ -2601,7 +2613,7 @@ export class Tripulante implements IPersonaje {
 
 export class Shelly implements IPersonaje {
     nombre = "Shelly";
-    habilidad = "Escopetazo:\nBoton (1 por turno): descarta hasta 3 Bangs! y conjura un Escopetazo Bang!.";
+    habilidad = "Escopetazo:\nBoton (1 por turno): descarta hasta 3 Bangs! y conjura un Escopetazo Bang!\nAl final del turno: si no usó su boton, conjura un Bang!.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
@@ -2668,7 +2680,21 @@ export class Shelly implements IPersonaje {
                     jugador.number.set("shellyRecarga", 1);
 
                     sala.agregarRegistro(`🔫 ¡${jugador.personaje} cargó su Escopetazo descartando ${descartados} BANG!`);
+                    sala.reproducirSfx("sfxBotonShelly")
                 }
+            }
+        }
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (jugador.number.get("shellyRecarga") <= 0){
+            const carta: Carta = CatalogoCartasEspeciales.crearBang()
+            if (carta){
+                carta.esConjurada = true
+                jugador.mano.push(carta)
+
+                sala.reproducirSfx("habilidadShelly")
+                sala.agregarRegistro(`🔫 ${jugador.personaje} conjura un Bang! por su pasiva.`)
             }
         }
     }
@@ -2744,67 +2770,254 @@ export class Byron implements IPersonaje {
     }
 }
 
+export class GeiruToneido implements IPersonaje {
+    nombre = "Geiru Toneido";
+    habilidad = "Payasa:\nBoton (1 por turno): descarta tu Bang! de más a la izquierda y conjura una Horda de Bloons.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteGeiru", false];
+    sfxDefault = "sfxGeiru";
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        let boton = new HabilidadActiva();
+        boton.id = "geiru_bloons";
+        boton.textoBoton = "Inflar globos";
+        boton.tooltip = "Descarta un BANG! y conjura una Horda de Bloons.";
+        boton.spriteBoton = "botonGeiru";
+        jugador.habilidadesActivas.push(boton);
+
+        jugador.boolean.set("geiruUsada", false);
+    }
+
+    onIniciarTurno(sala: any, miJugador: any): void {
+        miJugador.boolean.set("geiruUsada", false);
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (!jugador) {
+            console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Geiru");
+            return;
+        }
+        if (!sala) {
+            console.error("ERROR: sala es null en ejecutarHabilidadActiva de Geiru");
+            return;
+        }
+
+        if (jugador.estaVivo && idHabilidad === "geiru_bloons") {
+            
+            if (jugador.boolean.get("geiruUsada") === true) {
+                client.send("alerta_personal", "Ya usaste tu habilidad en este turno.");
+                return;
+            }
+
+            let indiceBang = jugador.mano.findIndex((c: any) => c.nombre === "BANG!");
+
+            if (indiceBang === -1) {
+                client.send("alerta_personal", "Necesitás tener al menos un BANG! en la mano para usar la habilidad.");
+                return;
+            }
+
+            let cartaExtraida = jugador.mano.splice(indiceBang, 1)[0];
+            sala.descartarCarta(cartaExtraida, jugador, "HABILIDAD");
+
+            let nuevaHorda = CatalogoCartasEspeciales.crearHordaDeBloons();
+            
+            if (nuevaHorda) {
+                nuevaHorda.esConjurada = true;
+                jugador.mano.push(nuevaHorda);
+
+                jugador.boolean.set("geiruUsada", true);
+
+                sala.agregarRegistro(`🎈 ¡${jugador.personaje} transformó un BANG! en una Horda de Bloons!`);
+                sala.reproducirSfx("geiruBoton")
+            }
+        }
+    }
+}
+
+export class Wendy implements IPersonaje {
+    nombre = "Wendy";
+    habilidad = "Protectora:\nAl perder vida: ataca el escudo de los rivales siguientes para protegerse, si no puede, gana un escudo.\nBoton (1 por turno): descarta el Bang! de la izquierda y conjura un Secador.\nTiene -1 vida.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteWendy", false];
+    sfxDefault = "sfxWendy";
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        // Tiene -1 vida
+        jugador.vidas--;
+        jugador.vidasMaximas--;
+
+        let boton = new HabilidadActiva();
+        boton.id = "wendy_secador";
+        boton.textoBoton = "Crear Secador";
+        boton.tooltip = "Descarta tu BANG! de la izquierda y conjura un Secador.";
+        boton.spriteBoton = "botonWendy";
+        jugador.habilidadesActivas.push(boton);
+
+        jugador.boolean.set("wendyUsada", false);
+    }
+
+    onIniciarTurno(sala: any, miJugador: any): void {
+        miJugador.boolean.set("wendyUsada", false);
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (!victima || !sala) return;
+
+        if (danoCuerpo > 0) {
+            let idWendy = Utilidades.obtenerSessionIdDeJugador(sala, victima);
+            
+            // Obtenemos a los jugadores vivos en orden de ronda
+            let vivos: string[] = [];
+            if (sala.getSillasFisicas() && sala.getSillasFisicas().length > 0) {
+                sala.getSillasFisicas().forEach((id: string) => {
+                    let j = sala.getJugadores().get(id);
+                    if (j && j.estaVivo) vivos.push(id);
+                });
+            }
+
+            let wendyIdx = vivos.indexOf(idWendy);
+            let danoNoAbsorbido = danoCuerpo;
+
+            // Por cada punto de daño que recibió en el cuerpo
+            for (let i = 0; i < danoCuerpo; i++) {
+                let escudoRobado = false;
+
+                // Buscamos hacia adelante en la mesa
+                for (let step = 1; step < vivos.length; step++) {
+                    let checkIdx = (wendyIdx + step) % vivos.length;
+                    let targetId = vivos[checkIdx];
+                    let targetJugador = sala.getJugadores().get(targetId);
+                    
+                    if (targetJugador && targetJugador.vidasEscudo > 0) {
+                        escudoRobado = true;
+                        
+                        // Le hacemos 1 de daño (lo que le romperá 1 escudo)
+                        Utilidades.procesarDano(sala, targetJugador, victima, 1, "SECADOR", false);
+                        
+                        // Wendy se cura ese daño bruta y mágicamente
+                        victima.vidas++; 
+                        if (victima.vidas > victima.vidasMaximas) {
+                            victima.vidas = victima.vidasMaximas;
+                        }
+
+                        danoNoAbsorbido--;
+                        sala.agregarRegistro(`𖣘 ¡${victima.personaje} se protegió con el escudo de ${targetJugador.personaje}!`);
+                        
+                        break;
+                    }
+                }
+
+                // Si recorrimos toda la mesa y no hubo escudos, cortamos la búsqueda
+                if (!escudoRobado) {
+                    break;
+                }
+            }
+
+            // Si al final de todo el robo, todavía le quedó daño por absorber
+            if (danoNoAbsorbido > 0) {
+                Utilidades.agregarEscudos(sala, victima, 1, 1, "PASIVA");
+                sala.agregarRegistro(`𖣘 ¡Al no encontrar escudos, ${victima.personaje} generó 1 escudo!`);
+            }
+        }
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (!jugador || !sala) return;
+
+        if (jugador.estaVivo && idHabilidad === "wendy_secador") {
+            
+            if (jugador.boolean.get("wendyUsada") === true) {
+                client.send("alerta_personal", "Ya usaste tu habilidad en este turno.");
+                return;
+            }
+
+            let indiceBang = jugador.mano.findIndex((c: any) => c.nombre === "BANG!");
+
+            if (indiceBang === -1) {
+                client.send("alerta_personal", "Necesitás tener al menos un BANG! en la mano.");
+                return;
+            }
+
+            let cartaExtraida = jugador.mano.splice(indiceBang, 1)[0];
+            sala.descartarCarta(cartaExtraida, jugador, "HABILIDAD");
+
+            let nuevaCarta = CatalogoCartasEspeciales.crearSecador()
+            nuevaCarta.esConjurada = true
+
+            jugador.mano.push(nuevaCarta);
+            jugador.boolean.set("wendyUsada", true);
+
+            sala.agregarRegistro(`𖣘 ¡${jugador.personaje} sacrificó su BANG! y conjuró un Secador!`);
+            sala.reproducirSfx("sfxBotonWendy")
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
-        this.registrar(new Perro())
-        this.registrar(new DaveElLoco())
-        this.registrar(new Junkrat())
-        this.registrar(new Max())
-        this.registrar(new Pedro())
-        this.registrar(new Amelia())
-        this.registrar(new Microbios())
-        this.registrar(new PerroNinja())
-        this.registrar(new Monito())
-        this.registrar(new KarateKillo())
-        this.registrar(new Tripulante())
-        this.registrar(new Shelly())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
+        // this.registrar(new Perro())
+        // this.registrar(new DaveElLoco())
+        // this.registrar(new Junkrat())
+        // this.registrar(new Max())
+        // this.registrar(new Pedro())
+        // this.registrar(new Amelia())
+        // this.registrar(new Microbios())
+        // this.registrar(new PerroNinja())
+        // this.registrar(new Monito())
+        // this.registrar(new KarateKillo())
+        // this.registrar(new Tripulante())
+        // this.registrar(new Shelly())
         this.registrar(new Byron())
-        this.registrar(new KarateKillo())
+        this.registrar(new GeiruToneido())
+        this.registrar(new Wendy())
+        this.registrar(new Tracer())
 
 
 
 
 
-        // this.registrar(new Tracer()) en general anda bien, pero mucho lio, tiene pequeños errores, cuando quiera volverme loco programando la vuelvo a hacer
+
     }
 
     private registrar(p: IPersonaje) {

@@ -50,7 +50,7 @@ export class EfectoCurarDuo implements IEfectoCarta {
         Utilidades.aplicarCuracion(sala, jugadorQueJuega, 1, "CURADUO", false);
         Utilidades.aplicarCuracion(sala, victima, 1, "CURADUO", false);
 
-        sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.nombre} y ${victima.personaje} compartieron curación!`);
+        sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.personaje} y ${victima.personaje} compartieron curación!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "curacion");
 
@@ -383,7 +383,7 @@ export class EfectoDesequipar implements IEfectoCarta {
         }
 
         let nombresCartas = cartasVoladas.join(" y ");
-        sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.nombre} lanzó ${cartaJugada.nombre}! ${victima.personaje} perdió ${nombresCartas}, directo al descarte.`);
+        sala.broadcast("notificacion_turno", `🌪️ ¡${jugadorQueJuega.personaje} lanzó ${cartaJugada.nombre}! ${victima.personaje} perdió ${nombresCartas}, directo al descarte.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         
         jugadorQueJuega.mano.splice(indiceCarta, 1);
@@ -527,7 +527,7 @@ export class EfectoEscudo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
         Utilidades.agregarEscudos(sala, jugadorQueJuega, 1, 1, "EFECTOESCUDO");
 
-        sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.nombre} usó ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
+        sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.personaje} usó ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.broadcast("sfx", "curacion"); 
 
@@ -613,7 +613,7 @@ export class EfectoClonarMano implements IEfectoCarta {
             jugadorQueJuega.mano.push(clon);
         }
 
-        sala.broadcast("notificacion_turno", `🪞 ¡${jugadorQueJuega.nombre} jugó ${cartaJugada.nombre}, sacrificó una carta original y fabricó 2 clones!`);
+        sala.broadcast("notificacion_turno", `🪞 ¡${jugadorQueJuega.personaje} jugó ${cartaJugada.nombre}, sacrificó una carta original y fabricó 2 clones!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         sala.broadcast("sfx", "tilinkPasiva");
@@ -1094,6 +1094,110 @@ export class EfectoDomoProtector implements IEfectoCarta {
     }
 }
 
+export class EfectoSecador implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega){
+            console.error("ERROR: el jugador es null en secador")
+            return false
+        }
+        if (!cartaJugada){
+            console.error("ERROR: la carta jugada es null en secador")
+            return false
+        }
+
+        let idObjetivo = parametros[parametros.length - 1]
+        if (!idObjetivo){
+            console.error("ERROR: idObjetivo es null en secador")
+            return false
+        }
+
+        let victima = sala.state.jugadores.get(idObjetivo)
+        if (!victima){
+            console.error("ERROR: victima es null en secador")
+        }
+        if (!victima.estaVivo){
+            return false
+        }
+
+        Utilidades.agregarEscudos(sala, victima, 1, 1, "carta")
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+
+        sala.agregarRegistro(`𖣘 ${jugadorQueJuega.personaje} jugó un Secador y le dio 1 de escudo a ${victima.personaje}.`)
+        sala.reproducirSfx("sfxSecador")
+
+        return true
+    }
+}
+
+export class EfectoForzarEnemigo implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        let idObjetivo = parametros[parametros.length - 1];
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido.");
+            return false;
+        }
+        if (victima.mano.length === 0 && victima.equipamiento.size === 0) {
+            client.send("alerta_personal", `${victima.nombre} no tiene nada para descartar.`);
+            return false;
+        }
+
+        // Consumimos el Cocoroch
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada);
+
+        sala.broadcast("notificacion_turno", `🪳 ¡${jugadorQueJuega.nombre} le jugó un Cocoroch a ${victima.nombre}!`);
+        const numero = Math.floor(Math.random() * 2);
+        sala.broadcast("sfx", "cocoroch" + numero);
+
+        sala.armarPanelSeleccion(idObjetivo, "¡Te tiraron un Cocoroch y tenés que descartar!", "normal", "cocoroch");
+        
+        victima.equipamiento.forEach((carta: any, clave: string) => {
+            // USAMOS |
+            sala.agregarOpcionSeleccion(`equip|${clave}`, carta, "Equipado en mesa", "Equipat");
+        });
+        victima.mano.forEach((carta: any, idx: number) => {
+            // USAMOS |
+            sala.agregarOpcionSeleccion(`mano|${idx}`, carta, "", "");
+        });
+
+        return true;
+    }
+}
+
+export class EfectoRobarEnemigo implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        let idObjetivo = parametros[parametros.length - 1];
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido.");
+            return false;
+        }
+        if (victima.mano.length === 0 && victima.equipamiento.size === 0) {
+            client.send("alerta_personal", `${victima.nombre} no tiene nada para robarle.`);
+            return false;
+        }
+
+        sala.armarPanelSeleccion(client.sessionId, `¿Qué querés robarle a ${victima.nombre}?`, "normal", "panico");
+        
+        victima.equipamiento.forEach((carta: any, clave: string) => {
+            // USAMOS |
+            sala.agregarOpcionSeleccion(`equip|${clave}|${idObjetivo}|${cartaJugada.id}`, carta, "Equipado en mesa", "Equipat");
+        });
+        victima.mano.forEach((carta: any, idx: number) => {
+            // USAMOS |
+            sala.agregarOpcionSeleccion(`mano|${idx}|${idObjetivo}|${cartaJugada.id}`, carta, "¿?", "¿?", "Carta Oculta", "CartaOculta");
+        });
+
+        return false;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -1135,6 +1239,9 @@ export class DespachadorDeCartas {
         "macetaKillo": new EfectoMacetaKillo(),
         "nutriente": new EfectoNutriente(),
         "domoProtector": new EfectoDomoProtector(),
+        "secador": new EfectoSecador(),
+        "forzar": new EfectoForzarEnemigo(),
+        "robarEnemigo": new EfectoRobarEnemigo(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
