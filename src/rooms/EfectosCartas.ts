@@ -252,10 +252,8 @@ export class EfectoTiendaJuju implements IEfectoCarta {
         sala.colaTienda = vivosIds;
         sala.state.cartasTienda.clear();
         
-        // Avisamos al servidor que estamos en modo Juju
         sala.state.tipoTiendaActual = "Juju";
 
-        // 2. Sacar 1 carta MALDITA por jugador víctima
         for(let i = 0; i < vivosIds.length; i++) {
             let cartaMaldita = CatalogoCartasEspeciales.crearCartaMalditaAleatoria();
             sala.state.cartasTienda.push(cartaMaldita);
@@ -853,7 +851,7 @@ export class EfectoHumoseta implements IEfectoCarta {
 
         Utilidades.equiparCarta(sala, jugadorQueJuega, cartaJugada, "humoseta");
         jugadorQueJuega.mano.splice(indiceCarta, 1);
-        sala.broadcast("notificacion_turno", `🫧 ¡${jugadorQueJuega.nombre} se equipó ${cartaJugada.nombre}!`);
+        sala.broadcast("notificacion_turno", `🫧 ¡${jugadorQueJuega.personaje} se equipó ${cartaJugada.nombre}!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         return true;
     }
@@ -1131,6 +1129,42 @@ export class EfectoSecador implements IEfectoCarta {
     }
 }
 
+export class EfectoTiendaPierre implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        
+        let vivosIds: string[] = [];
+        let idsJugadores = Array.from(sala.state.jugadores.keys());
+        let indiceInicial = idsJugadores.indexOf(client.sessionId);
+        
+        for(let i = 0; i < idsJugadores.length; i++) {
+            let idx = (indiceInicial + i) % idsJugadores.length;
+            let sessionId = idsJugadores[idx] as string;
+            let j = sala.state.jugadores.get(sessionId);
+            if(j && j.estaVivo) vivosIds.push(sessionId);
+        }
+
+        sala.colaTienda = vivosIds;
+        sala.state.cartasTienda.clear();
+        
+        sala.state.tipoTiendaActual = "Pierre";
+
+        for(let i = 0; i < vivosIds.length; i++) {
+            let cartaPierre = CatalogoCartasEspeciales.crearCartaPierreAleatoria();
+            cartaPierre.esConjurada = true
+            sala.state.cartasTienda.push(cartaPierre);
+        }
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("sfx", "sfxPierreTienda");
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+        sala.agregarAlDescarte(cartaJugada);
+        
+        sala.avanzarColaTienda();
+        
+        return true;
+    }
+}
+
 export class EfectoForzarEnemigo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         let idObjetivo = parametros[parametros.length - 1];
@@ -1144,11 +1178,29 @@ export class EfectoForzarEnemigo implements IEfectoCarta {
             client.send("alerta_personal", `${victima.nombre} no tiene nada para descartar.`);
             return false;
         }
+        if (victima.equipamiento.has("espantacocoroch")){
+            client.send("alerta_personal", `${victima.nombre} tiene un Espantacocoroch, no podes usar un Cocoroch en este jugador.`)
+            return false
+        }
 
         // Consumimos el Cocoroch
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         sala.agregarAlDescarte(cartaJugada);
+        if (jugadorQueJuega.equipamiento.has("espantacocoroch")){
+            const c: Carta = jugadorQueJuega.equipamiento.get("espantacocoroch")
+            if (c){
+                if (c.nombre == "Espantacocoroch"){
+                    sala.repartirCartas(jugadorQueJuega, 1, "equipamiento")
+                    sala.agregarRegistro(`${jugadorQueJuega.personaje} roba una carta por su Espantacocoroch.`)
+                } else if (c.nombre == "Espantacocoroch Pro"){
+                    sala.repartirCartas(jugadorQueJuega, 2, "equipamiento")
+                    sala.agregarRegistro(`${jugadorQueJuega.personaje} roba 2 cartas por su Espantacocoroch Pro.`)
+                } else {
+                    console.error("ERROR: tiene un espantapajaros el jugador que juega pero no corresponde a ninguno.")
+                }
+            }
+        }
 
         sala.broadcast("notificacion_turno", `🪳 ¡${jugadorQueJuega.nombre} le jugó un Cocoroch a ${victima.nombre}!`);
         const numero = Math.floor(Math.random() * 2);
@@ -1198,6 +1250,401 @@ export class EfectoRobarEnemigo implements IEfectoCarta {
     }
 }
 
+export class EfectoEnsalada implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
+
+            let totalVivos = 0;
+            sala.state.jugadores.forEach((j: any) => {
+                if (j && j.estaVivo) totalVivos++;
+            });
+
+            if (totalVivos == 2){
+                jugador.vidas++
+            } else {
+                jugador.vidas += 2
+            }
+
+            if (jugador.vidas > jugador.vidasMaximas){
+                jugador.vidas = jugador.vidasMaximas
+            }
+
+            sala.broadcast("notificacion_turno", `🥗 ${jugador.personaje} comió su Ensalada.`);
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
+            sala.broadcast("sfx", "curacion");
+
+            jugador.mano.splice(indiceCarta, 1);
+            sala.agregarAlDescarte(cartaJugada);
+            return true;
+        } else {
+            client.send("alerta_personal", "No podes curarte ahora mismo.");
+            return false;
+        }
+    }
+}
+
+export class EfectoEspantacocoroch implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega || !cartaJugada) return false;
+
+        Utilidades.equiparCarta(sala, jugadorQueJuega, cartaJugada, "espantacocoroch");
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `👨🏼‍🌾 ¡${jugadorQueJuega.personaje} se equipó ${cartaJugada.nombre}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
+    }
+}
+
+export class EfectoWarpTotem implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        // 1. Identificamos al objetivo
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let objetivo = sala.state.jugadores.get(idObjetivo);
+
+        if (!objetivo || !objetivo.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
+            return false;
+        }
+
+        if (objetivo === jugadorQueJuega) {
+            client.send("alerta_personal", "No podés intercambiar de lugar con vos mismo.");
+            return false;
+        }
+
+        // 2. Consumimos la carta
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+
+        // 3. Ejecutamos el intercambio de asientos
+        Utilidades.intercambiarPosicionesFisicas(sala, jugadorQueJuega, objetivo);
+
+        // 4. Robamos la carta extra
+        sala.repartirCartas(jugadorQueJuega, 1, "carta");
+
+        // 5. Aplicamos la curación (si es que no tiene la vida máxima)
+        let textoCura = "";
+        if (Utilidades.puedeRecibirCuracion(sala, jugadorQueJuega)) {
+            Utilidades.aplicarCuracion(sala, jugadorQueJuega, 1, "WARP_TOTEM", false);
+            textoCura = " y se curó 1 de salud";
+        }
+
+        // 6. Avisamos a la mesa
+        sala.broadcast("notificacion_turno", `🗿 ¡${jugadorQueJuega.personaje} usó un Warp Totem! Intercambió su asiento con ${objetivo.personaje}, robó 1 carta${textoCura}.`);
+        
+        // Ejecutamos animaciones y descartamos
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        return true;
+    }
+}
+
+export class EfectoBomba implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        // 1. Buscamos a los vivos en orden físico
+        let vivosIds: string[] = [];
+        sala.state.ordenSillasFisicas.forEach((id: string) => {
+            let j = sala.state.jugadores.get(id);
+            if (j && j.estaVivo) vivosIds.push(id);
+        });
+
+        // 2. Determinamos quiénes son los vecinos (distancia 1)
+        let victimasIds = new Set<string>();
+        if (vivosIds.length > 1) {
+            let miIndice = vivosIds.indexOf(client.sessionId);
+            let idxIzq = (miIndice - 1 + vivosIds.length) % vivosIds.length;
+            let idxDer = (miIndice + 1) % vivosIds.length;
+            
+            victimasIds.add(vivosIds[idxIzq]);
+            victimasIds.add(vivosIds[idxDer]);
+        }
+
+        if (victimasIds.size === 0) {
+            client.send("alerta_personal", "No hay jugadores vivos para atacar.");
+            return false;
+        }
+
+        // 3. Consumimos la carta y avisamos
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `💣 ¡${jugadorQueJuega.personaje} lanzó una Bomba a sus vecinos!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+        
+        sala.state.atacanteActual = client.sessionId;
+
+        // 4. Encolamos las interacciones para las víctimas
+        victimasIds.forEach(idVictima => {
+            let victima = sala.state.jugadores.get(idVictima);
+            let tieneCartas = victima.mano.length > 0;
+            
+            sala.encolarInteraccion(idVictima, `¡${jugadorQueJuega.personaje} te tiró una Bomba!`, "bomba", [
+                { idAccion: "bomba_descartar", texto: "Descartar carta izquierda", habilitado: tieneCartas, color: "verde" },
+                { idAccion: "bomba_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
+            ]);
+        });
+
+        sala.state.spriteFlecha = "bomba";
+        sala.procesarSiguienteInteraccion();
+        
+        return true;
+    }
+}
+
+export class EfectoMegaBomba implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        let vivosIds: string[] = [];
+        sala.state.ordenSillasFisicas.forEach((id: string) => {
+            let j = sala.state.jugadores.get(id);
+            if (j && j.estaVivo) vivosIds.push(id);
+        });
+
+        let victimasIds = new Set<string>();
+        
+        if (vivosIds.length > 1) {
+            let miIndice = vivosIds.indexOf(client.sessionId);
+            let n = vivosIds.length;
+            
+            // Distancia 1 (Vecinos directos)
+            victimasIds.add(vivosIds[(miIndice - 1 + n) % n]);
+            victimasIds.add(vivosIds[(miIndice + 1) % n]);
+            
+            // Distancia 2 (Vecinos de los vecinos)
+            victimasIds.add(vivosIds[(miIndice - 2 + n) % n]);
+            victimasIds.add(vivosIds[(miIndice + 2) % n]);
+        }
+
+        // SALVAGUARDIA: Si la mesa es muy chica (ej: 3 jugadores), la distancia 2 da la vuelta
+        // y te apunta a vos. Con esto, evitamos que te explotes a vos mismo.
+        victimasIds.delete(client.sessionId);
+
+        if (victimasIds.size === 0) {
+            client.send("alerta_personal", "No hay jugadores vivos para atacar.");
+            return false;
+        }
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `💣💣 ¡${jugadorQueJuega.personaje} lanzó una MEGA BOMBA a la mesa!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+        
+        sala.state.atacanteActual = client.sessionId;
+        sala.broadcast("sfx", "explosion"); // Si tuvieras un sonido más fuerte, iría acá
+
+        victimasIds.forEach(idVictima => {
+            let victima = sala.state.jugadores.get(idVictima);
+            // Validamos que tenga AL MENOS 2 cartas para habilitar el botón
+            let tieneCartasSuficientes = victima.mano.length >= 2;
+            
+            sala.encolarInteraccion(idVictima, `¡${jugadorQueJuega.personaje} tiró una Mega Bomba!`, "megabomba", [
+                { idAccion: "megaBomba_descartar", texto: "Descartar 2 cartas izquierdas", habilitado: tieneCartasSuficientes, color: "verde" },
+                { idAccion: "megaBomba_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
+            ]);
+        });
+
+        sala.state.spriteFlecha = "megabomba"; 
+        sala.procesarSiguienteInteraccion();
+        
+        return true;
+    }
+}
+
+export class EfectoFestivalDelHuevo implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        // 1. Consumimos la carta y avisamos a la mesa
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `🥚 ¡${jugadorQueJuega.personaje} inició el Festival del Huevo! Todos roban 1 carta.`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        // 2. TODOS los jugadores vivos roban 1 carta
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo) {
+                sala.repartirCartas(j, 1, "FESTIVAL");
+            }
+        });
+
+        // 3. Recalculamos quién tiene MÁS cartas DESPUÉS de haber robado
+        let maxCartas = -1;
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo && j.mano.length > maxCartas) {
+                maxCartas = j.mano.length;
+            }
+        });
+
+        // 4. Repartimos el huevo misterioso a los ganadores (puede ser 1 o un empate)
+        let ganadores: string[] = [];
+        
+        sala.state.jugadores.forEach((j: any) => {
+            if (j.estaVivo && j.mano.length === maxCartas) {
+                let huevo = CatalogoCartasEspeciales.crearCartaHuevoAleatorio();
+                if (huevo) {
+                    huevo.esConjurada = true; // La marcamos como conjurada para el borde brillante
+                    j.mano.push(huevo);
+                    ganadores.push(j.personaje);
+                }
+            }
+        });
+
+        // 5. Anunciamos a los ganadores sin revelar qué huevo les tocó
+        if (ganadores.length > 0) {
+            let nombres = ganadores.join(" y ");
+            sala.broadcast("notificacion_turno", `🥚 ¡${nombres} tenían más cartas y ganaron un Huevo Misterioso!`);
+        }
+
+        return true;
+    }
+}
+
+export class EfectoTormenta implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        // 1. Obtener orden en base a los IDs de los jugadores en la mesa
+        let vivosIds: string[] = [];
+        let idsJugadores = Array.from(sala.state.jugadores.keys());
+        let indiceInicial = idsJugadores.indexOf(client.sessionId);
+        
+        // Empezamos desde el siguiente (i = 1) y damos la vuelta completa
+        for(let i = 1; i < idsJugadores.length; i++) {
+            let idx = (indiceInicial + i) % idsJugadores.length;
+            let sessionId = idsJugadores[idx] as string;
+            let j = sala.state.jugadores.get(sessionId);
+            if(j && j.estaVivo) vivosIds.push(sessionId);
+        }
+
+        if (vivosIds.length === 0) {
+            client.send("alerta_personal", "No hay nadie a quien afecte la tormenta.");
+            return false;
+        }
+
+        // 2. Consumir carta y avisar
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `⛈️ ¡${jugadorQueJuega.personaje} desató una Tormenta!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+        sala.state.atacanteActual = client.sessionId;
+
+        // 3. Encolar a las víctimas en orden
+        vivosIds.forEach(idVictima => {
+            let victima = sala.state.jugadores.get(idVictima);
+            let tieneEquipamiento = victima.equipamiento.size > 0;
+            
+            sala.encolarInteraccion(idVictima, `¡${jugadorQueJuega.personaje} invocó una Tormenta!`, "tormenta", [
+                { idAccion: "tormenta_descartar", texto: "Descartar Equipamiento", habilitado: tieneEquipamiento, color: "azul" },
+                { idAccion: "tormenta_dano", texto: "Recibir 1 de Daño", habilitado: true, color: "rojo" }
+            ]);
+        });
+
+        // 4. Iniciar la tormenta
+        sala.state.spriteFlecha = "tormenta";
+        sala.procesarSiguienteInteraccion();
+        
+        return true;
+    }
+}
+
+export class EfectoEsquirlaPrismatica implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        
+        // 1. Probamos hacer la primera mejora
+        let primeraMejora = Utilidades.mejorarEquipamientoAleatorio(sala, jugadorQueJuega);
+
+        // 2. Si falló a la primera, significa que no hay NADA que se pueda mejorar
+        if (primeraMejora === "") {
+            client.send("alerta_personal", "No hay ningún equipamiento que puedas mejorar.");
+            return false; // Retorna false, cancela la jugada y no consume la carta
+        }
+
+        // 3. Si llegamos acá, al menos algo mejoró. Hacemos un bucle para el resto.
+        while (true) {
+            let siguienteMejora = Utilidades.mejorarEquipamientoAleatorio(sala, jugadorQueJuega);
+            
+            // Si la función devuelve un string vacío, significa que ya todo está al máximo
+            if (siguienteMejora === "") {
+                break;
+            }
+        }
+
+        // 4. Recién ahora consumimos el Iridio de la mano
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+
+        sala.broadcast("notificacion_turno", `🌈 ¡${jugadorQueJuega.personaje} usó una Esquirla prismatica y mejoró todo su equipamiento al máximo!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+        
+        // Reutilizamos el sonido de mejora
+        sala.broadcast("sfx", "robinMejora"); 
+
+        return true;
+    }
+}
+
+export class EfectoEspirituAlegre implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega || !cartaJugada) return false;
+
+        Utilidades.equiparCarta(sala, jugadorQueJuega, cartaJugada, "espiritu");
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.personaje} se equipó ${cartaJugada.nombre}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
+    }
+}
+
+export class EfectoEspirituEnojado implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega || !cartaJugada) return false;
+
+        let idObjetivo = parametros[parametros.length - 1];
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido.");
+            return false;
+        }
+
+        Utilidades.equiparCarta(sala, victima, cartaJugada, "espiritu");
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `✨ ¡${jugadorQueJuega.personaje} le colocó ${cartaJugada.nombre} a ${victima.personaje}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
+    }
+}
+
+export class EfectoCafe implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        let bandera: boolean = false
+
+        if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
+            Utilidades.aplicarCuracion(sala, jugador, 1, "cafe", false);
+
+            sala.broadcast("notificacion_turno", `☕ ${jugador.personaje} se curó 1 por su Café.`);
+            sala.broadcast("sfx", "curacion");
+            bandera = true
+        }
+
+        if (jugador.yaDisparo){
+            jugador.yaDisparo = false
+            sala.broadcast("notificacion_turno", `☕ ${jugador.personaje} reinicia su limite de Bang! por su Café.`);
+            bandera = true
+        }
+
+        if (!bandera){
+            client.send("alerta_personal", "No podes curarte ni reiniciar tu limite de Bang! ahora mismo.");
+            return false;
+        } else {
+            sala.ejecutarAnimacionCarta(client, cartaJugada)
+            jugador.mano.splice(indiceCarta, 1);
+
+            sala.agregarAlDescarte(cartaJugada);
+        }
+
+        return bandera
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -1242,6 +1689,18 @@ export class DespachadorDeCartas {
         "secador": new EfectoSecador(),
         "forzar": new EfectoForzarEnemigo(),
         "robarEnemigo": new EfectoRobarEnemigo(),
+        "tiendaPierre": new EfectoTiendaPierre(),
+        "ensalada": new EfectoEnsalada(),
+        "espantacocoroch": new EfectoEspantacocoroch(),
+        "warpTotem": new EfectoWarpTotem(),
+        "bomba": new EfectoBomba(),
+        "megaBomba": new EfectoMegaBomba(),
+        "festivalDelHuevo": new EfectoFestivalDelHuevo(),
+        "tormenta": new EfectoTormenta(),
+        "esquirlaPrismatica": new EfectoEsquirlaPrismatica(),
+        "espirituAlegre": new EfectoEspirituAlegre(),
+        "espirituEnojado": new EfectoEspirituEnojado(),
+        "cafe": new EfectoCafe(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

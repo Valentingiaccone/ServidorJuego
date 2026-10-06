@@ -90,6 +90,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearTiendaDePierre(): Carta {
+        const clon = new Carta();
+        clon.id = `tienda_pierre_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        clon.nombre = "La tienda de Pierre";
+        clon.descripcion = "Empezando por vos, todos eligen cartas exclusivas de esta tienda.";
+        clon.descripcionEnCatalan = "."
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "tiendaPierre";  
+        clon.esConjurada = false;
+        return clon;
+    }
+
     public static crearPapapum(): Carta {
         let clon = new Carta();
         clon.id = `papapum_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -357,7 +369,8 @@ export class CatalogoCartasEspeciales {
             { id: "clon", copias: 2 },
             { id: "escopetasReaper", copias: 1 },
             { id: "hordaDeBloons", copias: 3 },
-            { id : "domoProtector", copias: 1 },
+            { id: "domoProtector", copias: 1 },
+            { id: "tiendaDePierre", copias: 1 },
            // { id: "mortero", copias: 1 },
         ];
     }
@@ -376,6 +389,7 @@ export class CatalogoCartasEspeciales {
             case "mortero": return this.crearMortero();
             case "hordaDeBloons": return this.crearHordaDeBloons()
             case "domoProtector": return this.crearDomoProtector()
+            case "tiendaDePierre": return this.crearTiendaDePierre()
 
             default: return null;
         }
@@ -695,6 +709,392 @@ export class CatalogoCartasEspeciales {
         clon.efecto = "nutriente";
         clon.esConjurada = false;
         clon.esPlanta = true;
+        return clon;
+    }
+
+    public static crearCartaPierreAleatoria(): Carta | null {
+        const numero: number = Math.floor(Math.random() * 19)
+        switch (numero){
+            case 0:
+                return this.crearTirachinas()
+            case 1:
+                return this.crearEnsalada()
+            case 2:
+                return this.crearEspantacocoroch()
+            case 3:
+                return this.crearWarpTotem()
+            case 4:
+                return this.crearBomba()
+            case 5:
+                return this.crearMegaBomba()
+            case 6:
+                return this.crearFestivalDelHuevo()
+            case 7:
+                return this.crearTormenta()
+            case 8:
+                return this.crearEsquirlaPrismatica()
+            case 9:
+                return this.crearEspirituAlegre()
+            case 10:
+                return this.crearEspirituEnojado()
+            case 11:
+                return this.crearCafe()
+            case 12:
+                return this.crearEspadaGalactica()
+            case 13:
+                return this.crearAnilloDeIridio()
+            case 14:
+                return this.crearAnilloDeInmunidad()
+            case 15:
+                return this.crearAnilloDelVampiro()
+            case 16:
+                return this.crearAnilloDelLadron()
+            case 17:
+                return this.crearAnilloDeLaSuerte()
+            case 18:
+                return this.crearAnilloDeYoba()
+            
+            default: 
+                return null
+        }
+    }
+
+    public static crearTirachinas(): Carta {
+        let clon = new Carta();
+        clon.id = `tirachinas_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Tirachinas";
+        clon.descripcion = "Alcance 2. No tenes limites de Bang!.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = `equipar_arma_2`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearTirachinasMaestro(): Carta {
+        let clon = new Carta();
+        clon.id = `tirachinas_maestro_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Tirachinas maestro";
+        clon.descripcion = "Alcance 3. No tenes limites de Bang!.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = `equipar_arma_3`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEnsalada(): Carta {
+        let clon = new Carta();
+        clon.id = `ensalada_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Ensalada";
+        clon.descripcion = "+2 vidas (en 1vs1 +1 vida)";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "ensalada";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEspantacocoroch(): Carta {
+        let clon = new Carta();
+        clon.id = `espantacocoroch_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Espantacocoroch";
+        clon.descripcion = "Los cocoroch rivales ya no te molestan, al jugar un cocoroch roba una carta.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento"; 
+        clon.efecto = "espantacocoroch";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEspantacocorochPro(): Carta {
+        let clon = new Carta();
+        clon.id = `espantacocorochPro_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Espantacocoroch Pro";
+        clon.descripcion = "Los cocoroch rivales ya no te molestan, al jugar un cocoroch roba 2 cartas.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento"; 
+        clon.efecto = "espantacocoroch";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearWarpTotem(): Carta {
+        let clon = new Carta();
+        clon.id = `warp_totem_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Warp Totem";
+        clon.descripcion = "Intercambia lugar con otro jugador, roba una carta, y cura 1.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoUniversal"; 
+        clon.efecto = "warpTotem";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearBomba(): Carta {
+        let clon = new Carta();
+        clon.id = `bomba_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Bomba";
+        clon.descripcion = "Los jugadores a distancia 1 deben descartar su carta izquierda o perder 1 vida.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "bomba";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearMegaBomba(): Carta {
+        let clon = new Carta();
+        clon.id = `mega_bomba_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Mega Bomba";
+        clon.descripcion = "Los jugadores a distancia 1 y 2 deben descartar sus 2 cartas de la izquierda o perder 1 vida.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "megaBomba";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearFestivalDelHuevo(): Carta {
+        let clon = new Carta();
+        clon.id = `festival_del_huevo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Festival del Huevo";
+        clon.descripcion = "Todos roban una carta, los jugadores con mas cartas reciben un huevo aleatorio (daño, cura o robo).";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "festivalDelHuevo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearCartaHuevoAleatorio(): Carta | null {
+        const numero: number = Math.floor(Math.random() * 3)
+        switch (numero){
+            case 0:
+                return this.crearHuevoBang()
+            case 1:
+                return this.crearHuevoSano()
+            case 2:
+                return this.crearHuevoSorpresa()
+            
+            default: 
+                return null
+        }
+    }
+
+    public static crearHuevoBang(): Carta {
+        let clon = new Carta();
+        clon.id = `huevo_bang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Huevo BANG!";
+        clon.descripcion = "Quita 1 vida a un jugador a tu alcance.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivo";
+        clon.efecto = "dano_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearHuevoSano(): Carta {
+        let clon = new Carta();
+        clon.id = `huevo_sano_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Huevo sano";
+        clon.descripcion = "+1 vida, te salva de morir.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "curar_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearHuevoSorpresa(): Carta {
+        let clon = new Carta();
+        clon.id = `huevo_sorpresa_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Huevo sorpresa";
+        clon.descripcion = "Roba 1 carta.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "robar_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearTormenta(): Carta {
+        let clon = new Carta();
+        clon.id = `tormenta_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Tormenta";
+        clon.descripcion = "Los demas jugadores deben descartar un equipamiento o recibir 1 de daño.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "tormenta";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEsquirlaPrismatica(): Carta {
+        let clon = new Carta();
+        clon.id = `esquirla_prismatica_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Esquirla prismatica";
+        clon.descripcion = "Mejora todo tu equipamiento al maximo.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "esquirlaPrismatica";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEspirituAlegre(): Carta {
+        let clon = new Carta();
+        clon.id = `espiritu_alegre_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Espiritu alegre";
+        clon.descripcion = "Suerte +2.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento"; 
+        clon.efecto = "espirituAlegre";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEspirituEnojado(): Carta {
+        let clon = new Carta();
+        clon.id = `espiritu_enojado_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Espiritu enojado";
+        clon.descripcion = "Elegi un jugador para que tenga suerte -2.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoUniversal"; 
+        clon.efecto = "espirituEnojado";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEspirituAlegrePro(): Carta {
+        let clon = new Carta();
+        clon.id = `espiritu_alegre_pro_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Espiritu alegre Pro";
+        clon.descripcion = "Suerte +4.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento"; 
+        clon.efecto = "espirituAlegre";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEspirituEnojadoPro(): Carta {
+        let clon = new Carta();
+        clon.id = `espiritu_enojado_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Espiritu enojado Pro";
+        clon.descripcion = "Elegi un jugador para que tenga suerte -4.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoUniversal"; 
+        clon.efecto = "espirituEnojado";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearCafe(): Carta {
+        let clon = new Carta();
+        clon.id = `cafe_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Cafe";
+        clon.descripcion = "Cura 1 y reinicia tu limite de Bang!.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "cafe";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEspadaGalactica(): Carta {
+        let clon = new Carta();
+        clon.id = `arma_espada_galactica_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Espada galactica";
+        clon.descripcion = "Alcance 1, daño 2, sin limites de Bang!";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = `equipar_arma_1_1_0`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearEspadaGalacticaPro(): Carta {
+        let clon = new Carta();
+        clon.id = `arma_espada_galactica_pro_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Espada galactica Pro";
+        clon.descripcion = "Alcance 100, daño 2, sin limites de Bang!";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = `equipar_arma_100_1_0`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearAnilloDeIridio(): Carta {
+        let clon = new Carta();
+        clon.id = `anillo_de_iridio_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Anillo de iridio";
+        clon.descripcion = "Mientras esté en tu mano, ganás 3 de alcance.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = `null`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearAnilloDeInmunidad(): Carta {
+        let clon = new Carta();
+        clon.id = `anillo_de_inmunidad_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Anillo de inmunidad cargado";
+        clon.descripcion = "Mientras esté en tu mano y cargado, reduce el daño recibido a 0, luego se descarga, al inicio del turno se carga.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = `null`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearAnilloDelVampiro(): Carta {
+        let clon = new Carta();
+        clon.id = `anillo_del_vampiro_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Anillo del vampiro";
+        clon.descripcion = "Mientras esté en tu mano, matar un jugador te cura 2.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = `null`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearAnilloDelLadron(): Carta {
+        let clon = new Carta();
+        clon.id = `anillo_del_ladron_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Anillo del ladron";
+        clon.descripcion = "Mientras esté en tu mano, cuando robas cartas, robas una extra.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = `null`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearAnilloDeLaSuerte(): Carta {
+        let clon = new Carta();
+        clon.id = `anillo_de_la_suerte_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Anillo de la suerte";
+        clon.descripcion = "Mientras esté en tu mano tenés suerte +3.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = `null`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearAnilloDeYoba(): Carta {
+        let clon = new Carta();
+        clon.id = `anillo_de_yoba_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Anillo de Yoba";
+        clon.descripcion = "Mientras esté en tu mano, luego de recibir daño, tiene un 50% de obtener 1 escudo.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = `null`; 
+        clon.esConjurada = false;
         return clon;
     }
 }

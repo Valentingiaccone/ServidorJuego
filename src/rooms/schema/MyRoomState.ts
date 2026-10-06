@@ -81,9 +81,7 @@ export class Jugador extends Schema {
     
     @type([Carta]) mano = new ArraySchema<Carta>();
     
-    // --- EL NUEVO REY DEL EQUIPAMIENTO ---
     @type({ map: Carta }) equipamiento = new MapSchema<Carta>();
-    // ------------------------------------
 
     @type("string") spriteAvatarOpcional: string = ""
     @type("boolean") estaDesconectado: boolean = false;

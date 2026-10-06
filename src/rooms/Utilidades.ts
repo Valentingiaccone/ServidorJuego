@@ -44,6 +44,13 @@ export class Utilidades {
             }
         }
 
+        let anilloInmunidad: Carta = this.buscarCartaPorNombre(victima, "Anillo de inmunidad cargado")
+        if (anilloInmunidad && cantidad > 0){
+            cantidad = 0
+            anilloInmunidad.nombre = "Anillo de inmunidad descargado"
+            sala.agregarRegistro(`💍 ${victima.personaje} redujo el daño a 0 por su Anillo de inmunidad.`)
+        }
+
         let danoRestante = cantidad;
         let cantidadDanoEscudo = 0;
 
@@ -64,6 +71,15 @@ export class Utilidades {
         let pasivaVictima = sala.gestorPersonajes.obtener(victima.personaje);
         if (pasivaVictima && pasivaVictima.onRecibirDano) {
             pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
+        }
+
+        const y: number = this.contarCartasPorNombre(victima, "Anillo de Yoba")
+        for (let i = 0; i < y; i++){
+            const numero: number = Math.floor(Math.random() * 2)
+            if (numero == 0){
+                this.agregarEscudos(sala, victima, 1, 1, "anillo")
+                sala.agregarRegistro(`💍 ${victima.personaje} generó un escudo por su anillo de Yoba.`)
+            }
         }
 
         let pasivaAtacante = sala.gestorPersonajes.obtener(atacante?.personaje);
@@ -236,6 +252,13 @@ export class Utilidades {
         let barril = jugador.equipamiento.get("barril");
         if (barril && barril.nombre === "Barril") opcionesDeMejora.push("barril");
 
+        let espiritu = jugador.equipamiento.get("espiritu");
+        if (espiritu && espiritu.nombre === "Espiritu alegre") opcionesDeMejora.push("espirituAlegre");
+        if (espiritu && espiritu.nombre === "Espiritu enojado") opcionesDeMejora.push("espirituEnojado");
+
+        let espantacocoroch = jugador.equipamiento.get("espantacocoroch");
+        if (espantacocoroch && espantacocoroch.nombre === "Espantacocoroch") opcionesDeMejora.push("espantacocoroch");
+
         let datosArmaActual = this.getDatosArma(jugador);
         let siguienteArma = this.obtenerSiguienteArma(datosArmaActual.nombre);
         if (siguienteArma) {
@@ -247,6 +270,10 @@ export class Utilidades {
                 opcionesDeMejora.push("tracer")
             } else if (datosArmaActual.nombre == "Escopetas de Reaper"){
                 opcionesDeMejora.push("reaper")
+            } else if (datosArmaActual.nombre == "Tirachinas"){
+                opcionesDeMejora.push("tirachinas")
+            } else if (datosArmaActual.nombre == "Espada galactica"){
+                opcionesDeMejora.push("espadaGalactica")
             }
         }
 
@@ -291,6 +318,31 @@ export class Utilidades {
             cartaNueva.esConjurada = true
             this.equiparCarta(sala, jugador, cartaNueva, "arma")
             textoMejora = `su arma a ${cartaNueva.nombre}`
+        } else if (hueco === "tirachinas"){
+            let cartaNueva: Carta = CatalogoCartasEspeciales.crearTirachinasMaestro()
+            cartaNueva.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaNueva, "arma")
+            textoMejora = `su arma a ${cartaNueva.nombre}`
+        } else if (hueco === "espirituAlegre") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearEspirituAlegrePro();
+            cartaMejorada.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaMejorada, "espiritu");
+            textoMejora = "su Espiritu alegre";
+        } else if (hueco === "espirituEnojado") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearEspirituEnojadoPro();
+            cartaMejorada.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaMejorada, "espiritu");
+            textoMejora = "su Espiritu enojado";
+        } else if (hueco === "espadaGalactica"){
+            let cartaNueva: Carta = CatalogoCartasEspeciales.crearEspadaGalacticaPro()
+            cartaNueva.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaNueva, "arma")
+            textoMejora = `su arma a ${cartaNueva.nombre}`
+        } else if (hueco === "espantacocoroch") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearEspantacocorochPro()
+            cartaMejorada.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaMejorada, "espantacocoroch");
+            textoMejora = "su Espantacocoroch";
         }
 
         return textoMejora;
@@ -415,6 +467,31 @@ export class Utilidades {
     }
 
     /**
+     * Intercambia la posición física (silla) de dos jugadores en la mesa.
+     */
+    public static intercambiarPosicionesFisicas(sala: IMyRoom, jugador1: Jugador, jugador2: Jugador): boolean {
+        let state = (sala as any).state;
+        let id1 = this.obtenerSessionIdDeJugador(sala, jugador1);
+        let id2 = this.obtenerSessionIdDeJugador(sala, jugador2);
+
+        if (!id1 || !id2) return false;
+
+        let arraySillas = state.ordenSillasFisicas;
+        let idx1 = arraySillas.indexOf(id1);
+        let idx2 = arraySillas.indexOf(id2);
+
+        if (idx1 !== -1 && idx2 !== -1) {
+            // Intercambiamos los IDs en el array visual/físico
+            let temp = arraySillas[idx1];
+            arraySillas[idx1] = arraySillas[idx2];
+            arraySillas[idx2] = temp;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Crea una copia exacta de una carta, generándole un ID único para evitar problemas de renderizado o base de datos.
      */
     public static clonarCarta(cartaOriginal: Carta, prefijoId: string = "clon"): Carta {
@@ -448,5 +525,37 @@ export class Utilidades {
         if (jugador.efecto.has("malestar")){
             jugador.efecto.delete("malestar")
         }
+    }
+
+    /**
+     * Busca y devuelve la primera carta en la mano del jugador que coincida con el nombre.
+     * Si no la encuentra, devuelve null.
+     */
+    public static buscarCartaPorNombre(jugador: Jugador, nombreCarta: string): Carta | null {
+        if (!jugador || !jugador.mano) return null;
+
+        let cartaEncontrada = jugador.mano.find((c: Carta) => c.nombre === nombreCarta);
+        
+        return cartaEncontrada ? cartaEncontrada : null;
+    }
+
+    /**
+     * Cuenta y devuelve cuántas cartas con ese nombre tiene el jugador en la mano.
+     */
+    public static contarCartasPorNombre(jugador: Jugador, nombreCarta: string): number {
+        if (!jugador || !jugador.mano) return 0;
+
+        let cartasEncontradas = jugador.mano.filter((c: Carta) => c.nombre === nombreCarta);
+        
+        return cartasEncontradas.length;
+    }
+
+    /**
+     * Convierte la primera letra del string a mayúscula y el resto a minúscula.
+     * Ejemplo: "bAnG!" -> "Bang!"
+     */
+    public static capitalizar(texto: string): string {
+        if (!texto) return ""; // Seguridad por si viene vacío o null
+        return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
     }
 }

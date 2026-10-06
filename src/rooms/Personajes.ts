@@ -243,15 +243,16 @@ export class Chester implements IPersonaje {
 
 export class Frank implements IPersonaje {
     nombre = "Frank";
-    habilidad = "Esponja:\nTiene +1 de vida.";
-    habilidadEnCatalan: string = "Esponja:\nTé +1 de vida."
+    habilidad = "Esponja:\nTiene +4 de vida pero no puede usar Fallo.";
+    habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteFrank", true];
     sfxDefault= "sfxFrank"
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.vidas++
-        jugador.vidasMaximas++
+        jugador.vidas += 4
+        jugador.vidasMaximas += 4
+        jugador.boolean.set("frankFallo", true)
     }
 }
 
@@ -2287,7 +2288,7 @@ export class Monito implements IPersonaje {
             let tieneCopia = miJugador.mano.some((c: Carta) => c.nombre === cartaJugada.nombre);
 
             if (tieneCopia) {
-                if (miJugador.number.get("monito") <= 3){
+                if (miJugador.number.get("monito") < 3){
                     miJugador.number.set("monito", miJugador.number.get("monito") + 1)
                     sala.repartirCartas(miJugador, 1, "pasiva");
                 
@@ -2835,6 +2836,61 @@ export class GeiruToneido implements IPersonaje {
     }
 }
 
+export class Pierre implements IPersonaje {
+    nombre = "Pierre";
+    habilidad = "Tienda de calidad:\nCuando roba: tiene un % de robar 1 menos pero a cambio te da una carta de su tienda.\nAl inicio de la partida: coloca el % en 50.\nSi obtiene una carta de su tienda, el % baja en 10, si no sube en 20.";
+    habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteStardew", true];
+    sfxDefault = "sfxStardew"
+
+    subirPierre: number = 20
+    bajarPierre: number = 10
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.number.set("pierre", 50)
+    }
+
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
+        if (!jugador){
+            console.error("El jugador no existe al robar cartas con pierre")
+            return 0
+        }
+
+        const numero: number = Math.floor(Math.random() * 100) + 1
+
+        if (numero <= jugador.number.get("pierre")){
+            jugador.number.set("pierre", jugador.number.get("pierre") - this.bajarPierre)
+            this.limitesPierre(jugador)
+            const carta: Carta = CatalogoCartasEspeciales.crearCartaPierreAleatoria()
+            if (carta){
+                carta.esConjurada = true
+                jugador.mano.push(carta)
+            } else {
+                console.error("ERROR: pierre al crear carta dio null")
+            }
+
+            sala.agregarRegistro(`🛒 ¡${jugador.personaje} obtuvo una carta de la tienda de Pierre!`)
+
+            return -1
+
+        } else {
+            jugador.number.set("pierre", jugador.number.get("pierre") + this.subirPierre)
+            this.limitesPierre(jugador)
+
+            return 0
+        }
+    }
+
+    limitesPierre(jugador: Jugador): void {
+        if (jugador.number.get("pierre") < 0){
+            jugador.number.set("pierre", 0)
+        } else if (jugador.number.get("pierre") > 100){
+            jugador.number.set("pierre", 100)
+        }
+    }
+}
+
 export class Wendy implements IPersonaje {
     nombre = "Wendy";
     habilidad = "Protectora:\nAl perder vida: ataca el escudo de los rivales siguientes para protegerse, si no puede, gana un escudo.\nBoton (1 por turno): descarta el Bang! de la izquierda y conjura un Secador.\nTiene -1 vida.";
@@ -2955,6 +3011,58 @@ export class Wendy implements IPersonaje {
     }
 }
 
+export class Abigail implements IPersonaje {
+    nombre = "Abigail";
+    habilidad = "Repugnante:\nComo una buena asquerosa, repulsiva, fea y molesta, al golpear a un jugador le agrega un efecto tocxic.\nBoton: pierde 1 vida y todos los demas obtienen 1 efecto tocxic.";
+    habilidadEnCatalan = "..";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        let botonAbigail = new HabilidadActiva();
+        botonAbigail.id = "abigail_tocxic";
+        botonAbigail.textoBoton = "Ouija";
+        botonAbigail.tooltip = "Pierde 1 vida, 1 tocxic al resto.";
+        botonAbigail.spriteBoton = "botonAbigail";
+        jugador.habilidadesActivas.push(botonAbigail);
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (!jugador) {
+            console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Byron");
+            return;
+        }
+        if (!sala) {
+            console.error("ERROR: sala es null en ejecutarHabilidadActiva de Byron");
+            return;
+        }
+
+        if (jugador.estaVivo && idHabilidad === "abigail_tocxic") {
+            
+
+            if (jugador.vidas == 1) {
+                client.send("alerta_personal", "No podes usar la habilidad con 1 de vida.");
+                return;
+            }
+
+            sala.state.jugadores.forEach((j: Jugador) => {
+                if (j.estaVivo){
+                    if (j.efecto.has("tocxic")){
+                       // j.efecto.
+                    }
+                }
+            });
+        }
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+        if (jugadorGolpeado.efecto.has("malestar")){
+            jugadorGolpeado.efecto.set("malestar", jugadorGolpeado.efecto.get("malestar") + 1)
+        } else {
+            jugadorGolpeado.efecto.set("malestar", 1)
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -3012,6 +3120,7 @@ export class GestorPersonajes {
         this.registrar(new GeiruToneido())
         this.registrar(new Wendy())
         this.registrar(new Tracer())
+        this.registrar(new Pierre())
 
 
 
