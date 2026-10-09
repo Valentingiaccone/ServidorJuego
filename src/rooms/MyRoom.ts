@@ -2213,6 +2213,17 @@ export class MyRoom extends Room implements IMyRoom{
                 jugadorQuePasaElTurno.efecto.delete("malestar")
             }
         }
+
+        if (jugadorQuePasaElTurno.efecto.has("tocxic")){
+            if (jugadorQuePasaElTurno.efecto.get("tocxic") >= 3){
+                Utilidades.procesarDano(this, jugadorQuePasaElTurno, null, 1, "efecto", false)
+                this.agregarRegistro(`☣️ ${jugadorQuePasaElTurno.personaje} recibe 1 de daño por su efecto tocxic.`)
+            }
+            jugadorQuePasaElTurno.efecto.set("tocxic", jugadorQuePasaElTurno.efecto.get("tocxic") - 1)
+            if (jugadorQuePasaElTurno.efecto.get("tocxic") <= 0){
+                jugadorQuePasaElTurno.efecto.delete("tocxic")
+            }
+        }
     }
 
     public getSillasFisicas(): ArraySchema<string> {
@@ -2247,6 +2258,17 @@ export class MyRoom extends Room implements IMyRoom{
         let anilloInmunidad: Carta = Utilidades.buscarCartaPorNombre(jugador, "Anillo de inmunidad descargado")
         if (anilloInmunidad){
             anilloInmunidad.nombre = "Anillo de inmunidad cargado"
+        }
+
+        if (jugador.equipamiento.has("girasol")){
+            const g: string = jugador.equipamiento.get("girasol").nombre
+            if (g == "Girasol"){
+                Utilidades.darSol(this, jugador, 0.5)
+            } else if (g == "Birasol"){
+                Utilidades.darSol(this, jugador, 1)
+            } else {
+                console.error("ERROR: el jugador tiene un girasol pero no coincide con ninguno")
+            }
         }
 
         this.repartirCartas(jugador, 2, "turno");

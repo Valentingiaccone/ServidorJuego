@@ -480,7 +480,7 @@ export class CatalogoCartasEspeciales {
     }
 
     public static crearCartaPlantaAleatoria(): Carta | null {
-        const numero: number = Math.floor(Math.random() * 15)
+        const numero: number = Math.floor(Math.random() * 16)
         switch (numero){
             case 0:
                 return this.crearPapapum()
@@ -512,6 +512,8 @@ export class CatalogoCartasEspeciales {
                 return this.crearPlantaCarnivora()
             case 14:
                 return this.crearNutriente()
+            case 15:
+                return this.crearGirasol()
             default: 
                 return null
         }
@@ -707,6 +709,31 @@ export class CatalogoCartasEspeciales {
         clon.descripcionEnCatalan = "Millora un equipament aleatori. Les armes evolucionen i la resta es converteix en versió 'Pro'.";
         clon.tipoDeUso = "instantanea";
         clon.efecto = "nutriente";
+        clon.esConjurada = false;
+        clon.esPlanta = true;
+        return clon;
+    }
+
+    public static crearGirasol(): Carta {
+        let clon = new Carta();
+        clon.id = `girasol_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Girasol";
+        clon.descripcion = "Da 0.5 soles al inicio del turno. Cada 1 sol, te da una planta. Si tenes un Girasol, se mejora a Birasol.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = "girasol";
+        clon.esConjurada = false;
+        clon.esPlanta = true;
+        return clon;
+    }
+
+    public static crearBirasol(): Carta {
+        let clon = new Carta();
+        clon.id = `birasol_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Birasol";
+        clon.descripcion = "Da 1 sol al inicio del turno. Cada 1 sol, te da una planta.";
+        clon.tipoDeUso = "equipamiento";
+        clon.efecto = "girasol";
         clon.esConjurada = false;
         clon.esPlanta = true;
         return clon;
@@ -1094,6 +1121,18 @@ export class CatalogoCartasEspeciales {
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = `null`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearZombidito(): Carta {
+        let clon = new Carta();
+        clon.id = `zombidito_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Zombidito";
+        clon.descripcion = "Al descartar: recibis 1 de daño, si sos Zombistein, te curas 1.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = `descartar_zombidito_1`; 
         clon.esConjurada = false;
         return clon;
     }

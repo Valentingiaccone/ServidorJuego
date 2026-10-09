@@ -386,6 +386,10 @@ export class EfectoDesequipar implements IEfectoCarta {
         
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+
+        if (cartaJugada.nombre == "Come piedras"){
+            sala.reproducirSfx("sfxComePiedras")
+        }
         
         return true; 
     }
@@ -442,6 +446,18 @@ export class EfectoDescartar implements IEfectoCarta {
                     break;
                 }
             }
+        }
+        else if (tipoMaldicion === "zombidito") {
+            if (jugador.boolean.get("esZombistein")){
+                sala.broadcast("notificacion_turno", `🧟 ¡${jugador.personaje} descartó un ${carta.nombre} y lo muerde pero como es Zombistein, lo cura ${cantidad} vida!`);
+                if (Utilidades.puedeRecibirCuracion(sala, jugador)){
+                    Utilidades.aplicarCuracion(sala, jugador, 1, "carta", false)
+                }
+            } else {
+                sala.broadcast("notificacion_turno", `🧟 ¡${jugador.personaje} descartó un ${carta.nombre} y lo muerde quitandole ${cantidad} vida!`);
+                Utilidades.procesarDano(sala, jugador, null, cantidad, "MALDICION", false);
+            }
+            sala.reproducirSfx("zombiditoDescarte")
         }
 
         return true;
@@ -1088,6 +1104,8 @@ export class EfectoDomoProtector implements IEfectoCarta {
             }
         });
 
+        sala.reproducirSfx("eolia")
+
         return true
     }
 }
@@ -1645,6 +1663,32 @@ export class EfectoCafe implements IEfectoCarta {
     }
 }
 
+export class EfectoGirasol implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: Jugador, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (!jugadorQueJuega || !cartaJugada) return false;
+
+        if (jugadorQueJuega.equipamiento.has("girasol")){
+            if (jugadorQueJuega.equipamiento.get("girasol").nombre == "Girasol"){
+                let birasol: Carta = CatalogoCartasEspeciales.crearBirasol()
+                birasol.esConjurada = true
+                if (birasol){
+                    jugadorQueJuega.mano.splice(indiceCarta, 1);
+                    sala.ejecutarAnimacionCarta(client, cartaJugada);
+                    Utilidades.equiparCarta(sala, jugadorQueJuega, birasol, "girasol")
+                    sala.broadcast("notificacion_turno", `🌻 ¡${jugadorQueJuega.personaje} mejoró su Girasol a ${cartaJugada.nombre}!`);
+                    return true
+                }
+            }
+        }
+
+        Utilidades.equiparCarta(sala, jugadorQueJuega, cartaJugada, "girasol");
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.broadcast("notificacion_turno", `🌻 ¡${jugadorQueJuega.personaje} se equipó ${cartaJugada.nombre}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        return true;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -1701,6 +1745,7 @@ export class DespachadorDeCartas {
         "espirituAlegre": new EfectoEspirituAlegre(),
         "espirituEnojado": new EfectoEspirituEnojado(),
         "cafe": new EfectoCafe(),
+        "girasol": new EfectoGirasol(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

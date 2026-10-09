@@ -1724,11 +1724,19 @@ export class Perro implements IPersonaje {
 
 export class DaveElLoco implements IPersonaje {
     nombre = "Dave el loco";
-    habilidad = "Plantas:\nCuando roba: roba 1 menos pero a cambio te da una planta entre 15 posibles.";
+    habilidad = "Plantas:\nAl inicio de la partida: comenzas con un girasol.\nCuando roba: roba 1 menos pero a cambio te da una planta entre 16 posibles.";
     habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["sfxCrazyDaveMuerte", false];
     sfxDefault = "sfxCrazyDave1";
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        let girasol: Carta = CatalogoCartasEspeciales.crearGirasol()
+        girasol.esConjurada = true
+        if (girasol){
+            Utilidades.equiparCarta(sala, jugador, girasol, "girasol")
+        }
+    }
 
     onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
         if (!jugador.estaVivo){
@@ -2773,65 +2781,42 @@ export class Byron implements IPersonaje {
 
 export class GeiruToneido implements IPersonaje {
     nombre = "Geiru Toneido";
-    habilidad = "Payasa:\nBoton (1 por turno): descarta tu Bang! de más a la izquierda y conjura una Horda de Bloons.";
+    habilidad = "Payasa:\nAl inicio del turno: descarta todos los BANG! de tu mano y por cada uno conjura una Horda de Bloons.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteGeiru", false];
     sfxDefault = "sfxGeiru";
 
-    onIniciarPartida(sala: any, jugador: any): void {
-        let boton = new HabilidadActiva();
-        boton.id = "geiru_bloons";
-        boton.textoBoton = "Inflar globos";
-        boton.tooltip = "Descarta un BANG! y conjura una Horda de Bloons.";
-        boton.spriteBoton = "botonGeiru";
-        jugador.habilidadesActivas.push(boton);
-
-        jugador.boolean.set("geiruUsada", false);
-    }
-
     onIniciarTurno(sala: any, miJugador: any): void {
-        miJugador.boolean.set("geiruUsada", false);
-    }
+        let bangsDescartados = 0;
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
-        if (!jugador) {
-            console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Geiru");
-            return;
-        }
-        if (!sala) {
-            console.error("ERROR: sala es null en ejecutarHabilidadActiva de Geiru");
-            return;
-        }
-
-        if (jugador.estaVivo && idHabilidad === "geiru_bloons") {
+        // Buscamos y extraemos todos los BANG! de la mano uno por uno
+        let indiceBang = miJugador.mano.findIndex((c: any) => c.nombre === "BANG!");
+        
+        while (indiceBang !== -1) {
+            let cartaExtraida = miJugador.mano.splice(indiceBang, 1)[0];
             
-            if (jugador.boolean.get("geiruUsada") === true) {
-                client.send("alerta_personal", "Ya usaste tu habilidad en este turno.");
-                return;
-            }
-
-            let indiceBang = jugador.mano.findIndex((c: any) => c.nombre === "BANG!");
-
-            if (indiceBang === -1) {
-                client.send("alerta_personal", "Necesitás tener al menos un BANG! en la mano para usar la habilidad.");
-                return;
-            }
-
-            let cartaExtraida = jugador.mano.splice(indiceBang, 1)[0];
-            sala.descartarCarta(cartaExtraida, jugador, "HABILIDAD");
-
-            let nuevaHorda = CatalogoCartasEspeciales.crearHordaDeBloons();
+            // Usamos tu método centralizado para que aplique pasivas (perros, curaciones, etc.)
+            sala.descartarCarta(cartaExtraida, miJugador, "VOLUNTARIO");
             
-            if (nuevaHorda) {
-                nuevaHorda.esConjurada = true;
-                jugador.mano.push(nuevaHorda);
+            bangsDescartados++;
+            
+            // Volvemos a buscar el siguiente
+            indiceBang = miJugador.mano.findIndex((c: any) => c.nombre === "BANG!");
+        }
 
-                jugador.boolean.set("geiruUsada", true);
-
-                sala.agregarRegistro(`🎈 ¡${jugador.personaje} transformó un BANG! en una Horda de Bloons!`);
-                sala.reproducirSfx("geiruBoton")
+        // Si encontró y descartó al menos un BANG!, generamos las Hordas
+        if (bangsDescartados > 0) {
+            for (let i = 0; i < bangsDescartados; i++) {
+                let nuevaHorda = CatalogoCartasEspeciales.crearHordaDeBloons();
+                if (nuevaHorda) {
+                    nuevaHorda.esConjurada = true;
+                    miJugador.mano.push(nuevaHorda);
+                }
             }
+            
+            sala.agregarRegistro(`🎈 ¡${miJugador.personaje} transformó todos sus Bangs! en Horda de Bloons!`);
+            sala.reproducirSfx("geiruBoton"); 
         }
     }
 }
@@ -3013,7 +2998,7 @@ export class Wendy implements IPersonaje {
 
 export class Abigail implements IPersonaje {
     nombre = "Abigail";
-    habilidad = "Repugnante:\nComo una buena asquerosa, repulsiva, fea y molesta, al golpear a un jugador le agrega un efecto tocxic.\nBoton: pierde 1 vida y todos los demas obtienen 1 efecto tocxic.";
+    habilidad = "Repugnante:\nComo una buena asquerosa, repulsiva, fea y molesta, al golpear a otro jugador le agrega un efecto tocxic.\nBoton: pierde 1 vida y todos los demas obtienen 1 efecto tocxic.";
     habilidadEnCatalan = "..";
     vidasBase = 4;
 
@@ -3045,20 +3030,68 @@ export class Abigail implements IPersonaje {
             }
 
             sala.state.jugadores.forEach((j: Jugador) => {
-                if (j.estaVivo){
-                    if (j.efecto.has("tocxic")){
-                       // j.efecto.
-                    }
+                if (j.estaVivo && j != jugador){
+                    Utilidades.agregarEfecto(j, "tocxic", 1)
                 }
             });
+
+            Utilidades.procesarDano(sala, jugador, jugador, 1, "boton", true)
+
+            sala.agregarRegistro(`☣️ ¡${jugador.personaje} pierde 1 vida para agregarle a todos los demas un efecto tocxi!`)
         }
     }
 
     onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
-        if (jugadorGolpeado.efecto.has("malestar")){
-            jugadorGolpeado.efecto.set("malestar", jugadorGolpeado.efecto.get("malestar") + 1)
+        if (miJugador == jugadorGolpeado){
+            return
+        }
+
+        Utilidades.agregarEfecto(jugadorGolpeado, "tocxic", 1)
+        sala.agregarRegistro(`☣️ ${miJugador.personaje} le agrega un efecto tocxic a ${jugadorGolpeado.personaje}.`)
+    }
+}
+
+export class Zombistein implements IPersonaje {
+    nombre = "Zombistein";
+    habilidad = "GARGANTUAR:\nCuando tiene 2 vidas o menos: cambia al modo Zombistein enojado.\nLa primera vez que tiene 2 vidas o menos: lanza un zombidito a todos los demas jugadores.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteZombistein", false];
+    sfxDefault = "sfxZombistein";
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.boolean.set("esZombistein", true)
+        jugador.boolean.set("zombiditoCargado", true)
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        this.actualizarSprite(victima)
+        if (victima.boolean.get("zombiditoCargado") && victima.vidas <= 2){
+            victima.boolean.set("zombiditoCargado", false)
+
+            sala.getJugadores().forEach((j: any) => {
+            if (j.estaVivo && (j != victima)){
+                let z: Carta = CatalogoCartasEspeciales.crearZombidito()
+                if (z){
+                    z.esConjurada = true
+                    j.mano.push(z)
+                }
+            }
+
+            sala.reproducirSfx("zombiditoLanzado")
+        });
+        }
+    }
+
+    onRecibirCuracion(sala: any, jugador: any): void {
+        this.actualizarSprite(jugador)
+    }
+
+    actualizarSprite(jugador: Jugador){
+        if (jugador.vidas <= 2){
+            jugador.spriteAvatarOpcional = "Zombistein enojado"
         } else {
-            jugadorGolpeado.efecto.set("malestar", 1)
+            jugador.spriteAvatarOpcional = ""
         }
     }
 }
@@ -3119,14 +3152,15 @@ export class GestorPersonajes {
         this.registrar(new Byron())
         this.registrar(new GeiruToneido())
         this.registrar(new Wendy())
-        this.registrar(new Tracer())
         this.registrar(new Pierre())
+        this.registrar(new Zombistein())
+        this.registrar(new Abigail())
 
 
 
 
 
-
+        // this.registrar(new Tracer())
     }
 
     private registrar(p: IPersonaje) {

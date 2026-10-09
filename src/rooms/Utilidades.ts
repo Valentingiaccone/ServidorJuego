@@ -36,6 +36,9 @@ export class Utilidades {
                 if (atacante.equipamiento.has("plantorcha") && (this.getDatosArma(atacante).nombre == "Lanzaguisantes" || this.getDatosArma(atacante).nombre == "Repetidora")){
                     cantidad += 1;
                 }
+                if (atacante.boolean.get("esZombistein") && atacante.vidas <= 2){
+                    cantidad += 1
+                }
                 if (atacante.boolean.get("mercyActivada")){
                     this.aplicarCuracion(sala, victima, cantidad, causa, false);
                     this.aplicarCuracion(sala, atacante, 1, causa, false)
@@ -252,6 +255,9 @@ export class Utilidades {
         let barril = jugador.equipamiento.get("barril");
         if (barril && barril.nombre === "Barril") opcionesDeMejora.push("barril");
 
+        let girasol = jugador.equipamiento.get("girasol");
+        if (girasol && girasol.nombre === "Girasol") opcionesDeMejora.push("girasol");
+
         let espiritu = jugador.equipamiento.get("espiritu");
         if (espiritu && espiritu.nombre === "Espiritu alegre") opcionesDeMejora.push("espirituAlegre");
         if (espiritu && espiritu.nombre === "Espiritu enojado") opcionesDeMejora.push("espirituEnojado");
@@ -343,6 +349,11 @@ export class Utilidades {
             cartaMejorada.esConjurada = true
             this.equiparCarta(sala, jugador, cartaMejorada, "espantacocoroch");
             textoMejora = "su Espantacocoroch";
+        } else if (hueco === "girasol") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearBirasol()
+            cartaMejorada.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaMejorada, "girasol");
+            textoMejora = "su Girasol";
         }
 
         return textoMejora;
@@ -557,5 +568,50 @@ export class Utilidades {
     public static capitalizar(texto: string): string {
         if (!texto) return ""; // Seguridad por si viene vacío o null
         return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+    }
+
+    /**
+     * Da soles a un jugador y por cada sol que tenga, da una planta
+     */
+    public static darSol(sala: IMyRoom, jugador: Jugador, soles: number): void {
+        if (jugador.number.has("soles")){
+            jugador.number.set("soles", jugador.number.get("soles") + soles)
+        } else {
+            jugador.number.set("soles", soles)
+        }
+
+        if (jugador.number.get("soles") < 0){
+            jugador.number.set("soles", 0)
+        }
+
+        while (jugador.number.get("soles") >= 1){
+            jugador.number.set("soles", jugador.number.get("soles") - 1)
+            let c: Carta = CatalogoCartasEspeciales.crearCartaPlantaAleatoria()
+            if (c){
+                c.esConjurada = true
+                jugador.mano.push(c)
+                sala.agregarRegistro(`🌻 ¡${jugador.personaje} obtuvo una planta porque obtuvo 1 sol!`)
+            }
+        }
+
+        if (jugador.number.get("soles") < 0){
+            jugador.number.set("soles", 0)
+        }
+
+        sala.reproducirSfx("girasol")
+    }
+
+    /**
+     * Agrega efecto a un jugador
+     * Retorna la cantidad del efecto luego de agregarse
+     */
+    public static agregarEfecto(jugador: Jugador, efecto: string, cantidad: number): number {
+        if (jugador.efecto.has(efecto)){
+            jugador.efecto.set(efecto, jugador.efecto.get(efecto) + cantidad)
+        } else {
+            jugador.efecto.set(efecto, 1)
+        }
+
+        return jugador.efecto.get(efecto)
     }
 }
