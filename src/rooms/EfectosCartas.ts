@@ -459,6 +459,10 @@ export class EfectoDescartar implements IEfectoCarta {
             }
             sala.reproducirSfx("zombiditoDescarte")
         }
+        else if (tipoMaldicion === "huevoExplosivo") {
+            sala.broadcast("notificacion_turno", `🥚 ¡${jugador.personaje} descartó un ${carta.nombre} y explota quitandole ${cantidad} vida!`);
+            Utilidades.procesarDano(sala, jugador, null, cantidad, "MALDICION", false);
+        }
 
         return true;
     }
@@ -1689,6 +1693,174 @@ export class EfectoGirasol implements IEfectoCarta {
     }
 }
 
+export class EfectoCrisalida implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido.");
+            return false;
+        }
+
+        if (victima.equipamiento.has("crisalida")){
+            client.send("alerta_personal", "El jugador seleccionado ya tiene una crisalida.");
+            return false;
+        }
+
+        Utilidades.equiparCarta(sala, victima, cartaJugada, "crisalida")
+        sala.reproducirSfx("sfxCrisalida")
+
+        sala.broadcast("notificacion_turno", `🐚 ¡${jugadorQueJuega.personaje} encerró en una crisalida a ${victima.personaje}!`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada);
+        return true; 
+    }
+}
+
+export class EfectoDano implements IEfectoCarta {
+    ejecutar(sala: any, client: any, atacante: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
+        // 1. Identificamos al objetivo
+        let idObjetivo = parametros[parametros.length - 1];
+        let victima = sala.state.jugadores.get(idObjetivo);
+
+        // Validación básica de supervivencia
+        if (!victima || !victima.estaVivo) {
+            client.send("alerta_personal", "Objetivo inválido o ya está eliminado.");
+            return false;
+        }
+
+        // 2. Comprobación del límite de disparos por turno
+        let pasivaAtacante = gestorPersonajes.obtener(atacante.personaje);
+        let puedeDispararExtra = pasivaAtacante && pasivaAtacante.puedeDispararBang ? pasivaAtacante.puedeDispararBang(sala, atacante, victima) : false;
+
+        let statsArma = Utilidades.getDatosArma(atacante);
+
+        if (atacante.yaDisparo && !puedeDispararExtra && 
+            statsArma.nombre !== "Pistola de Tracer" && statsArma.nombre !== "Pistola de Tracer Pro" && 
+            statsArma.nombre !== "Tirachinas" && statsArma.nombre !== "Tirachinas mestro" && 
+            statsArma.nombre !== "Espada galactica" && statsArma.nombre !== "Espada galactica Pro") {
+            
+            client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
+            return false; 
+        }
+
+        // 3. Cálculo de las sillas y distancia física base
+        let vivos: string[] = [];
+        sala.state.ordenSillasFisicas.forEach((id: string) => { 
+            let j = sala.state.jugadores.get(id);
+            if (j && j.estaVivo) vivos.push(id); 
+        });
+
+        let idxAtacante = vivos.indexOf(client.sessionId);
+        let idxVictima = vivos.indexOf(idObjetivo);
+        let n = vivos.length;
+        let diferencia = Math.abs(idxAtacante - idxVictima);
+        let distanciaFisica = Math.min(diferencia, n - diferencia);
+        let distancia = distanciaFisica;
+
+        // Validación de alcance mínimo
+        if (distanciaFisica < statsArma.alcanceMinimo) {
+            client.send("alerta_personal", `El arma está diseñada para largo alcance. No podés dispararle a alguien tan cerca.`);
+            return false;
+        }
+
+        // 4. Modificadores de distancia (Objetos, Cartas y Pasivas)
+        let alcanceMaximo = statsArma.alcance;
+
+        if (cartaJugada && cartaJugada.tipoDeUso === "objetivoVecino") {
+            alcanceMaximo = 1;
+        } else {
+            let miraAtacante = atacante.equipamiento.get("mira");
+            if (miraAtacante) distancia -= (miraAtacante.nombre === "Monoaldea Pro" ? 2 : 1);
+
+            let mustangVictima = victima.equipamiento.get("mustang");
+            if (mustangVictima) distancia += (mustangVictima.nombre === "Caballo Pro" ? 2 : 1);
+
+            if (victima.number.has("jetpackCat")){
+                distancia += victima.number.get("jetpackCat");
+            }
+
+            if (atacante.modificarAlcance) distancia -= atacante.modificarAlcance;
+            if (victima.modificarDistancia) distancia += victima.modificarDistancia;
+            if (atacante.number.get("pedroCrecimiento")) distancia -= atacante.number.get("pedroCrecimiento");
+
+            if (atacante && atacante.string.get("angryBird") == "chuck"){
+                distancia -= 3;
+            }
+
+            if (atacante && atacante.string.get("angryBird") == "blue"){
+                distancia -= 2;
+            }
+
+            const i: number = Utilidades.contarCartasPorNombre(atacante, "Anillo de iridio");
+            if (i > 0){
+                distancia -= 3 * i;
+            }
+        }
+
+        // Pasivas de distancia de los personajes
+        if (pasivaAtacante && pasivaAtacante.modificarDistancia) {
+            distancia = pasivaAtacante.modificarDistancia(sala, atacante, victima, distancia);
+        }
+
+        let pasivaVictimaDistancia = gestorPersonajes.obtener(victima.personaje);
+        if (pasivaVictimaDistancia && pasivaVictimaDistancia.modificarDistancia) {
+            distancia = pasivaVictimaDistancia.modificarDistancia(sala, atacante, victima, distancia);
+        }
+        
+        // Validación de alcance máximo
+        if (distancia > alcanceMaximo) {
+            client.send("alerta_personal", `${victima.nombre} está fuera de tu alcance.`);
+            return false; 
+        }
+        
+        // 5. Ejecución del ataque
+        if (cartaJugada && (cartaJugada.efecto === "dano_1" || cartaJugada.efecto === "dano_2" || cartaJugada.efecto === "dano_3")) {
+            atacante.yaDisparo = true;
+            
+            // Retiramos la carta de la mano y la mandamos al descarte
+            atacante.mano.splice(indiceCarta, 1);
+            sala.ejecutarAnimacionCarta(client, cartaJugada);
+            sala.agregarAlDescarte(cartaJugada);
+            
+            // Preparación del estado de la sala
+            sala.state.jugadorEnPeligro = idObjetivo;
+            sala.state.atacanteActual = client.sessionId;
+            
+            // Cálculo del daño
+            let danoBase = 0;
+            if (cartaJugada.efecto === "dano_1"){
+                danoBase = 1;
+            } else if (cartaJugada.efecto === "dano_2"){
+                danoBase = 2;
+            } else if (cartaJugada.efecto === "dano_3"){
+                danoBase = 3;
+            }
+
+            let bonusDano = (cartaJugada.efecto === "dano_1") ? statsArma.danoExtra : 0;
+            
+            sala.state.danoPendiente = danoBase + bonusDano; 
+            sala.causaDePeligro = "BANG";
+            sala.state.usosBarril = 0;
+            
+            sala.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
+        
+            sala.ejecutarPasivasAlJugarCarta(atacante, cartaJugada);
+
+            // 6. ¡LA MAGIA DEL NUEVO SISTEMA! 
+            // Invocamos la interacción universal que creaste en MyRoom.ts
+            sala.enviarInteraccionBang(idObjetivo);
+            
+            return true;
+        }
+
+        return false;
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -1746,6 +1918,8 @@ export class DespachadorDeCartas {
         "espirituEnojado": new EfectoEspirituEnojado(),
         "cafe": new EfectoCafe(),
         "girasol": new EfectoGirasol(),
+        "crisalida": new EfectoCrisalida(),
+        "dano": new EfectoDano(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

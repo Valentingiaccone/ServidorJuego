@@ -56,6 +56,7 @@ export class MyRoom extends Room implements IMyRoom{
             this.state.interaccionActiva.idJugadorObjetivo = "";
             this.state.atacanteActual = "";
             this.state.spriteFlecha = ""
+            this.state.jugadorEnPeligro = ""
             this.actualizarMusicaAutomatica(); 
         }
     }
@@ -68,6 +69,7 @@ export class MyRoom extends Room implements IMyRoom{
             let victima = this.state.jugadores.get(this.state.jugadorEnPeligro);
             if (victima && victima.estaVivo) {
                 this.broadcast("notificacion_turno", `⚠️ ¡El Tiratachuela apunta a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
+                this.enviarInteraccionBang(this.state.jugadorEnPeligro);
             } else {
                 this.avanzarColaDePeligro()
             }
@@ -526,7 +528,7 @@ export class MyRoom extends Room implements IMyRoom{
                     const prision = new Carta();
                     prision.id = `prision_${i}`;
                     prision.nombre = "Prisión";
-                    prision.descripcion = "Un jugador tiene 37.5% de salir de la carcel o perder el turno (no afecta al Sheriff).";
+                    prision.descripcion = "Un jugador tiene 6/16 de salir de la carcel o perder el turno (no afecta al Sheriff).";
                     prision.descripcionEnCatalan = "Un jugador té un 37,5% de sortir de la presó o perdre el torn (no afecta el Sheriff)."
                     prision.tipoDeUso = "objetivoGlobal"; 
                     prision.efecto = "prision";
@@ -940,12 +942,19 @@ export class MyRoom extends Room implements IMyRoom{
                     if (motivoActual === "Barril") {
                         if (fueExitoStr === "exito") {
                             this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! El Barril salvó a ${victima?.nombre}.`);
-                            if (this.colaDePeligro && this.colaDePeligro.length > 0) this.avanzarColaDePeligro();
-                            else { this.state.jugadorEnPeligro = ""; this.state.atacanteActual = ""; this.state.usosBarril = 0; }
+                            if (this.colaDePeligro && this.colaDePeligro.length > 0) {
+                                this.avanzarColaDePeligro();
+                            } else { 
+                                this.state.atacanteActual = ""; 
+                                this.state.usosBarril = 0; 
+                                this.state.spriteFlecha = "";
+                                this.state.jugadorEnPeligro = ""
+                            }
                         } else {
                             this.broadcast("notificacion_turno", `💥 ¡Salió Rojo! El Barril no aguantó el disparo.`);
+                            this.enviarInteraccionBang(client.sessionId);
                         }
-                    } 
+                    }
                     else if (motivoActual === "Dinamita") {
                         if (fueExitoStr !== "exito") { 
                             this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió Rojo. La dinamita explotó en la cara de ${victima?.nombre}.`);
@@ -978,7 +987,7 @@ export class MyRoom extends Room implements IMyRoom{
                             
                             Utilidades.procesarDano(this, victima, null, 2, "PAPA");
                             
-                            if (victima && victima.estaVivo) this.evaluarFasePrision(client.sessionId);
+                            if (victima && victima.estaVivo) this.evaluarFaseCrisalida(client.sessionId);
                             else this.avanzarAlSiguienteTurno(client.sessionId);
                         } else { 
                             this.state.probabilidadPapa += 2;
@@ -986,7 +995,7 @@ export class MyRoom extends Room implements IMyRoom{
                             if (p > 15) p = 15;
                             
                             this.broadcast("notificacion_turno", `💨 ¡Salió Verde! La Papapum no explotó, pero la probabilidad aumentó a ${p}/16.`);
-                            this.evaluarFasePrision(client.sessionId);
+                            this.evaluarFaseCrisalida(client.sessionId);
                         }
                     }
                     else if (motivoActual === "Prision") {
@@ -1000,6 +1009,22 @@ export class MyRoom extends Room implements IMyRoom{
                             this.avanzarAlSiguienteTurno(client.sessionId);
                         }
                         Utilidades.quitarEquipamiento(victima, "prision");
+                    }
+                    else if (motivoActual === "Crisalida") {
+                        if (fueExitoStr === "exito") {
+                            this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! ${victima?.personaje} escapó de la crisalida.`);
+                            if (victima.equipamiento.has("prision")){
+                                this.evaluarFasePrision(client.sessionId);
+                            } else {
+                                this.ejecutarIniciarTurno(victima)
+                                this.broadcast("notificacion_turno", `¡Es el turno de ${victima?.personaje}!`);
+                            }
+                        } else {
+                            this.broadcast("notificacion_turno", `🐚 ¡Salió Rojo! ${victima?.personaje} se queda encerrado.`);
+                            this.ejecutarAccionesAlPasarTurno(victima)
+                            this.avanzarAlSiguienteTurno(client.sessionId);
+                        }
+                        Utilidades.quitarEquipamiento(victima, "crisalida");
                     }
                     // --- NUEVA FASE: EMBRUJOS FANTASMALES ---
                     else if (motivoActual === "Embrujo") {
@@ -1283,109 +1308,66 @@ export class MyRoom extends Room implements IMyRoom{
                     this.procesarSiguienteInteraccion();
                 }
             }
-            
-        });
-
-        this.onMessage("disparar_jugador", (client, datosDelDisparo) => {
-            let atacante = this.state.jugadores.get(client.sessionId);
-            let victima = this.state.jugadores.get(datosDelDisparo.objetivoId);
-            
-            if (atacante && victima && this.state.turnoActual === client.sessionId && victima.estaVivo && !this.juegoPausado()) {
+            // --- CARTA BANG (SISTEMA UNIVERSAL) ---
+            else if (idAccion === "bang_fallo") {
+                let indiceFallo = victima.mano.findIndex((c: any) => c.efecto === "esquivar");
+                if (indiceFallo !== -1) {
+                    let cartaJugada = victima.mano.splice(indiceFallo, 1)[0];
+                    this.agregarAlDescarte(cartaJugada);
+                    this.ejecutarAnimacionCarta(client, cartaJugada);
+                    this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.personaje} usó un ¡Fallo! y esquivó el ataque.`);
+                    this.ejecutarPasivasAlJugarCarta(victima, cartaJugada);
+                }
                 
-                let pasivaAtacante = this.gestorPersonajes.obtener(atacante.personaje);
-                let puedeDispararExtra = pasivaAtacante && pasivaAtacante.puedeDispararBang ? pasivaAtacante.puedeDispararBang(this, atacante, victima) : false;
-
-                let statsArma = Utilidades.getDatosArma(atacante);
-
-                if (atacante.yaDisparo && !puedeDispararExtra && statsArma.nombre !== "Pistola de Tracer" && statsArma.nombre !== "Pistola de Tracer Pro" && statsArma.nombre !== "Tirachinas" && statsArma.nombre !== "Tirachinas mestro" && statsArma.nombre !== "Espada galactica" && statsArma.nombre !== "Espada galactica Pro") {
-                    client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
-                    return; 
-                }
-
-                let vivos: string[] = [];
-                this.state.ordenSillasFisicas.forEach((id: string) => { 
-                    let j = this.state.jugadores.get(id);
-                    if (j && j.estaVivo) vivos.push(id); 
-                });
-
-                let idxAtacante = vivos.indexOf(client.sessionId);
-                let idxVictima = vivos.indexOf(datosDelDisparo.objetivoId);
-                let n = vivos.length;
-                let diferencia = Math.abs(idxAtacante - idxVictima);
-                let distanciaFisica = Math.min(diferencia, n - diferencia);
-                let distancia = distanciaFisica;
-
-                if (distanciaFisica < statsArma.alcanceMinimo) {
-                    client.send("alerta_personal", `El arma está diseñada para largo alcance. No podés dispararle a alguien tan cerca.`);
-                    return;
-                }
-
-                let indiceCarta = atacante.mano.findIndex((c: any) => c.id === datosDelDisparo.idCarta);
-                let cartaUsada = (indiceCarta !== -1) ? atacante.mano[indiceCarta] : null;
-                let alcanceMaximo = statsArma.alcance;
-
-                if (cartaUsada && cartaUsada.tipoDeUso === "objetivoVecino") {
-                    alcanceMaximo = 1;
+                // Verificamos si era Tiratachuela para seguir la cadena
+                if (this.colaDePeligro && this.colaDePeligro.length > 0) {
+                    this.avanzarColaDePeligro();
                 } else {
-                    let miraAtacante = atacante.equipamiento.get("mira");
-                    if (miraAtacante) distancia -= (miraAtacante.nombre === "Monoaldea Pro" ? 2 : 1);
-
-                    let mustangVictima = victima.equipamiento.get("mustang");
-                    if (mustangVictima) distancia += (mustangVictima.nombre === "Caballo Pro" ? 2 : 1);
-
-                    if (atacante.modificarAlcance) distancia -= atacante.modificarAlcance;
-                    if (victima.modificarDistancia) distancia += victima.modificarDistancia;
-                    if (atacante.number.get("pedroCrecimiento")) distancia -= atacante.number.get("pedroCrecimiento");
-
-                    const i: number = Utilidades.contarCartasPorNombre(atacante, "Anillo de iridio")
-                    if (i > 0){
-                        distancia -= 3 * i
-                    }
-                }
-
-                if (pasivaAtacante && pasivaAtacante.modificarDistancia) {
-                    distancia = pasivaAtacante.modificarDistancia(this, atacante, victima, distancia);
-                }
-
-                let pasivaVictimaDistancia = this.gestorPersonajes.obtener(victima.personaje);
-                if (pasivaVictimaDistancia && pasivaVictimaDistancia.modificarDistancia) {
-                    distancia = pasivaVictimaDistancia.modificarDistancia(this, atacante, victima, distancia);
+                    this.state.atacanteActual = "";
+                    this.state.spriteFlecha = "";
+                    this.actualizarMusicaAutomatica();
                 }
                 
-                if (distancia > alcanceMaximo) {
-                    client.send("alerta_personal", `${victima.nombre} está fuera de tu alcance.`);
-                    return; 
+                this.state.usosBarril = 0;
+                this.procesarSiguienteInteraccion();
+            }
+            else if (idAccion === "bang_barril") {
+                this.state.usosBarril++;
+                
+                // Ocultamos el panel de interacción temporalmente para que se vea la ruleta sola
+                this.state.interaccionActiva.idJugadorObjetivo = "";
+                
+                this.prepararDesenfundar(client.sessionId, "Barril");
+                this.broadcast("notificacion_turno", `🛢️ ¡${victima.personaje} tira de la ruleta del Barril!`);
+            }
+            else if (idAccion === "bang_dano") {
+                let atacante = this.state.jugadores.get(this.state.atacanteActual);
+                
+                if (this.causaDePeligro === "TIRATACHUELA") {
+                    this.broadcast("notificacion_turno", `💥 ¡${victima.personaje} no pudo esquivar el Tiratachuela!`);
+                } else {
+                    this.broadcast("notificacion_turno", `💥 ¡${victima.personaje} recibió el balazo de ${atacante?.personaje}!`);
                 }
                 
-                if (cartaUsada && (cartaUsada.efecto === "dano_1" || cartaUsada.efecto === "dano_2" || cartaUsada.efecto === "dano_3")) {
-                    atacante.yaDisparo = true;
-                    atacante.mano.splice(indiceCarta, 1);
-                    this.ejecutarAnimacionCarta(client, cartaUsada);
-                    this.agregarAlDescarte(cartaUsada);
-                    
-                    this.state.jugadorEnPeligro = datosDelDisparo.objetivoId;
-                    this.state.atacanteActual = client.sessionId;
-                    
-                    let danoBase = 0
-                    if (cartaUsada.efecto === "dano_1"){
-                        danoBase = 1
-                    } else if (cartaUsada.efecto === "dano_2"){
-                        danoBase = 2
-                    } else if (cartaUsada.efecto === "dano_3"){
-                        danoBase = 3
-                    }
+                const numero: number = Math.floor(Math.random() * 3);
+                this.broadcast("sfx", "bang" + numero);
 
-                    let bonusDano = (cartaUsada.efecto === "dano_1") ? statsArma.danoExtra : 0;
-                    
-                    this.state.danoPendiente = danoBase + bonusDano; 
-                    this.causaDePeligro = "BANG";
-                    this.state.usosBarril = 0;
-                    
-                    this.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
+                Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, this.causaDePeligro);
                 
-                    this.ejecutarPasivasAlJugarCarta(atacante, cartaUsada)
+                if (this.colaDePeligro && this.colaDePeligro.length > 0) {
+                    this.avanzarColaDePeligro();
+                } else {
+                    this.state.atacanteActual = "";
+                    this.state.spriteFlecha = "";
+                    this.actualizarMusicaAutomatica();
+                }
+                
+                this.state.usosBarril = 0;
+                if (victima.vidas > 0) {
+                    this.procesarSiguienteInteraccion();
                 }
             }
+            
         });
 
         this.onMessage("encarcelar_jugador", (client, datos) => {
@@ -1433,75 +1415,6 @@ export class MyRoom extends Room implements IMyRoom{
                 this.broadcast("sfx", "prision")
 
                 this.ejecutarPasivasAlJugarCarta(atacante, cartaUsada)
-            }
-        });
-
-        this.onMessage("responder_ataque", (client, idCartaFallo) => {
-            if (client.sessionId !== this.state.jugadorEnPeligro) return;
-
-            let victima = this.state.jugadores.get(client.sessionId);
-            let atacante = this.state.jugadores.get(this.state.atacanteActual);
-            
-            let sobrevivioAlAtaque = true; 
-
-            let recibioBalazo = false;
-
-            if (victima) {
-                if (idCartaFallo) {
-                    let indice = victima.mano.findIndex((c: any) => c.id === idCartaFallo);
-                    
-                    if (indice !== -1 && victima.mano[indice].efecto === "esquivar") {
-                        let carta = victima.mano[indice];
-                        victima.mano.splice(indice, 1);
-                        this.ejecutarAnimacionCarta(client, carta)
-                        this.agregarAlDescarte(carta)
-                        
-                        this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.nombre} usó un ¡Fallo! y esquivó la bala.`);
-                    
-                       this.ejecutarPasivasAlJugarCarta(victima, carta)
-                    }
-                }
-                else {
-                    recibioBalazo = true;
-                    
-                    // Mensaje dinámico según la causa
-                    if (this.causaDePeligro === "TIRATACHUELA") {
-                        this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} no pudo esquivar el Tiratachuela de ${atacante?.nombre}!`);
-                    } else {
-                        this.broadcast("notificacion_turno", `💥 ¡${victima.nombre} recibió el balazo de ${atacante?.nombre}!`);
-                    }
-                    
-                    const numero: number = Math.floor(Math.random() * 3);
-                    this.broadcast("sfx", "bang" + numero);
-
-                    Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, this.causaDePeligro);
-                    
-                    if (victima.vidas <= 0) {
-                        sobrevivioAlAtaque = false;
-                    }
-                }
-            }
-
-            if (sobrevivioAlAtaque) {
-
-                if (recibioBalazo && atacante && atacante.equipamiento.has("papa") && this.causaDePeligro == "BANG") {
-                    let papaTrasladada = Utilidades.quitarEquipamiento(atacante, "papa");
-                    if (papaTrasladada) {
-                        Utilidades.equiparCarta(this, victima, papaTrasladada, "papa");
-                    }
-                    this.broadcast("notificacion_turno", `🥔 ¡${atacante.nombre} le pasó el Papapum a ${victima.nombre}!`);
-                    this.broadcast("sfx", "sfxPapapumColocandose")
-                }
-
-                if (this.colaDePeligro && this.colaDePeligro.length > 0) {
-                    this.avanzarColaDePeligro();
-                } else {
-                    this.state.jugadorEnPeligro = "";
-                    this.state.atacanteActual = "";
-                    this.state.spriteFlecha = ""
-                    this.state.usosBarril = 0;
-                    this.actualizarMusicaAutomatica()
-                }
             }
         });
 
@@ -1916,6 +1829,18 @@ export class MyRoom extends Room implements IMyRoom{
             this.broadcast("notificacion_turno", `🥔 ¡El Papapum quema en las manos de ${jugador.personaje}! Debe desenfundar...`);
             this.prepararDesenfundar(idJugador, "Papa");
         } else {
+            this.evaluarFaseCrisalida(idJugador);
+        }
+    }
+
+    evaluarFaseCrisalida(idJugador: string) {
+        let jugador = this.state.jugadores.get(idJugador);
+        if (!jugador) return;
+
+        if (jugador.equipamiento.has("crisalida")) {
+            this.broadcast("notificacion_turno", `🐚 ¡${jugador.personaje} está en una crisalida! Debe desenfundar...`);
+            this.prepararDesenfundar(idJugador, "Crisalida");
+        } else {
             this.evaluarFasePrision(idJugador);
         }
     }
@@ -1978,6 +1903,7 @@ export class MyRoom extends Room implements IMyRoom{
             else if (motivo === "Prision") { puntosVerdes = 6; this.state.ruletaVerde = ""; this.state.ruletaRojo = ""; } 
             else if (motivo === "Dinamita") { puntosVerdes = 14; this.state.ruletaVerde = ""; this.state.ruletaRojo = "ruletaExplosion"; } 
             else if (motivo === "Papa") { puntosVerdes = 16 - this.state.probabilidadPapa; this.state.ruletaVerde = ""; this.state.ruletaRojo = "ruletaExplosion"; }
+            else if (motivo === "Crisalida") { puntosVerdes = 9; this.state.ruletaVerde = ""; this.state.ruletaRojo = ""; } 
 
             //procesador Suerte
             const procesarSuerte = (resultado: any, ownerId: string) => {
@@ -1994,7 +1920,7 @@ export class MyRoom extends Room implements IMyRoom{
             //Suerte Local
             let personajeVictima = this.gestorPersonajes.obtener(victima?.personaje);
             // tarea para el que lea esto: cambiar la suerte ruleta normal por barril y colocarle a chester la habilidad esta de prision
-            if (motivo == "Prision" && personajeVictima && personajeVictima.modificarSuerteLocalPrision){
+            if ((motivo == "Prision" || motivo == "Crisalida") && personajeVictima && personajeVictima.modificarSuerteLocalPrision){
                 procesarSuerte(personajeVictima.modificarSuerteLocalPrision(this, victima), idJugador)
             }
             if ((motivo !== "Dinamita" && motivo !== "Papa") && personajeVictima && personajeVictima.modificarSuerteRuletaNormal) {
@@ -2037,6 +1963,7 @@ export class MyRoom extends Room implements IMyRoom{
                         else if (motivo === "Prision" && jPersonaje.modificarSuerteGlobalPrision) procesarSuerte(jPersonaje.modificarSuerteGlobalPrision(this, victima, j), sessionId);
                         else if (motivo === "Dinamita" && jPersonaje.modificarSuerteGlobalDinamita) procesarSuerte(jPersonaje.modificarSuerteGlobalDinamita(this, victima, j), sessionId);
                         else if (motivo === "Papa" && jPersonaje.modificarSuerteGlobalPapapum) procesarSuerte(jPersonaje.modificarSuerteGlobalPapapum(this, victima, j), sessionId);
+                        else if (motivo === "Crisalida" && jPersonaje.modificarSuerteGlobalPrision) procesarSuerte(jPersonaje.modificarSuerteGlobalPrision(this, victima, j), sessionId);
                     }
                 }
             });
@@ -2207,6 +2134,13 @@ export class MyRoom extends Room implements IMyRoom{
             pasiva.onPasarTurno(this, jugadorQuePasaElTurno)
         }
 
+        if (Utilidades.getDatosArma(jugadorQuePasaElTurno) && Utilidades.getDatosArma(jugadorQuePasaElTurno).nombre == "Espada galactica"){
+            const espada: Carta = Utilidades.quitarEquipamiento(jugadorQuePasaElTurno, "arma")
+            if (espada){
+                this.agregarAlDescarte(espada, jugadorQuePasaElTurno, null)
+            }
+        }
+
         if (jugadorQuePasaElTurno.efecto.has("malestar")){
             jugadorQuePasaElTurno.efecto.set("malestar", jugadorQuePasaElTurno.efecto.get("malestar") - 1)
             if (jugadorQuePasaElTurno.efecto.get("malestar") <= 0){
@@ -2272,5 +2206,41 @@ export class MyRoom extends Room implements IMyRoom{
         }
 
         this.repartirCartas(jugador, 2, "turno");
+    }
+
+    public enviarInteraccionBang(idVictima: string) {
+        let victima = this.state.jugadores.get(idVictima);
+        if (!victima || !victima.estaVivo) return;
+
+        // Evaluamos si tiene ¡Fallo!
+        let tieneFallo = victima.mano.some((c: any) => c.efecto === "esquivar");
+        if (!victima.puedeUsarFallo || victima.boolean.get("frankFallo")) tieneFallo = false;
+
+        // Evaluamos si le quedan usos del Barril
+        let maxUsosBarril = 0;
+        let barril = victima.equipamiento?.get("barril");
+        if (barril) {
+            if (barril.nombre === "Barril Pro") maxUsosBarril += 2;
+            else maxUsosBarril += 1;
+        }
+        if (victima.tieneBarrilPasiva) maxUsosBarril++;
+        let tieneBarrilDisponible = (maxUsosBarril > 0 && this.state.usosBarril < maxUsosBarril);
+
+        let atacante = this.state.jugadores.get(this.state.atacanteActual);
+        let nombreAtacante = atacante ? atacante.nombre : "Alguien";
+
+        let titulo = this.causaDePeligro === "TIRATACHUELA" 
+            ? `¡El Tiratachuela te apunta!\nElegí cómo responder:`
+            : `¡${nombreAtacante.toUpperCase()} te está disparando!\nElegí cómo responder:`;
+
+        // ¡Usamos tu Interacción Universal!
+        this.encolarInteraccion(idVictima, titulo, "bang", [
+            { idAccion: "bang_fallo", texto: "Usar ¡Fallo!", habilitado: tieneFallo, color: "verde" },
+            { idAccion: "bang_barril", texto: "Usar Barril", habilitado: tieneBarrilDisponible, color: "blanco" },
+            { idAccion: "bang_dano", texto: "Recibir daño", habilitado: true, color: "rojo" }
+        ]);
+
+        this.state.spriteFlecha = "revolver";
+        this.procesarSiguienteInteraccion();
     }
 }

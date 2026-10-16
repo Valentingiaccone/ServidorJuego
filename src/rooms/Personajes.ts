@@ -65,7 +65,7 @@ export interface IPersonaje {
 
     onIniciarTurno?(sala: IMyRoom, miJugador: Jugador): void
 
-    onGolpear?(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void
+    onGolpear?(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void
 
     onJugarCartaGlobal?(sala: IMyRoom, miJugador: Jugador, jugadorQueJuega: Jugador, cartaJugada: Carta): void;
 }
@@ -141,20 +141,20 @@ export class Maton implements IPersonaje {
 
 export class Mandy implements IPersonaje {
     nombre = "Mandy";
-    habilidad = "Concentración:\nConsidera a todos los demás jugadores a distancia -2.";
-    habilidadEnCatalan: string = "Concentració:\nConsidera tots els altres jugadors a distància -2."
+    habilidad = "Concentración:\nConsidera a todos los demás jugadores a distancia -5.";
+    habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMandy", false];
     sfxDefault = "sfxMandy"
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.modificarAlcance += 2
+        jugador.modificarAlcance += 5
     }
 }
 
 export class Tralalero implements IPersonaje {
     nombre = "Tralalero";
-    habilidad = "Los tralaleritos dicen tralalá:\nAl final del turno: si no tiene cartas en la mano, cura 1 y roba 2 cartas.";
+    habilidad = "Los tralaleritos dicen tralalá:\nAl final del turno: si no tiene cartas en la mano, cura 1 y roba 3 cartas.";
     habilidadEnCatalan: string = "Els tralaleritos diuen tralalà:\nEn passar el torn, si no té cartes a la mà, recupera 1 punt de vida i roba 2 cartes.."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTralalero", true];
@@ -168,9 +168,9 @@ export class Tralalero implements IPersonaje {
                 seCuro = true;
             }
 
-            sala.repartirCartas(jugador, 2, "pasiva");
+            sala.repartirCartas(jugador, 3, "pasiva");
             let extra = seCuro ? "recuperó salud/escudo y " : "";
-            sala.agregarRegistro(`🎵 ${jugador.personaje} ${extra}robó 2 cartas gracias a su pasiva.`);
+            sala.agregarRegistro(`🎵 ${jugador.personaje} ${extra}robó 3 cartas gracias a su pasiva.`);
         }
     }
 }
@@ -190,14 +190,25 @@ export class Darryl implements IPersonaje {
 
 export class JetpackCat implements IPersonaje {
     nombre = "Jetpack Cat";
-    habilidad = "Gato en las alturas:\nLos demás jugadores te consideran a distancia +1.";
+    habilidad = "Gato en las alturas:\nLos demás jugadores te consideran a distancia +1.\nCuando descarta: aumenta en 1 tu distancia hasta el inicio del turno.";
     habilidadEnCatalan: string = "Gat a les altures:\nEls altres jugadors el consideren a distància +1."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteJetpackCat", false];
     sfxDefault= "sfxJetpackCat"
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.modificarDistancia++
+        jugador.number.set("jetpackCat", 1)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        miJugador.number.set("jetpackCat", 1)
+    }
+
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
+        if (jugador.estaVivo){
+            jugador.number.set("jetpackCat", jugador.number.get("jetpackCat") + 1)
+            sala.reproducirSfx("sfxJetpackCat")
+        }
     }
 }
 
@@ -746,11 +757,23 @@ export class Leah implements IPersonaje {
 
 export class Robin implements IPersonaje {
     nombre = "Robin";
-    habilidad = "Carpintera:\nCuando descarta en su turno: si no es su primer descarte mejora de forma aleatoria.";
+    habilidad = "Carpintera:\nCuando descarta de forma voluntaria: si no es su primer descarte mejora de forma aleatoria.\nAl final del turno: si en su turno no jugó carta: mejora de forma aleatoria.";
     habilidadEnCatalan = "Fustera:\nDesprés del primer descart, cada descart en el seu torn millora un equipament aleatori. Les armes evolucionen i la resta es converteix en una versió 'Pro'.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
     sfxDefault = "sfxStardew"
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.boolean.set("robinJuegaCarta", false)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        miJugador.boolean.set("robinJuegaCarta", false)
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        jugador.boolean.set("robinJuegaCarta", true)
+    }
 
     onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string): void {
         if (motivo !== "VOLUNTARIO") return;
@@ -761,17 +784,23 @@ export class Robin implements IPersonaje {
             return;
         }
 
-        // Dejamos que la magia ocurra en Utilidades
-        let textoMejora = Utilidades.mejorarEquipamientoAleatorio(sala, jugador);
-
-        if (textoMejora !== "") {
-            sala.agregarRegistro(`🔨 ¡${jugador.personaje} descartó una carta y mejoró ${textoMejora}!`);
-            sala.reproducirSfx("robinMejora"); 
-        }
+        this.mejorar(sala, jugador, "descartó una carta")
     }
 
     onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
         jugador.robinDescartes = 0;
+        if (jugador.boolean.get("robinJuegaCarta") == false){
+            this.mejorar(sala, jugador, "no jugó ninguna carta")
+        }
+    }
+
+    mejorar(sala: IMyRoom, miJugador: Jugador, causa: "descartó una carta" | "no jugó ninguna carta"): void {
+        let textoMejora = Utilidades.mejorarEquipamientoAleatorio(sala, miJugador);
+
+        if (textoMejora !== "") {
+            sala.agregarRegistro(`🔨 ¡${miJugador.personaje} ${causa} y mejoró ${textoMejora}!`);
+            sala.reproducirSfx("robinMejora"); 
+        }
     }
 }
 
@@ -891,22 +920,30 @@ export class Maggey implements IPersonaje {
 
 export class Mortis implements IPersonaje {
     nombre = "Mortis";
-    habilidad = "Criatura de la noche:\nAl recibir daño o cuando muere otro jugador: conjura aleatoriamente 2 carta fantasma.";
+    habilidad = "Criatura de la noche:\nAl recibir daño o cuando muere otro jugador: conjura aleatoriamente 2 carta fantasma.\nAl golpear: conjura aleatoriamente 1 carta fantasma.";
     habilidadEnCatalan = "Criatura de la nit:\nEn rebre dany o quan mor un altre jugador, conjura 2 cartes fantasmals aleatòries.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMortis", true];
     sfxDefault = "sfxMortis"
 
-    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
-        if (victima.vidas > 0){
-            for (let i = 0; i < 2; i++){
+    crearCartaFantasma(sala: IMyRoom, miJugador: Jugador, cantidad: number){
+        for (let i = 0; i < cantidad; i++){
             let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria()
             if (cartaFantasma) {
-                victima.mano.push(cartaFantasma)
+                miJugador.mano.push(cartaFantasma)
             }
         }
 
-            sala.agregarRegistro(`🪏 ${victima.personaje} conjura 2 cartas fantasmales por su pasiva.`)
+        if (cantidad == 1){
+            sala.agregarRegistro(`🪏 ${miJugador.personaje} conjura ${cantidad} carta fantasmal por su pasiva.`)
+        } else {
+            sala.agregarRegistro(`🪏 ${miJugador.personaje} conjura ${cantidad} cartas fantasmales por su pasiva.`)
+        }
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (victima.estaVivo){
+            this.crearCartaFantasma(sala, victima, 2)
         }
     }
 
@@ -916,14 +953,15 @@ export class Mortis implements IPersonaje {
             return
         }
 
-        for (let i = 0; i < 2; i++){
-            let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria()
-            if (cartaFantasma) {
-                miJugador.mano.push(cartaFantasma)
-            }
+        if (miJugador.estaVivo){
+            this.crearCartaFantasma(sala, miJugador, 2)
         }
+    }
 
-        sala.broadcast("notificacion_turno", `🪏 ${miJugador.personaje} conjura dos cartas fantasmales por su pasiva.`)
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
+        if (miJugador.estaVivo){
+            this.crearCartaFantasma(sala, miJugador, 1)
+        }
     }
 }
 
@@ -1053,9 +1091,9 @@ export class Maya implements IPersonaje {
         })
     }
 
-    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
         this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
-            if (pasiva.onGolpear) pasiva.onGolpear(sala, miJugador, jugadorGolpeado);
+            if (pasiva.onGolpear) pasiva.onGolpear(sala, miJugador, jugadorGolpeado, causa);
         });
     }
 
@@ -1261,7 +1299,7 @@ export class Geraldo implements IPersonaje {
 
 export class RaymundoEscudos implements IPersonaje {
     nombre = "Raymundo Escudos";
-    habilidad = "Mejor Abogado:\nTu cura se transforma en escudo.\nTu escudo no se va con el tiempo.";
+    habilidad = "Mejor Abogado:\nTu cura se transforma en escudo.\nTu escudo no se va con el tiempo.\nCada 2 escudo: gana un almacenamiento.";
     habilidadEnCatalan = "Millor Advocat:\nNo pots recuperar la teva salut base. Tota curació que rebis es converteix en un Escut Permanent.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteRaymundo", true]; 
@@ -1283,6 +1321,10 @@ export class RaymundoEscudos implements IPersonaje {
         } else {
             sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó su Escudo temporal en un Escudo Infinito!`);
         }
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
+        return Math.floor(jugador.vidasEscudo / 2)
     }
 }
 
@@ -1684,7 +1726,7 @@ export class Meg implements IPersonaje {
 
 export class Perro implements IPersonaje {
     nombre = "Perro";
-    habilidad = "La casa del perro:\nAl golpear o al recibir daño: le coloca un perro con hueso en una carta aleatoria del otro jugador.";
+    habilidad = "La casa del perro:\nAl golpear: le coloca un perro con hueso en una carta aleatoria del otro jugador.\nAl recibir daño: le coloca un perro con hueso en 2 cartas aleatorias del otro jugador.";
     habilidadEnCatalan = "NADIE VA A LEER ESTO PORQUE EL CATALAN YA NO EXISTE EN ESTE JUEGO.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["sfxPerroMuerte", true];
@@ -1692,23 +1734,29 @@ export class Perro implements IPersonaje {
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         if (atacante && atacante.mano.length > 0) {
-            let cartasLibres = atacante.mano.filter((c: any) => c.idDuenoDelPerro === "");
+            let p: number = 0
+            for (let i = 0; i < 2; i++){
+                let cartasLibres = atacante.mano.filter((c: any) => c.idDuenoDelPerro === "");
 
-            if (cartasLibres.length > 0) {
-                let indiceAleatorio = Math.floor(Math.random() * cartasLibres.length);
-                let cartaAleatoria = cartasLibres[indiceAleatorio];
+                if (cartasLibres.length > 0) {
+                    let indiceAleatorio = Math.floor(Math.random() * cartasLibres.length);
+                    let cartaAleatoria = cartasLibres[indiceAleatorio];
 
-                let idDeLaVictima = "";
-                sala.getJugadores().forEach((j, sessionId) => {
-                    if (j === victima) idDeLaVictima = sessionId;
-                });
+                    let idDeLaVictima = "";
+                    sala.getJugadores().forEach((j, sessionId) => {
+                        if (j === victima) idDeLaVictima = sessionId;
+                    });
 
-                cartaAleatoria.idDuenoDelPerro = idDeLaVictima;
+                    cartaAleatoria.idDuenoDelPerro = idDeLaVictima;
+                    p++
+                }
             }
+
+            sala.agregarRegistro(`🐶 ¡${victima.personaje} le colocó ${p} perro con hueso a ${atacante.personaje}!`)
         }
     }
 
-    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
         if (jugadorGolpeado && jugadorGolpeado.mano.length > 0) {
             let cartasLibres = jugadorGolpeado.mano.filter((c: any) => c.idDuenoDelPerro === "");
 
@@ -1717,6 +1765,7 @@ export class Perro implements IPersonaje {
                 let cartaAleatoria = cartasLibres[indiceAleatorio];
 
                 cartaAleatoria.idDuenoDelPerro = Utilidades.obtenerSessionIdDeJugador(sala, miJugador);
+                sala.agregarRegistro(`🐶 ¡${miJugador.personaje} le colocó un perro con hueso a ${jugadorGolpeado.personaje}!`)
             }
         }
     }
@@ -1953,7 +2002,7 @@ export class Pedro implements IPersonaje {
         jugador.boolean.set("spriteFueraDeJuego", true)
     }
 
-    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
         if (!miJugador){
             console.error("ERROR: miJugador es null en pedro onGolpear")
             return
@@ -2011,8 +2060,8 @@ export class Pedro implements IPersonaje {
 
         if (victima.vidas > 0){
             if (victima.number.get("pedroCrecimiento") > 0){
-                const numero: number = Math.floor(Math.random() * 2)
-                if (numero == 1){
+                const numero: number = Math.floor(Math.random() * 100) + 1
+                if (numero <= 40){
                     victima.number.set("pedroCrecimiento", victima.number.get("pedroCrecimiento") - 1)
                     sala.agregarRegistro(`🌿 ${victima.personaje} decrece ${victima.number.get("pedroCrecimiento")}/5`)
                     sala.reproducirSfx("sfxPedroEncogiendose")
@@ -2386,7 +2435,7 @@ export class KarateKillo implements IPersonaje {
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
         if (!victima){
-            console.error("ERROR: victima es null en onGolpear en karate killo")
+            console.error("ERROR: victima es null en onRecibirDaño en karate killo")
             return
         }
         if (!victima.estaVivo){
@@ -2711,7 +2760,7 @@ export class Shelly implements IPersonaje {
 
 export class Byron implements IPersonaje {
     nombre = "Byron";
-    habilidad = "Tratamiento completo:\nBoton (1 por turno): descarta un Bang! y conjura un Botiquin.\nAl golpear: agrega 1 de efecto Malestar.";
+    habilidad = "Tratamiento completo:\nBoton (1 por turno): descarta dos Bangs! y conjura un Botiquin.\nAl golpear: agrega 1 de efecto Malestar.";
     habilidadEnCatalan = "..";
     vidasBase = 4;
 
@@ -2741,36 +2790,50 @@ export class Byron implements IPersonaje {
         }
 
         if (jugador.estaVivo && idHabilidad === "byron_botiquin") {
-            
+
             if (jugador.boolean.get("byronUsado") === true) {
                 client.send("alerta_personal", "Ya usaste tu habilidad en este turno.");
                 return;
             }
 
-            let indiceBang = jugador.mano.findIndex((c: any) => c.nombre === "BANG!");
+            let indicesBang: number[] = [];
 
-            if (indiceBang === -1) {
-                client.send("alerta_personal", "Necesitás tener al menos un BANG! en la mano.");
+            for (let i = 0; i < jugador.mano.length; i++) {
+                if (jugador.mano[i].nombre === "BANG!") {
+                    indicesBang.push(i);
+
+                    if (indicesBang.length === 2) {
+                        break;
+                    }
+                }
+            }
+
+            if (indicesBang.length < 2) {
+                client.send("alerta_personal", "Necesitás tener al menos 2 BANG! en la mano.");
                 return;
             }
 
-            let cartaExtraida = jugador.mano.splice(indiceBang, 1)[0];
-            sala.descartarCarta(cartaExtraida, jugador, "HABILIDAD");
+            for (let i = 0; i < 2; i++) {
+                let cartaExtraida = jugador.mano.splice(indicesBang[0], 1)[0];
+                sala.descartarCarta(cartaExtraida, jugador, "HABILIDAD");
+                indicesBang.shift();
+                indicesBang = indicesBang.map(indice => indice - 1);
+            }
 
             let nuevoBotiquin = CatalogoCartasEspeciales.crearBotiquin();
-            
+
             if (nuevoBotiquin) {
                 nuevoBotiquin.esConjurada = true;
                 jugador.mano.push(nuevoBotiquin);
 
                 jugador.boolean.set("byronUsado", true);
 
-                sala.agregarRegistro(`🧪 ¡${jugador.personaje} convirtió un BANG! en un Botiquín!`);
+                sala.agregarRegistro(`🧪 ¡${jugador.personaje} convirtió 2 BANG! en un Botiquín!`);
             }
         }
     }
 
-    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
         if (jugadorGolpeado.efecto.has("malestar")){
             jugadorGolpeado.efecto.set("malestar", jugadorGolpeado.efecto.get("malestar") + 1)
         } else {
@@ -2781,41 +2844,18 @@ export class Byron implements IPersonaje {
 
 export class GeiruToneido implements IPersonaje {
     nombre = "Geiru Toneido";
-    habilidad = "Payasa:\nAl inicio del turno: descarta todos los BANG! de tu mano y por cada uno conjura una Horda de Bloons.";
+    habilidad = "Payasa:\nAl inicio del turno: conjura una Horda de Bloons.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteGeiru", false];
     sfxDefault = "sfxGeiru";
 
     onIniciarTurno(sala: any, miJugador: any): void {
-        let bangsDescartados = 0;
-
-        // Buscamos y extraemos todos los BANG! de la mano uno por uno
-        let indiceBang = miJugador.mano.findIndex((c: any) => c.nombre === "BANG!");
-        
-        while (indiceBang !== -1) {
-            let cartaExtraida = miJugador.mano.splice(indiceBang, 1)[0];
-            
-            // Usamos tu método centralizado para que aplique pasivas (perros, curaciones, etc.)
-            sala.descartarCarta(cartaExtraida, miJugador, "VOLUNTARIO");
-            
-            bangsDescartados++;
-            
-            // Volvemos a buscar el siguiente
-            indiceBang = miJugador.mano.findIndex((c: any) => c.nombre === "BANG!");
-        }
-
-        // Si encontró y descartó al menos un BANG!, generamos las Hordas
-        if (bangsDescartados > 0) {
-            for (let i = 0; i < bangsDescartados; i++) {
-                let nuevaHorda = CatalogoCartasEspeciales.crearHordaDeBloons();
-                if (nuevaHorda) {
-                    nuevaHorda.esConjurada = true;
-                    miJugador.mano.push(nuevaHorda);
-                }
-            }
-            
-            sala.agregarRegistro(`🎈 ¡${miJugador.personaje} transformó todos sus Bangs! en Horda de Bloons!`);
+        let carta: Carta = CatalogoCartasEspeciales.crearHordaDeBloons()
+        if (carta){
+            carta.esConjurada = true
+            miJugador.mano.push(carta)
+            sala.agregarRegistro(`🎈 ¡${miJugador.personaje} conjuró una Horda de Bloons!`);
             sala.reproducirSfx("geiruBoton"); 
         }
     }
@@ -2998,7 +3038,7 @@ export class Wendy implements IPersonaje {
 
 export class Abigail implements IPersonaje {
     nombre = "Abigail";
-    habilidad = "Repugnante:\nComo una buena asquerosa, repulsiva, fea y molesta, al golpear a otro jugador le agrega un efecto tocxic.\nBoton: pierde 1 vida y todos los demas obtienen 1 efecto tocxic.";
+    habilidad = "Repugnante:\nComo una buena asquerosa, repulsiva, fea y molesta, al golpear a otro jugador le agrega un efecto tocxic.\nBoton: pierde 1 vida y todos los demas obtienen 1 efecto tocxic.\nAl recibir daño: le agrega un efecto tocxic.";
     habilidadEnCatalan = "..";
     vidasBase = 4;
 
@@ -3041,13 +3081,22 @@ export class Abigail implements IPersonaje {
         }
     }
 
-    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador): void {
-        if (miJugador == jugadorGolpeado){
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
+        if (miJugador == jugadorGolpeado || !miJugador.estaVivo || !jugadorGolpeado.estaVivo){
             return
         }
 
         Utilidades.agregarEfecto(jugadorGolpeado, "tocxic", 1)
         sala.agregarRegistro(`☣️ ${miJugador.personaje} le agrega un efecto tocxic a ${jugadorGolpeado.personaje}.`)
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (victima == atacante || !victima.estaVivo || !atacante.estaVivo){
+            return
+        }
+
+        Utilidades.agregarEfecto(atacante, "tocxic", 1)
+        sala.agregarRegistro(`☣️ ${victima.personaje} le agrega un efecto tocxic a ${atacante.personaje}.`)
     }
 }
 
@@ -3093,6 +3142,209 @@ export class Zombistein implements IPersonaje {
         } else {
             jugador.spriteAvatarOpcional = ""
         }
+    }
+}
+
+export class Charlie implements IPersonaje {
+    nombre = "Charlie";
+    habilidad = "Digestion:\nCuando roba: conjura una crisalida con un % de exito.\nAl inicio de la partida: coloca el % en 50.\nSi obtiene la crisalida, el % baja en 10, si no sube en 20.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["charlieMuerte", false];
+    sfxDefault = "sfxCharlie";
+
+    subirCharlie: number = 20
+    bajarCharlie: number = 10
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.number.set("charlie", 50)
+    }
+
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
+        if (!jugador){
+            console.error("El jugador no existe al robar cartas con charlie")
+            return 0
+        }
+
+        const numero: number = Math.floor(Math.random() * 100) + 1
+
+        if (numero <= jugador.number.get("charlie")){
+            jugador.number.set("charlie", jugador.number.get("charlie") - this.bajarCharlie)
+            this.limitesCharlie(jugador)
+            const carta: Carta = CatalogoCartasEspeciales.crearCrisalida()
+            if (carta){
+
+                carta.esConjurada = true
+                jugador.mano.push(carta)
+
+                const n: number = Math.floor(Math.random() * 4)
+                const sfx: string = "sfxCharlieConjura" + n
+                sala.reproducirSfx(sfx)
+
+            } else {
+                console.error("ERROR: charlie al crear carta dio null")
+            }
+
+            sala.agregarRegistro(`🐚 ¡${jugador.personaje} obtuvo una crisalida!`)
+        } else {
+            jugador.number.set("charlie", jugador.number.get("charlie") + this.subirCharlie)
+            this.limitesCharlie(jugador)
+        }
+
+        return 0
+    }
+
+    limitesCharlie(jugador: Jugador): void {
+        if (jugador.number.get("charlie") < 0){
+            jugador.number.set("charlie", 0)
+        } else if (jugador.number.get("charlie") > 100){
+            jugador.number.set("charlie", 100)
+        }
+    }
+}
+
+export class ElP implements IPersonaje {
+    nombre = "ElP";
+    habilidad = "Llenado:\nAl perder vida: gana un llenadoRobot.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["sfxElpMuerto", false];
+    sfxDefault = "sfxElp";
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.number.set("llenadoRobot", 0)
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (victima.estaVivo && danoCuerpo > 0 && victima.number.get("llenadoRobot") < 3){
+            victima.number.set("llenadoRobot", victima.number.get("llenadoRobot") + 1)
+            sala.agregarRegistro(`🤖 ${victima.personaje} ganó un llenado robot.`)
+            this.actualizarSprite(victima)
+            if (victima.number.get("llenadoRobot") >= 3){
+                sala.reproducirSfx("sfxElpLleno")
+            }
+        }
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (miJugador.estaVivo && miJugador.number.get("llenadoRobot") >= 3){
+            if (Utilidades.puedeRecibirCuracion(sala, miJugador)){
+                Utilidades.aplicarCuracion(sala, miJugador, 1, "pasiva", false)
+                sala.reproducirSfx("curacion")
+                sala.agregarRegistro(`🤖 ¡${miJugador.personaje} se curó 1 por tener 3 llenado robot!`)
+                miJugador.number.set("llenadoRobot", 0)
+                this.actualizarSprite(miJugador)
+            } else {
+                sala.agregarRegistro(`🤖 ${miJugador.personaje} está listo para curarse pero algo se lo impide.`)
+            }
+        }
+    }
+
+    actualizarSprite(miJugador: Jugador): void {
+        const r: number = miJugador.number.get("llenadoRobot")
+        if (r == 1){
+            miJugador.spriteAvatarOpcional = "ElP 1"
+        } else if (r == 2){
+            miJugador.spriteAvatarOpcional = "ElP 2"
+        } else if (r == 3){
+            miJugador.spriteAvatarOpcional = "ElP 3"
+        } else {
+            miJugador.spriteAvatarOpcional = ""
+        }
+    }
+}
+
+export class Tirachinas implements IPersonaje {
+    nombre = "Tirachinas";
+    habilidad = "Angry birds:\nAl inicio del turno: cambia de pajaro.\nLas probabilidades de cambiar a otro pajaro diferente son: red: 20%, chuck: 20%, blue: 23%, matilda: 5%, terrence: 3%, bomb: 6%, hal: 13%, bubbles: 10%.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["angryBirdsMuerto", false];
+    sfxDefault = "sfxAngryBirds";
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.string.set("angryBird", "red")
+        this.actualizarSprite(jugador)
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
+        if (causa == "BANG" && miJugador.estaVivo){
+
+            if (jugadorGolpeado.estaVivo && miJugador.string.get("angryBird") == "matilda"){
+                let carta: Carta = CatalogoCartasEspeciales.crearHuevoExplosivo()
+                if (carta){
+                    carta.esConjurada = true
+                    jugadorGolpeado.mano.push(carta)
+                    sala.agregarRegistro(`🥚 ${miJugador.personaje} le coloca un Huevo explosivo a ${jugadorGolpeado.personaje}.`)
+                }
+            } else if (jugadorGolpeado.estaVivo && miJugador.string.get("angryBird") == "bomb"){
+                let cantidadADescartar = Math.min(2, jugadorGolpeado.mano.length);
+    
+                if (cantidadADescartar > 0) {
+                    let cartasDescartadas = jugadorGolpeado.mano.splice(0, cantidadADescartar);
+                    
+                    cartasDescartadas.forEach((carta: any) => {
+                        sala.descartarCarta(carta, jugadorGolpeado, "pasiva");
+                    });
+
+                    sala.agregarRegistro(`💥 ¡${miJugador.personaje} obligó a ${jugadorGolpeado.personaje} a descartar ${cantidadADescartar} carta(s)!`);
+                }
+            } else if (miJugador.string.get("angryBird") == "hal"){
+                sala.repartirCartas(miJugador, 1, "pasiva")
+                sala.agregarRegistro(`𓅫 ${miJugador.personaje} robó una carta por su pasiva.`)
+            } else if (miJugador.string.get("angryBird") == "bubbles"){
+                Utilidades.agregarEscudos(sala, miJugador, 1, 1, "pasiva")
+                sala.agregarRegistro(`𓅫 ${miJugador.personaje} obtuvo un escudo por su pasiva.`)
+            }
+        }
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        this.cambiarPajaro(miJugador)
+        sala.agregarRegistro(`𓅫 ${miJugador.personaje} cambió al pajaro ${miJugador.string.get("angryBird")}.`)
+    }
+
+    cambiarPajaro(jugador: Jugador): void {
+        const pajaroActual = jugador.string.get("angryBird");
+
+        const pajaros = [
+            { nombre: "red", probabilidad: 20 },
+            { nombre: "chuck", probabilidad: 20 },
+            { nombre: "blue", probabilidad: 23 },
+            { nombre: "matilda", probabilidad: 5 },
+            { nombre: "terrence", probabilidad: 3 },
+            { nombre: "bomb", probabilidad: 6 },
+            { nombre: "hal", probabilidad: 13 },
+            { nombre: "bubbles", probabilidad: 10 }
+        ];
+
+        // Excluir el pájaro que ya tiene asignado.
+        const opciones = pajaros.filter(
+            pajaro => pajaro.nombre !== pajaroActual
+        );
+
+        // Sumar las probabilidades disponibles.
+        const probabilidadTotal = opciones.reduce(
+            (total, pajaro) => total + pajaro.probabilidad,
+            0
+        );
+
+        // Generar un número aleatorio dentro del total.
+        let aleatorio = Math.random() * probabilidadTotal;
+
+        for (const pajaro of opciones) {
+            aleatorio -= pajaro.probabilidad;
+
+            if (aleatorio < 0) {
+                jugador.string.set("angryBird", pajaro.nombre);
+                this.actualizarSprite(jugador)
+                return;
+            }
+        }
+    }
+
+    actualizarSprite(jugador: Jugador): void {
+        jugador.spriteAvatarOpcional = "Tirachinas " + jugador.string.get("angryBird")
     }
 }
 
@@ -3155,6 +3407,9 @@ export class GestorPersonajes {
         this.registrar(new Pierre())
         this.registrar(new Zombistein())
         this.registrar(new Abigail())
+        this.registrar(new Charlie())
+        this.registrar(new ElP())
+        this.registrar(new Tirachinas())
 
 
 

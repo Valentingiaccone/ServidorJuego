@@ -13,7 +13,6 @@ export class Utilidades {
             return;
         }
 
-        // --- SISTEMA NUEVO: CALABAZA ---
         let cartaCalabaza = victima.equipamiento.get("calabaza");
         if (cartaCalabaza){
             sala.agregarAlDescarte(cartaCalabaza, victima, null);
@@ -22,7 +21,14 @@ export class Utilidades {
             return;
         }
 
-        // --- SISTEMA NUEVO: HUMOSETA ---
+        let cartaCrisalida = victima.equipamiento.get("crisalida");
+        if (cartaCrisalida){
+            sala.agregarAlDescarte(cartaCrisalida, victima, null);
+            victima.equipamiento.delete("crisalida");
+            sala.broadcast("notificacion_turno", `🐚 La Crisalida de ${victima.personaje} lo protege del ataque.`);
+            return;
+        }
+
         if (atacante && atacante.equipamiento.has("humoseta")){
             ignoraEscudo = true;
         }
@@ -39,6 +45,9 @@ export class Utilidades {
                 if (atacante.boolean.get("esZombistein") && atacante.vidas <= 2){
                     cantidad += 1
                 }
+                if (atacante.string.get("angryBird") == "terrence"){
+                    cantidad += 1
+                }
                 if (atacante.boolean.get("mercyActivada")){
                     this.aplicarCuracion(sala, victima, cantidad, causa, false);
                     this.aplicarCuracion(sala, atacante, 1, causa, false)
@@ -47,11 +56,13 @@ export class Utilidades {
             }
         }
 
-        let anilloInmunidad: Carta = this.buscarCartaPorNombre(victima, "Anillo de inmunidad cargado")
+        let anilloInmunidad: Carta = this.buscarCartaPorNombre(victima, "Anillo de inmunidad")
         if (anilloInmunidad && cantidad > 0){
             cantidad = 0
-            anilloInmunidad.nombre = "Anillo de inmunidad descargado"
-            sala.agregarRegistro(`💍 ${victima.personaje} redujo el daño a 0 por su Anillo de inmunidad.`)
+            this.agregarEscudos(sala, victima, 2, 1, "anillo")
+            this.eliminarCartaDeLaMano(victima, anilloInmunidad)
+            sala.descartarCarta(anilloInmunidad, victima, "anillo")
+            sala.agregarRegistro(`💍 ${victima.personaje} redujo el daño a 0 por su Anillo de inmunidad, este le dió 2 escudos y luego se descartó.`)
         }
 
         let danoRestante = cantidad;
@@ -78,7 +89,7 @@ export class Utilidades {
 
         const y: number = this.contarCartasPorNombre(victima, "Anillo de Yoba")
         for (let i = 0; i < y; i++){
-            const numero: number = Math.floor(Math.random() * 2)
+            const numero: number = Math.floor(Math.random() * 3)
             if (numero == 0){
                 this.agregarEscudos(sala, victima, 1, 1, "anillo")
                 sala.agregarRegistro(`💍 ${victima.personaje} generó un escudo por su anillo de Yoba.`)
@@ -87,7 +98,7 @@ export class Utilidades {
 
         let pasivaAtacante = sala.gestorPersonajes.obtener(atacante?.personaje);
         if (pasivaAtacante && pasivaAtacante.onGolpear) {
-            pasivaAtacante.onGolpear(sala, atacante, victima);
+            pasivaAtacante.onGolpear(sala, atacante, victima, causa);
         }
 
         sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"});
@@ -536,6 +547,9 @@ export class Utilidades {
         if (jugador.efecto.has("malestar")){
             jugador.efecto.delete("malestar")
         }
+        if (jugador.efecto.has("tocxic")){
+            jugador.efecto.delete("tocxic")
+        }
     }
 
     /**
@@ -613,5 +627,17 @@ export class Utilidades {
         }
 
         return jugador.efecto.get(efecto)
+    }
+
+    /**
+    * Elimina de la mano una carta específica del jugador.
+    */
+    public static eliminarCartaDeLaMano(jugador: Jugador, carta: Carta): void {
+        for (let i = 0; i < jugador.mano.length; i++) {
+            if (jugador.mano[i] === carta) {
+                jugador.mano.splice(i, 1);
+                return;
+            }
+        }
     }
 }

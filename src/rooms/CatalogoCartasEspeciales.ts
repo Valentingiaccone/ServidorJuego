@@ -1033,7 +1033,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `arma_espada_galactica_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
         clon.nombre = "Espada galactica";
-        clon.descripcion = "Alcance 1, daño 2, sin limites de Bang!";
+        clon.descripcion = "Alcance 1, daño 2, sin limites de Bang!, al final del turno se desequipa.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "equipamiento";
         clon.efecto = `equipar_arma_1_1_0`; 
@@ -1045,10 +1045,10 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `arma_espada_galactica_pro_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
         clon.nombre = "Espada galactica Pro";
-        clon.descripcion = "Alcance 100, daño 2, sin limites de Bang!";
+        clon.descripcion = "Alcance 1, daño 2, sin limites de Bang!";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "equipamiento";
-        clon.efecto = `equipar_arma_100_1_0`; 
+        clon.efecto = `equipar_arma_1_1_0`; 
         clon.esConjurada = false;
         return clon;
     }
@@ -1057,7 +1057,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `anillo_de_iridio_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
         clon.nombre = "Anillo de iridio";
-        clon.descripcion = "Mientras esté en tu mano, ganás 3 de alcance.";
+        clon.descripcion = "En mano: ganás 3 de alcance.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = `null`; 
@@ -1068,8 +1068,8 @@ export class CatalogoCartasEspeciales {
     public static crearAnilloDeInmunidad(): Carta {
         let clon = new Carta();
         clon.id = `anillo_de_inmunidad_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
-        clon.nombre = "Anillo de inmunidad cargado";
-        clon.descripcion = "Mientras esté en tu mano y cargado, reduce el daño recibido a 0, luego se descarga, al inicio del turno se carga.";
+        clon.nombre = "Anillo de inmunidad";
+        clon.descripcion = "En mano: reduce el daño recibido a 0, te da 2 escudos y luego se descarta.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = `null`; 
@@ -1081,7 +1081,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `anillo_del_vampiro_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
         clon.nombre = "Anillo del vampiro";
-        clon.descripcion = "Mientras esté en tu mano, matar un jugador te cura 2.";
+        clon.descripcion = "En mano: matar un jugador te cura 2.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = `null`; 
@@ -1093,7 +1093,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `anillo_del_ladron_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
         clon.nombre = "Anillo del ladron";
-        clon.descripcion = "Mientras esté en tu mano, cuando robas cartas, robas una extra.";
+        clon.descripcion = "En mano: cuando robas cartas, robas una extra.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = `null`; 
@@ -1105,7 +1105,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `anillo_de_la_suerte_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
         clon.nombre = "Anillo de la suerte";
-        clon.descripcion = "Mientras esté en tu mano tenés suerte +3.";
+        clon.descripcion = "En mano: tenés suerte +3.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = `null`; 
@@ -1117,7 +1117,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `anillo_de_yoba_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
         clon.nombre = "Anillo de Yoba";
-        clon.descripcion = "Mientras esté en tu mano, luego de recibir daño, tiene un 50% de obtener 1 escudo.";
+        clon.descripcion = "En mano: luego de recibir daño, tiene un 33% de obtener 1 escudo.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = `null`; 
@@ -1133,6 +1133,30 @@ export class CatalogoCartasEspeciales {
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = `descartar_zombidito_1`; 
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearCrisalida(): Carta {
+        let clon = new Carta();
+        clon.id = `crisalida_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        clon.nombre = "Crisalida"; 
+        clon.descripcion = "Un jugador tiene 9/16 de salir de la crisalida o perder el turno, tanquea daño y se rompe.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoUniversal"; 
+        clon.efecto = "crisalida";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearHuevoExplosivo(): Carta {
+        let clon = new Carta();
+        clon.id = `huevo_explosivo_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+        clon.nombre = "Huevo explosivo";
+        clon.descripcion = "Al descartar: recibis 1 de daño.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = `descartar_huevoExplosivo_1`; 
         clon.esConjurada = false;
         return clon;
     }
