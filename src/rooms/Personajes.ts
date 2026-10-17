@@ -14,6 +14,7 @@ export interface IPersonaje {
     sfxMuerte?: [string, boolean, number?];
     sfxDefault?: string;
     spriteFueraDeJuego?: boolean
+    esNpcInvocable?: boolean;
 
     onRecibirDano?(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void;
 
@@ -3205,34 +3206,34 @@ export class Charlie implements IPersonaje {
 
 export class ElP implements IPersonaje {
     nombre = "ElP";
-    habilidad = "Llenado:\nAl perder vida: gana un llenadoRobot.";
+    habilidad = "Robotilin:\nAl perder vida: gana un jugo.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["sfxElpMuerto", false];
     sfxDefault = "sfxElp";
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.number.set("llenadoRobot", 0)
+        jugador.number.set("jugo", 0)
     }
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
-        if (victima.estaVivo && danoCuerpo > 0 && victima.number.get("llenadoRobot") < 3){
-            victima.number.set("llenadoRobot", victima.number.get("llenadoRobot") + 1)
-            sala.agregarRegistro(`🤖 ${victima.personaje} ganó un llenado robot.`)
+        if (victima.estaVivo && danoCuerpo > 0 && victima.number.get("jugo") < 3){
+            victima.number.set("jugo", victima.number.get("jugo") + 1)
+            sala.agregarRegistro(`🤖 ${victima.personaje} ganó un jugo.`)
             this.actualizarSprite(victima)
-            if (victima.number.get("llenadoRobot") >= 3){
+            if (victima.number.get("jugo") >= 3){
                 sala.reproducirSfx("sfxElpLleno")
             }
         }
     }
 
     onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
-        if (miJugador.estaVivo && miJugador.number.get("llenadoRobot") >= 3){
+        if (miJugador.estaVivo && miJugador.number.get("jugo") >= 3){
             if (Utilidades.puedeRecibirCuracion(sala, miJugador)){
                 Utilidades.aplicarCuracion(sala, miJugador, 1, "pasiva", false)
                 sala.reproducirSfx("curacion")
-                sala.agregarRegistro(`🤖 ¡${miJugador.personaje} se curó 1 por tener 3 llenado robot!`)
-                miJugador.number.set("llenadoRobot", 0)
+                sala.agregarRegistro(`🤖 ¡${miJugador.personaje} se curó 1 por tener 3 jugos!`)
+                miJugador.number.set("jugo", 0)
                 this.actualizarSprite(miJugador)
             } else {
                 sala.agregarRegistro(`🤖 ${miJugador.personaje} está listo para curarse pero algo se lo impide.`)
@@ -3241,7 +3242,7 @@ export class ElP implements IPersonaje {
     }
 
     actualizarSprite(miJugador: Jugador): void {
-        const r: number = miJugador.number.get("llenadoRobot")
+        const r: number = miJugador.number.get("jugo")
         if (r == 1){
             miJugador.spriteAvatarOpcional = "ElP 1"
         } else if (r == 2){
@@ -3348,6 +3349,163 @@ export class Tirachinas implements IPersonaje {
     }
 }
 
+export class Nita implements IPersonaje {
+    nombre = "Nita";
+    habilidad = "Hermano oso:\nCada 2 vidas que pierde: invoca a un NPC Bruce en su sentido antihorario.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador) return;
+        jugador.number.set("nitaVidasPerdidas", 0);
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (!victima || !sala || !victima.estaVivo) return;
+
+        // Si querés que Nita NO invoque a Bruce en el golpe que la mata, descomentá la siguiente línea:
+        // if (victima.vidas <= 0) return;
+
+        if (danoCuerpo > 0) {
+            let acumulado = (victima.number.get("nitaVidasPerdidas") || 0) + danoCuerpo;
+
+            // Usamos while por si recibe 4 de daño de golpe (ej. Dinamita/Escopetazo)
+            while (acumulado >= 2) {
+                acumulado -= 2;
+                Utilidades.invocarNpcEnMesa(sala, victima, "Bruce", 3, 0, "antihorario");
+            }
+
+            victima.number.set("nitaVidasPerdidas", acumulado);
+        }
+    }
+}
+
+export class Bruce implements IPersonaje {
+    nombre = "Bruce";
+    habilidad = "NPC:\nNo roba cartas en su fase de robo.\nAl inicio de su turno: conjura un BANG!.\nAl jugar una carta: se mueve en sentido antihorario.";
+    habilidadEnCatalan = ".";
+    vidasBase = 3;
+    esNpcInvocable = true;
+
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
+        if (causa === "turno") {
+            return -2;
+        }
+        return 0;
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (!miJugador || !miJugador.estaVivo) return;
+
+        let bang = CatalogoCartasEspeciales.crearBang();
+        if (bang) {
+            bang.esConjurada = true;
+            miJugador.mano.push(bang);
+            sala.agregarRegistro(`🐻 ¡${miJugador.personaje} conjuró un BANG! al iniciar su turno!`);
+        }
+    }
+
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (!jugador || !jugador.estaVivo) return;
+
+        Utilidades.moverPosicionFisica(sala, jugador, "antihorario");
+        sala.agregarRegistro(`🐻 ¡${jugador.personaje} jugó una carta y se movió en sentido antihorario!`);
+    }
+}
+
+export class Larry implements IPersonaje {
+    nombre = "Larry";
+    habilidad = "Gemelos justicieros:\nTiene 3 vidas.\nAl inicio de la partida: obtiene 1 escudo e invoca al NPC Lawrie en su sentido antihorario.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador || !sala) return;
+        jugador.vidas--
+        jugador.vidasMaximas--
+
+        Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva");
+        Utilidades.invocarNpcEnMesa(sala, jugador, "Lawrie", 3, 3, "horario");
+    }
+}
+
+export class Lawrie implements IPersonaje {
+    nombre = "Lawrie";
+    habilidad = "NPC:\nNo tiene ninguna habilidad especial.";
+    habilidadEnCatalan = ".";
+    vidasBase = 3;
+    esNpcInvocable = true;
+}
+
+export class Bubble implements IPersonaje {
+    nombre = "Bubble";
+    habilidad = "Muchas burbujas:\nTiene 1 vida.\nAl inicio de la partida: obtiene 2 escudo e invoca a 10 NPC Bubble a sus lados.\nAlmacenamiento 1.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        if (!jugador || !sala) return;
+        jugador.vidas -= 3
+        jugador.vidasMaximas -= 3
+
+        Utilidades.agregarEscudos(sala, jugador, 2, 1, "pasiva");
+        for (let i = 0; i < 5; i++){
+            Utilidades.invocarNpcEnMesa(sala, jugador, "Bubble_npc", 1, 1, "antihorario");
+            Utilidades.invocarNpcEnMesa(sala, jugador, "Bubble_npc", 1, 1, "horario");
+        }
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return 1
+    }
+}
+
+export class Bubble_npc implements IPersonaje {
+    nombre = "Bubble_npc";
+    habilidad = "NPC:\nAlmacenamiento 1.";
+    habilidadEnCatalan = ".";
+    vidasBase = 1;
+    esNpcInvocable = true;
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return 1
+    }
+}
+
+export class Phoenix implements IPersonaje {
+    nombre = "Phoenix";
+    habilidad = "Asistentes:\nAl inicio de la partida: tus otras 2 opciones de eleccion se convierten en npc, empiezan con 3 cartas iniciales.\nPenalizacion 1.";
+    habilidadEnCatalan = ".";
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: Jugador): void {
+        if (!jugador || !sala) return;
+
+        const inicio = jugador.reroll ? 3 : 0;
+
+        const elecciones = jugador.opcionesPersonaje
+            ?.slice(inicio, inicio + 3)
+            .map(opcion => opcion?.nombre ?? null);
+
+        if (!elecciones || elecciones.length < 3 || elecciones.some(nombre => nombre == null)) {
+            return;
+        }
+
+        if (!elecciones.includes("Phoenix")) {
+            return;
+        }
+
+        const [asistente1, asistente2] = elecciones.filter(nombre => nombre !== "Phoenix");
+
+        Utilidades.invocarNpcEnMesa(sala, jugador, asistente1, 4, 3, "antihorario");
+        Utilidades.invocarNpcEnMesa(sala, jugador, asistente2, 4, 3, "horario");
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+        return -1
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
@@ -3410,6 +3568,21 @@ export class GestorPersonajes {
         this.registrar(new Charlie())
         this.registrar(new ElP())
         this.registrar(new Tirachinas())
+        this.registrar(new Nita());
+        this.registrar(new Larry());
+        this.registrar(new Bubble())
+        this.registrar(new Phoenix())
+
+
+
+
+
+
+        // NPC:
+
+        this.registrar(new Lawrie());
+        this.registrar(new Bruce());
+        this.registrar(new Bubble_npc())
 
 
 
@@ -3427,8 +3600,10 @@ export class GestorPersonajes {
     }
 
     public obtenerTodosParaRepartir(): any[] {
-        // 1. Extraemos los valores, pero los pasamos por un Set para borrar duplicados
-        let valoresUnicos = new Set(Object.values(this.personajes));
+        // 1. Extraemos los valores sin duplicados y excluimos a los NPCs invocables
+        let valoresUnicos = new Set(
+            Object.values(this.personajes).filter(p => !p.esNpcInvocable)
+        );
         
         // 2. Volvemos a convertir ese Set en un Array normal
         let lista = Array.from(valoresUnicos);

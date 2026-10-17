@@ -113,6 +113,9 @@ export class Jugador extends Schema {
     @type({ map: "string" }) string = new MapSchema<string>();
     @type({ map: Jugador }) jugador = new MapSchema<Jugador>();
     @type({ map: "number" }) efecto = new MapSchema<number>();
+    @type("boolean") esNpc: boolean = false;
+    @type("string") idDueno: string = "";
+    @type("boolean") reroll: boolean = false;
 }
 
 export class MyRoomState extends Schema {

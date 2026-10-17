@@ -1452,7 +1452,6 @@ export class EfectoMegaBomba implements IEfectoCarta {
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         
         sala.state.atacanteActual = client.sessionId;
-        sala.broadcast("sfx", "explosion"); // Si tuvieras un sonido más fuerte, iría acá
 
         victimasIds.forEach(idVictima => {
             let victima = sala.state.jugadores.get(idVictima);
@@ -1847,8 +1846,6 @@ export class EfectoDano implements IEfectoCarta {
             sala.state.usosBarril = 0;
             
             sala.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
-        
-            sala.ejecutarPasivasAlJugarCarta(atacante, cartaJugada);
 
             // 6. ¡LA MAGIA DEL NUEVO SISTEMA! 
             // Invocamos la interacción universal que creaste en MyRoom.ts

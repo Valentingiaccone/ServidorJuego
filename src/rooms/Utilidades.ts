@@ -640,4 +640,82 @@ export class Utilidades {
             }
         }
     }
+
+    /**
+     * Crea e inserta un NPC,
+     * tanto en las sillas físicas como en el orden de turnos.
+     */
+    public static invocarNpcEnMesa(
+        sala: any, 
+        dueno: Jugador, 
+        nombrePersonajeNpc: string, 
+        vidasNpc: number, 
+        cartasIniciales: number = 0,
+        posicionAparicion: "antihorario" | "horario"
+    ): Jugador | null {
+        let idDueno = this.obtenerSessionIdDeJugador(sala, dueno);
+        if (!idDueno) return null;
+
+        let idNpc = `npc_${nombrePersonajeNpc.toLowerCase()}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        let npc = new Jugador();
+
+        npc.nombre = nombrePersonajeNpc;
+        npc.personaje = nombrePersonajeNpc;
+        npc.esNpc = true;
+        npc.idDueno = idDueno;
+        npc.rol = "";
+        npc.vidas = vidasNpc;
+        npc.vidasMaximas = vidasNpc;
+        npc.estaVivo = true;
+        npc.yaEligioPersonaje = true;
+        npc.beneficiarseDeSuMuerte = false;
+
+        let datosClase = sala.gestorPersonajes.obtener(nombrePersonajeNpc);
+        if (datosClase) {
+            npc.habilidad = datosClase.habilidad || "";
+            npc.habilidadEnCatalan = datosClase.habilidadEnCatalan || "";
+            if (datosClase.sfxMuerte) npc.sfxMuerte = datosClase.sfxMuerte;
+            if (datosClase.sfxDefault) npc.sfxDefault = datosClase.sfxDefault;
+        }
+
+        // Calculamos el desfase: +1 si es horario (después del dueño), 0 si es antihorario (antes del dueño)
+        let offset = (posicionAparicion === "horario") ? 1 : 0;
+
+        // 1. Insertar en ordenSillasFisicas sin usar ArraySchema.splice para insertar
+        let sillasTemp = Array.from(sala.state.ordenSillasFisicas) as string[];
+        let idxFisico = sillasTemp.indexOf(idDueno);
+        if (idxFisico !== -1) {
+            sillasTemp.splice(idxFisico + offset, 0, idNpc);
+        } else {
+            sillasTemp.push(idNpc);
+        }
+        sala.state.ordenSillasFisicas.clear();
+        sillasTemp.forEach(id => sala.state.ordenSillasFisicas.push(id));
+
+        // 2. Insertar en el orden de turnos del servidor (array normal de JS)
+        if (sala.ordenTurnos) {
+            let idxTurno = sala.ordenTurnos.indexOf(idDueno);
+            if (idxTurno !== -1) {
+                sala.ordenTurnos.splice(idxTurno + offset, 0, idNpc);
+            } else {
+                sala.ordenTurnos.push(idNpc);
+            }
+        }
+
+        // 3. Agregar al MapSchema sin hacer .clear() de los demás jugadores
+        sala.state.jugadores.set(idNpc, npc);
+
+        // 4. Repartir cartas iniciales si corresponde
+        if (cartasIniciales > 0) {
+            sala.repartirCartas(npc, cartasIniciales, "inicio_npc");
+        }
+
+        // 5. Ejecutar onIniciarPartida del NPC si tuviera
+        if (datosClase && datosClase.onIniciarPartida) {
+            datosClase.onIniciarPartida(sala, npc);
+        }
+
+        sala.agregarRegistro(`🤖 ¡${dueno.personaje} invocó a ${npc.personaje} en la mesa!`);
+        return npc;
+    }
 }
