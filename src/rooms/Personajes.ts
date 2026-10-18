@@ -3372,7 +3372,7 @@ export class Nita implements IPersonaje {
             // Usamos while por si recibe 4 de daño de golpe (ej. Dinamita/Escopetazo)
             while (acumulado >= 2) {
                 acumulado -= 2;
-                Utilidades.invocarNpcEnMesa(sala, victima, "Bruce", 3, 0, "antihorario");
+                Utilidades.invocarNpcEnMesa(sala, victima, "Bruce", 2, 0, "antihorario");
             }
 
             victima.number.set("nitaVidasPerdidas", acumulado);
@@ -3384,7 +3384,7 @@ export class Bruce implements IPersonaje {
     nombre = "Bruce";
     habilidad = "NPC:\nNo roba cartas en su fase de robo.\nAl inicio de su turno: conjura un BANG!.\nAl jugar una carta: se mueve en sentido antihorario.";
     habilidadEnCatalan = ".";
-    vidasBase = 3;
+    vidasBase = 2;
     esNpcInvocable = true;
 
     modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
@@ -3431,10 +3431,14 @@ export class Larry implements IPersonaje {
 
 export class Lawrie implements IPersonaje {
     nombre = "Lawrie";
-    habilidad = "NPC:\nNo tiene ninguna habilidad especial.";
+    habilidad = "NPC:\nPuede recibir curacion.";
     habilidadEnCatalan = ".";
     vidasBase = 3;
     esNpcInvocable = true;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.boolean.set("lawrieCura", true)
+    }
 }
 
 export class Bubble implements IPersonaje {

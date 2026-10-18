@@ -131,6 +131,10 @@ export class Utilidades {
             if (j && j.estaVivo) totalVivos++;
         });
 
+        if (jugador.esNpc && !jugador.boolean.get("lawrieCura")){
+            return false
+        }
+
         if (jugador.efecto.has("malestar")){
             return false
         }
