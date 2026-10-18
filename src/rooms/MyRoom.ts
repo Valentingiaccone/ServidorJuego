@@ -1270,6 +1270,14 @@ export class MyRoom extends Room implements IMyRoom{
 
             Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, this.causaDePeligro);
             
+            if (this.causaDePeligro == "BANG" && atacante.equipamiento.has("papa")){
+                const papapum: Carta = atacante.equipamiento.get("papa")
+                if (papapum){
+                    Utilidades.equiparCarta(this, victima, papapum, "papa")
+                    atacante.equipamiento.delete("papa")
+                }
+            }
+
             if (this.colaDePeligro && this.colaDePeligro.length > 0) {
                 this.avanzarColaDePeligro();
             } else {
