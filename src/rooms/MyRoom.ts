@@ -1231,7 +1231,7 @@ export class MyRoom extends Room implements IMyRoom{
 
             Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, this.causaDePeligro);
             
-            if (atacante.equipamiento.has("papa")){
+            if (this.causaDePeligro == "BANG" && atacante.equipamiento.has("papa")){
                 const papapum: Carta = atacante.equipamiento.get("papa")
                 if (papapum){
                     Utilidades.equiparCarta(this, victima, papapum, "papa")
