@@ -153,27 +153,42 @@ export class GestorNPC {
 
     private static finalizarTurnoNpc(sala: any, idNpc: string, npc: Jugador) {
         let clienteNpc = this.crearClienteNpc(idNpc);
-
-        let modificacion = 0;
-        let pasiva = sala.gestorPersonajes.obtener(npc.personaje);
-        if (pasiva && pasiva.modificarCartasEnManoAlPasarTurno) {
-            modificacion = pasiva.modificarCartasEnManoAlPasarTurno(sala, npc);
-        }
-
-        let limiteMano = Math.max(0, npc.vidas + modificacion);
-
-        // Descarta cartas al azar hasta cumplir la regla de salud = cartas en mano
         let frenoSeguridad = 50;
-        while (npc.estaVivo && sala.state.turnoActual === idNpc && npc.mano.length > limiteMano && npc.mano.length > 0 && frenoSeguridad > 0) {
+
+        // Usamos un bucle que evaluará dinámicamente el estado en CADA descarte
+        while (true) {
+            // 1. Chequeos de seguridad básicos para salir del bucle
+            if (!npc.estaVivo || sala.state.turnoActual !== idNpc || npc.mano.length === 0 || frenoSeguridad <= 0) {
+                break;
+            }
+
+            // 2. Recalcular el límite de cartas EXACTO en este preciso instante
+            let modificacion = 0;
+            let pasiva = sala.gestorPersonajes.obtener(npc.personaje);
+            if (pasiva && pasiva.modificarCartasEnManoAlPasarTurno) {
+                modificacion = pasiva.modificarCartasEnManoAlPasarTurno(sala, npc);
+            }
+            let limiteManoActual = Math.max(0, npc.vidas + modificacion);
+
+            // 3. Si ya cumplimos la regla de salud = cartas, rompemos el bucle
+            if (npc.mano.length <= limiteManoActual) {
+                break;
+            }
+
+            // 4. Si seguimos teniendo cartas de más, descartamos UNA sola
             frenoSeguridad--;
             let idxRandom = Math.floor(Math.random() * npc.mano.length);
             let cartaADescartar = npc.mano[idxRandom];
+            
             if (cartaADescartar) {
+                // Al descartar, pueden pasar mil cosas (daño, robos extra, muerte)
+                // Por eso, la próxima iteración del while volverá a evaluar TODO desde cero.
                 sala.procesarDescartarCarta(clienteNpc, cartaADescartar.id);
             }
         }
 
-        // Si sigue vivo y sigue siendo su turno, pasa el turno
+        // 5. Una vez terminados todos los descartes, evaluamos si puede pasar de turno
+        // (Verificamos de nuevo que siga vivo, ya que pudo morir por el efecto de un descarte)
         if (npc.estaVivo && sala.state.turnoActual === idNpc) {
             sala.procesarPasarTurno(clienteNpc);
         }

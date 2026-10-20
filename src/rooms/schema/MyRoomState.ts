@@ -122,7 +122,6 @@ export class MyRoomState extends Schema {
     @type({ map: Jugador }) jugadores = new MapSchema<Jugador>();
     @type("string") estadoJuego: string = "Lobby";
     @type("string") turnoActual: string = "";
-    @type("string") jugadorEnPeligro: string = "";
     @type("string") jugadorDebeDescartar: string = "";
     @type("string") atacanteActual: string = "";
     @type([Carta]) mazo = new ArraySchema<Carta>();

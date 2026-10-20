@@ -38,6 +38,7 @@ export class Utilidades {
                 if (atacante.boolean.get("chispitasCargado")){
                     atacante.boolean.set("chispitasCargado", false);
                     cantidad = 999;
+                    sala.reproducirSfx("sfxChispitasBang")
                 }
                 if (atacante.equipamiento.has("plantorcha") && (this.getDatosArma(atacante).nombre == "Lanzaguisantes" || this.getDatosArma(atacante).nombre == "Repetidora")){
                     cantidad += 1;
@@ -193,11 +194,17 @@ export class Utilidades {
      * Huecos comunes: "arma", "mustang", "mira", "barril", "prision", "dinamita", "papa", "calabaza", "plantorcha", "humoseta".
      */
     public static equiparCarta(sala: any, jugador: Jugador, carta: Carta, hueco: string): void {
+        carta.idDuenoDelPerro = ""
         if (jugador.equipamiento.has(hueco)) {
             let cartaVieja = jugador.equipamiento.get(hueco);
             sala.agregarAlDescarte(cartaVieja, jugador, null);
         }
         jugador.equipamiento.set(hueco, carta);
+
+        let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
+        if (pasiva && pasiva.onEquiparCarta) {
+            pasiva.onEquiparCarta(sala, jugador, carta, hueco);
+        }
     }
 
     /**

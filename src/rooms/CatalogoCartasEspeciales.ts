@@ -78,6 +78,18 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearTiratachuela(): Carta {
+        let tira = new Carta()
+        tira.id = `tiratachuela_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        tira.nombre = "Tiratachuela";
+        tira.descripcion = "Dispara a todos los demás jugadores uno por uno.";
+        tira.descripcionEnCatalan = "Dispara a tots els altres jugadors un per un."
+        tira.tipoDeUso = "instantanea";
+        tira.efecto = "tiratachuela";
+        tira.esConjurada = false
+        return tira
+    }
+
     public static crearTiendaDeJuju(): Carta {
         const clon = new Carta();
         clon.id = `tienda_juju_${Date.now()}_${Math.floor(Math.random() * 10000)}`;

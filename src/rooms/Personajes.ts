@@ -69,6 +69,8 @@ export interface IPersonaje {
     onGolpear?(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void
 
     onJugarCartaGlobal?(sala: IMyRoom, miJugador: Jugador, jugadorQueJuega: Jugador, cartaJugada: Carta): void;
+
+    onEquiparCarta?(sala: IMyRoom, miJugador: Jugador, carta: Carta, hueco: string): void
 }
 
 export class ColeCasiddy implements IPersonaje {
@@ -109,6 +111,7 @@ export class Berry implements IPersonaje {
             if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
                 Utilidades.aplicarCuracion(sala, jugador, 1, "PASIVA", false);
                 texto += ` y recibe curación`;
+                sala.reproducirSfx("curacion")
             }
             texto += ` por su pasiva.`;
             sala.agregarRegistro(texto);
@@ -219,6 +222,7 @@ export class KayFaraday implements IPersonaje {
     habilidadEnCatalan: string = "La lladre:\nCada vegada que perd una vida a causa d'un jugador, roba una carta a l'atzar de la mà d'aquest jugador."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteKay", true];
+    sfxDefault: string = "sfxKay"
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
         if (atacante && atacante.mano.length > 0 && danoCuerpo > 0) {
@@ -274,6 +278,7 @@ export class Trucy implements IPersonaje {
     habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTrucy", false];
+    sfxDefault: string = "sfxTrucy"
 
     modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
         return 1
@@ -894,10 +899,11 @@ export class Haley implements IPersonaje {
 
 export class Maggey implements IPersonaje {
     nombre = "Maggey";
-    habilidad = "Ay! pero que mala suerte...:\nEl resto de los jugadores tiene mas mala suerte y les agrega en su ruleta tres puntos para robar una carta.";
+    habilidad = "Ay! pero que mala suerte...:\nEl resto de los jugadores tienen suerte -1 y agrega 3 fichas tipo Fallo en sus ruletas que le dan una carta a Maggey.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAceAttorney", false];
+    sfxDefault: string = "sfxMaggey"
 
     private aplicarMalaSuerte(jugadorQueTira: any, miJugador: any) {
         if (jugadorQueTira.nombre !== miJugador.nombre && jugadorQueTira.personaje !== miJugador.personaje) {
@@ -971,7 +977,8 @@ export class Maya implements IPersonaje {
     habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos.\nPenalizacion 1.\n(seguramente no funcione con flowery y Haley).";
     habilidadEnCatalan = ".";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteAceAttorney", false];
+    sfxMuerte: [string, boolean] = ["sfxMayaMuerte", true];
+    sfxDefault: string = "sfxMaya"
 
     // =================================================================
     // EL MOTOR CENTRAL: Acá ocurre toda la lógica repetitiva
@@ -1107,6 +1114,12 @@ export class Maya implements IPersonaje {
     onSacarEmbrujoEnRuleta(sala: any, miJugador: Jugador, tipo: string): void {
         this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
             if (pasiva.onSacarEmbrujoEnRuleta) pasiva.onSacarEmbrujoEnRuleta(sala, miJugador, tipo);
+        });
+    }
+
+    onEquiparCarta(sala: IMyRoom, miJugador: Jugador, carta: Carta, hueco: string): void {
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
+            if (pasiva.onRecibirCuracion) pasiva.onRecibirCuracion(sala, miJugador, carta, hueco);
         });
     }
 
@@ -1334,7 +1347,7 @@ export class Cubo implements IPersonaje {
     habilidad = "Geometry dash:\nAl jugar carta: cambias a un modo aleatorio entre Cubo, Nave, Ball, Ufo, Wave, Robot, Araña o Swing copter.";
     habilidadEnCatalan = "Geometry dash:\nQuan jugues una carta, canvies a un mode aleatori. CUB: col·loca en un punt de tipus ÈXIT de les ruletes una moneda; si surt, roba 2 cartes. NAU: augmenta en 1 la distància a la qual el veuen. BALL: descartar una carta durant el teu torn et permet robar-ne una altra (un cop per torn). OVNI: et salva de la mort (1 ús). ONA: fer servir FALLADA conjura una altra FALLADA i no canvia el teu mode. ROBOT: en rebre dany, si té 3 cartes o menys, roba una carta. ARANYA: redueix la probabilitat que els altres surtin de la presó i augmenta la teva. HELICÒPTER SWING: si tens 4 cartes o més a la mà, et protegeix del teu següent cop durant una ronda.";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteCubo", false]; 
+    sfxMuerte: [string, boolean] = ["sfxCuboMuerte", false]; 
     sfxDefault = "sfxCubo";
 
     private cambiarDeModo(sala: any, jugador: any){
@@ -1491,6 +1504,7 @@ export class VonKarma implements IPersonaje {
     habilidadEnCatalan = "Falsificació d'evidència:\nPots perdre 1 de vida per robar 2 cartes.";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAceAttorney", false];
+    sfxDefault: string = "sfxVonKarma"
 
     onIniciarPartida(sala: any, jugador: any) {
         let boton = new HabilidadActiva();
@@ -1567,8 +1581,8 @@ export class Chispitas implements IPersonaje {
     habilidad = "Destruccion:\nSi durante su turno no juega ni descarta cartas: se carga y gana 1 escudo.\nJugar o descartar cartas lo descarga excepto disparar Bangs!\nAlmacenamiento 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
-    sfxDefault = "sfxMensaje";
+    sfxMuerte: [string, boolean] = ["sfxChispitasMuerte", false];
+    sfxDefault = "sfxChispitas";
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.boolean.set("chispitasBandera", true)
@@ -1611,6 +1625,7 @@ export class Chispitas implements IPersonaje {
             // se carga
             jugador.spriteAvatarOpcional = "Chispitas cargado"
             jugador.boolean.set("chispitasCargado", true)
+            sala.reproducirSfx("sfxChispitas")
             Utilidades.agregarEscudos(sala, jugador, 1, 1, "CHISPITAS");
             sala.agregarRegistro(`⚡ ¡${jugador.personaje} se carga para preparar un ataque letal y gana un escudo!`)
         }
@@ -1624,8 +1639,8 @@ export class Dahlia implements IPersonaje {
     habilidad = "Hermanas gemelas:\nSi no es SHERIFF es Dahlia: Al embrujar: coloca un +150% de puntos.\nSi es SHERIFF es Iris: no le afectan los embrujos negativos y potencia los positivos.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
-    sfxDefault = "sfxMensaje";
+    sfxMuerte: [string, boolean] = ["sfxDahliaMuerte", false];
+    sfxDefault = "sfxDahlia";
 
     onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (jugador.rol == "Sheriff"){
@@ -1682,6 +1697,7 @@ export class Meg implements IPersonaje {
             Utilidades.agregarEscudos(sala, victima, 1, 1, "PASIVA")
             victima.string.set("modoMeg", "CHIQUITA")
             victima.spriteAvatarOpcional = "Meg chiquita"
+            sala.reproducirSfx("sfxMegChiquita")
         }
     }
 
@@ -1721,6 +1737,7 @@ export class Meg implements IPersonaje {
         if (miJugador.string.get("modoMeg") == "CONSTRUCTORA"){
             miJugador.string.set("modoMeg", "ROBOT")
             miJugador.spriteAvatarOpcional = ""
+            sala.reproducirSfx("sfxMegMeca")
         }
     }
 }
@@ -2529,6 +2546,7 @@ export class Tripulante implements IPersonaje {
     habilidad = "Tripulante ejemplar:\nAl final del turno: se pone a hacer una de 4 tareas que quieras: CABLES, ARCHIVOS, PESCADOS, ESCUDOS.\nPerder vida te cancela una tarea.\nRepetir tu ultima tarea cambia automaticamente a la siguiente.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxDefault: string = "sfxTripulante"
 
     onIniciarPartida(sala: any, jugador: any): void {
         if (!jugador){
@@ -3481,6 +3499,7 @@ export class Phoenix implements IPersonaje {
     habilidad = "Asistentes:\nAl inicio de la partida: tus otras 2 opciones de eleccion se convierten en npc, empiezan con 3 cartas iniciales.\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxDefault: string = "sfxPhoenix"
 
     onIniciarPartida(sala: any, jugador: Jugador): void {
         if (!jugador || !sala) return;
@@ -3507,6 +3526,20 @@ export class Phoenix implements IPersonaje {
 
     modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
         return -1
+    }
+}
+
+export class Clint implements IPersonaje {
+    nombre = "Clint";
+    habilidad = "Forja:\nAl equipar: roba una carta.";
+    habilidadEnCatalan: string = "."
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteStardew", true];
+    sfxDefault = "sfxStardew"
+
+    onEquiparCarta(sala: IMyRoom, miJugador: Jugador, carta: Carta, hueco: string): void {
+        sala.repartirCartas(miJugador, 1, "pasiva")
+        sala.agregarRegistro(`🔨 ¡${miJugador.personaje} robó una carta por su pasiva!`)
     }
 }
 
@@ -3576,6 +3609,7 @@ export class GestorPersonajes {
         this.registrar(new Larry());
         this.registrar(new Bubble())
         this.registrar(new Phoenix())
+        this.registrar(new Clint())
 
 
 

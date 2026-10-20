@@ -119,33 +119,55 @@ export class EfectoCurarATodos implements IEfectoCarta {
 
 export class EfectoTiratachuela implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
-        sala.colaDePeligro = [];
+        let victimasIds: string[] = [];
         
         sala.state.jugadores.forEach((j: any, sessionId: string) => {
             if (j.estaVivo && sessionId !== client.sessionId) {
-                sala.colaDePeligro.push(sessionId);
+                victimasIds.push(sessionId);
             }
         });
 
-        if (sala.colaDePeligro.length > 0) {
+        if (victimasIds.length > 0) {
             jugadorQueJuega.mano.splice(indiceCarta, 1);
             sala.state.atacanteActual = client.sessionId;
-
-            // --- LA CORRECCIÓN ACÁ ---
-            sala.causaDePeligro = "TIRATACHUELA"; // Le avisamos a la cola qué es
-            sala.state.danoPendiente = 1;         // Arreglamos el bug del Super Bang
+            sala.causaDePeligro = "TIRATACHUELA"; 
+            sala.state.danoPendiente = 1;         
             
             sala.broadcast("notificacion_turno", `🌧️ ¡${jugadorQueJuega.nombre} usó un Tiratachuela! ¡Todos a cubierto!`);
             sala.ejecutarAnimacionCarta(client, cartaJugada)
             sala.agregarAlDescarte(cartaJugada);
             sala.broadcast("musica", "tiratachueladaOst")
             
-            sala.state.spriteFlecha = "tiratachuela"
-            sala.avanzarColaDePeligro();
-            return true
+            // ¡MAGIA! Encolamos todo automáticamente usando tu sistema universal
+            victimasIds.forEach(idVictima => {
+                let victima = sala.state.jugadores.get(idVictima);
+                
+                // Evaluamos defensas en el momento de encolar
+                let tieneFallo = victima.mano.some((c: any) => c.efecto === "esquivar");
+                if (!victima.puedeUsarFallo || victima.boolean.get("frankFallo")) tieneFallo = false;
+                
+                let maxUsosBarril = 0;
+                let barril = victima.equipamiento?.get("barril");
+                if (barril) {
+                    if (barril.nombre === "Barril Pro") maxUsosBarril += 2;
+                    else maxUsosBarril += 1;
+                }
+                if (victima.tieneBarrilPasiva) maxUsosBarril++;
+                let tieneBarrilDisponible = (maxUsosBarril > 0);
+
+                sala.encolarInteraccion(idVictima, `¡El Tiratachuela te apunta!\nElegí cómo responder:`, "bang", [
+                    { idAccion: "bang_fallo", texto: "Usar ¡Fallo!", habilitado: tieneFallo, color: "verde" },
+                    { idAccion: "bang_barril", texto: "Usar Barril", habilitado: tieneBarrilDisponible, color: "blanco" },
+                    { idAccion: "bang_dano", texto: "Recibir daño", habilitado: true, color: "rojo" }
+                ]);
+            });
+
+            sala.state.spriteFlecha = "tiratachuela";
+            sala.procesarSiguienteInteraccion();
+            return true;
         } else {
-            client.send("alerta_personal", "No hay nadie vivo para atacar.")
-            return false
+            client.send("alerta_personal", "No hay nadie vivo para atacar.");
+            return false;
         }
     }
 }
@@ -373,7 +395,7 @@ export class EfectoDesequipar implements IEfectoCarta {
             } else {
                 break;
             }
-        }
+        }   
 
         if (cartasVoladas.length === 0) {
             client.send("alerta_personal", `${victima.personaje} no tiene ningún equipamiento para quitarle.`);
@@ -387,7 +409,9 @@ export class EfectoDesequipar implements IEfectoCarta {
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
-        if (cartaJugada.nombre == "Come piedras"){
+        if (cartaJugada.nombre == "Tornado"){
+            sala.reproducirSfx("sfxTornado")
+        } else if (cartaJugada.nombre == "Come piedras"){
             sala.reproducirSfx("sfxComePiedras")
         }
         
@@ -547,7 +571,7 @@ export class EfectoEscudo implements IEfectoCarta {
 
         sala.broadcast("notificacion_turno", `🛡️ ¡${jugadorQueJuega.personaje} usó ${cartaJugada.nombre}! Obtiene vida extra temporal.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
-        sala.broadcast("sfx", "curacion"); 
+        sala.broadcast("sfx", "sfxEscudo"); 
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
@@ -1825,8 +1849,6 @@ export class EfectoDano implements IEfectoCarta {
             sala.ejecutarAnimacionCarta(client, cartaJugada);
             sala.agregarAlDescarte(cartaJugada);
             
-            // Preparación del estado de la sala
-            sala.state.jugadorEnPeligro = idObjetivo;
             sala.state.atacanteActual = client.sessionId;
             
             // Cálculo del daño
@@ -1844,6 +1866,7 @@ export class EfectoDano implements IEfectoCarta {
             sala.state.danoPendiente = danoBase + bonusDano; 
             sala.causaDePeligro = "BANG";
             sala.state.usosBarril = 0;
+            sala.spriteFlecha = "revolver"
             
             sala.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
 
