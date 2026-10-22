@@ -3661,12 +3661,6 @@ export class Cosmo implements IPersonaje {
         jugador.boolean.set("cosmo_usado", false);
     }
 
-    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
-        if (causa == "Orbita BANG!" && jugadorGolpeado.estaVivo && miJugador.estaVivo){
-            Utilidades.agregarEfecto(jugadorGolpeado, "gravitacional", 3)
-        }
-    }
-
     ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
         if (idHabilidad === "cosmo_orbita") {
             

@@ -104,6 +104,10 @@ export class Utilidades {
             pasivaAtacante.onGolpear(sala, atacante, victima, causa);
         }
 
+        if (causa == "Orbita BANG!"){
+            Utilidades.agregarEfecto(victima, "gravitacional", 3)
+        }
+
         sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"});
         sala.evaluarMuerte(victima, atacante, ignoraEscudo);
     }
