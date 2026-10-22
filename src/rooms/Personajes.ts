@@ -3548,6 +3548,7 @@ export class Phoenix implements IPersonaje {
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxDefault: string = "sfxPhoenix"
+    sfxMuerte: [string, boolean, number?] = ["sfxPhoenixMuerte", true]
 
     onIniciarPartida(sala: any, jugador: Jugador): void {
         if (!jugador || !sala) return;
@@ -3596,15 +3597,17 @@ export class Kertley implements IPersonaje {
     habilidad = "Mejor fiscal:\nSus ataques ignoran el escudo.";
     habilidadEnCatalan: string = "."
     vidasBase = 4;
+    sfxDefault: string = "sfxKertley"
+    sfxMuerte: [string, boolean, number?] = ["sfxKertleyMuerte", true]
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.boolean.set("kertley", true)
     }
 }
 
-export class SusatoMikotoba implements IPersonaje {
-    nombre = "Susato Mikotoba";
-    habilidad = "Interesada:\nCuando roba: se le da a elegir entre el doble de cartas a robar y Susato elije las que mas le interese.";
+export class Susato implements IPersonaje {
+    nombre = "Susato";
+    habilidad = "Interesada:\nCuando roba: se le da a elegir entre +1 cartas a robar y Susato elije las que mas le interese, la carta no elejida va al descarte.";
     habilidadEnCatalan: string = "."
     vidasBase = 4;
 
@@ -3618,6 +3621,8 @@ export class Colt implements IPersonaje {
     habilidad = "Pistolero equipado:\nAl equipar un arma: conjura un Bang!.\nAl equipar prision, dinamita, papapum, barril o monoaldea: conjura un Fallo!.";
     habilidadEnCatalan: string = "."
     vidasBase = 4;
+    sfxDefault: string = "sfxColt"
+    sfxMuerte: [string, boolean, number?] = ["sfxColtMuerte", false]
 
     onEquiparCarta(sala: IMyRoom, miJugador: Jugador, carta: Carta, hueco: string): void {
         if (hueco == "arma"){
@@ -3626,6 +3631,7 @@ export class Colt implements IPersonaje {
                 carta.esConjurada = true
                 miJugador.mano.push(carta)
                 sala.agregarRegistro(`🔫 ¡${miJugador.personaje} conjuró un Bang! por su pasiva.`)
+                sala.reproducirSfx("sfxColtHabilidad")
             }
         } else if (hueco == "prision" || hueco == "dinamita" || hueco == "papa" || hueco == "barril" || hueco == "mira"){
             let carta: Carta = CatalogoCartasEspeciales.crearFallo()
@@ -3633,6 +3639,7 @@ export class Colt implements IPersonaje {
                 carta.esConjurada = true
                 miJugador.mano.push(carta)
                 sala.agregarRegistro(`🔫 ¡${miJugador.personaje} conjuró un Fallo! por su pasiva.`)
+                sala.reproducirSfx("sfxColtHabilidad")
             }
         }
     }
@@ -3643,6 +3650,8 @@ export class Cosmo implements IPersonaje {
     vidasBase = 4;
     habilidad = "Campo magnetico:\nBoton (1 por turno): descarta tus 2 cartas BANG! de más a la izquierda para conjurar una Orbita BANG!, hace 0 de daño y al golpear agrega 3 efecto gravitacional.";
     habilidadEnCatalan = ".";
+    sfxDefault: string = "sfxCosmo"
+    sfxMuerte: [string, boolean, number?] = ["sfxCosmoMuerte", false]
     
     // Le damos la habilidad activa al iniciar
     onIniciarPartida(sala: any, jugador: any): void {
@@ -3705,77 +3714,92 @@ export class Cosmo implements IPersonaje {
     }
 }
 
+export class Amber implements IPersonaje {
+    nombre = "Amber";
+    vidasBase = 4;
+    habilidad = "Estoy caliente:\nAl golpear: agrega 1 efecto fuego al jugador golpeado.";
+    habilidadEnCatalan = ".";
+    
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
+        if (jugadorGolpeado.estaVivo){
+            Utilidades.agregarEfecto(jugadorGolpeado, "fuego", 1)
+            sala.agregarRegistro(`🔥 ¡${miJugador.personaje} incendia a ${jugadorGolpeado.personaje} por su pasiva!`)
+        }
+    }
+}
+
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
-        this.registrar(new Perro())
-        this.registrar(new DaveElLoco())
-        this.registrar(new Junkrat())
-        this.registrar(new Max())
-        this.registrar(new Pedro())
-        this.registrar(new Amelia())
-        this.registrar(new Microbios())
-        this.registrar(new PerroNinja())
-        this.registrar(new Monito())
-        this.registrar(new KarateKillo())
-        this.registrar(new Tripulante())
-        this.registrar(new Shelly())
-        this.registrar(new Byron())
-        this.registrar(new GeiruToneido())
-        this.registrar(new Wendy())
-        this.registrar(new Pierre())
-        this.registrar(new Zombistein())
-        this.registrar(new Abigail())
-        this.registrar(new Charlie())
-        this.registrar(new ElP())
-        this.registrar(new Tirachinas())
-        this.registrar(new Nita());
-        this.registrar(new Larry());
-        this.registrar(new Bubble())
-        this.registrar(new Phoenix())
-        this.registrar(new Clint())
-        this.registrar(new Kertley())
-        this.registrar(new SusatoMikotoba())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
+        // this.registrar(new Perro())
+        // this.registrar(new DaveElLoco())
+        // this.registrar(new Junkrat())
+        // this.registrar(new Max())
+        // this.registrar(new Pedro())
+        // this.registrar(new Amelia())
+        // this.registrar(new Microbios())
+        // this.registrar(new PerroNinja())
+        // this.registrar(new Monito())
+        // this.registrar(new KarateKillo())
+        // this.registrar(new Tripulante())
+        // this.registrar(new Shelly())
+        // this.registrar(new Byron())
+        // this.registrar(new GeiruToneido())
+        // this.registrar(new Wendy())
+        // this.registrar(new Pierre())
+        // this.registrar(new Zombistein())
+        // this.registrar(new Abigail())
+        // this.registrar(new Charlie())
+        // this.registrar(new ElP())
+        // this.registrar(new Tirachinas())
+        // this.registrar(new Nita());
+        // this.registrar(new Larry());
+        // this.registrar(new Bubble())
+        // this.registrar(new Phoenix())
+        // this.registrar(new Clint())
+        // this.registrar(new Kertley())
+        this.registrar(new Susato())
         this.registrar(new Colt())
         this.registrar(new Cosmo())
+        this.registrar(new Amber())
 
 
 

@@ -383,6 +383,7 @@ export class CatalogoCartasEspeciales {
             { id: "hordaDeBloons", copias: 3 },
             { id: "domoProtector", copias: 1 },
             { id: "tiendaDePierre", copias: 1 },
+            { id: "manzanaDorada", copias: 1},
            // { id: "mortero", copias: 1 },
         ];
     }
@@ -402,6 +403,7 @@ export class CatalogoCartasEspeciales {
             case "hordaDeBloons": return this.crearHordaDeBloons()
             case "domoProtector": return this.crearDomoProtector()
             case "tiendaDePierre": return this.crearTiendaDePierre()
+            case "manzanaDorada": return this.crearManzanaDorada()
 
             default: return null;
         }
@@ -1333,10 +1335,34 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `orbita_bang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         clon.nombre = "Orbita BANG!";
-        clon.descripcion = "Quita 0 vidas a un jugador a tu alcance y le agrega 5 efecto gravitacional.";
+        clon.descripcion = "Quita 0 vidas a un jugador a tu alcance y le agrega 3 efecto gravitacional.";
         clon.descripcionEnCatalan = "";
         clon.tipoDeUso = "objetivo";
         clon.efecto = "dano_0";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearManzanaDorada(): Carta {
+        let clon = new Carta();
+        clon.id = `manzana_dorada_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Manzana dorada";
+        clon.descripcion = "Cura 1. Si no puede curar y tenes la vida al maximo: aumenta tu vida maxima en 1.";
+        clon.descripcionEnCatalan = "";
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "manzanaDorada";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearMechero(): Carta {
+        let clon = new Carta();
+        clon.id = `mechero_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Mechero";
+        clon.descripcion = "Agrega 1 efecto fuego a un jugador (debe descartar para evitar daño).";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoUniversal"; 
+        clon.efecto = "mechero";
         clon.esConjurada = false;
         return clon;
     }
@@ -1356,6 +1382,8 @@ export class CatalogoCartasEspeciales {
         lista.push(this.crearDuelo());
         lista.push(this.crearTiendaDeGriff());
         lista.push(this.crearMusicoterapia());
+        lista.push(this.crearManzanaDorada())
+        lista.push(this.crearMechero())
         
         // --- ARMAS BÁSICAS (Ejemplos representativos) ---
         lista.push(this.crearArma("Pistola de Shion", 2));

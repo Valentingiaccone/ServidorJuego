@@ -1569,7 +1569,7 @@ export class MyRoom extends Room implements IMyRoom{
         }
 
         if (jugador.boolean.get("susato")) {
-            let cantidadAExtraer = cantidad * 2;
+            let cantidadAExtraer = cantidad + 1
             let cartasExtraidas = [];
 
             // Sacamos el doble de cartas del mazo
@@ -1987,6 +1987,8 @@ export class MyRoom extends Room implements IMyRoom{
             pasiva.onDescartarCarta(this, jugador, cartaDescartada, motivo)
         }
 
+        Utilidades.restarEfecto(jugador, "fuego", 1)
+
         if (cartaDescartada.idDuenoDelPerro && cartaDescartada.idDuenoDelPerro != ""){
             const atacante = this.state.jugadores.get(cartaDescartada.idDuenoDelPerro);
             
@@ -2068,20 +2070,25 @@ export class MyRoom extends Room implements IMyRoom{
             }
         }
 
-        Utilidades.restarEfecto(jugadorQuePasaElTurno, "malestar", 1)
-
-        Utilidades.restarEfecto(jugadorQuePasaElTurno, "gravitacional", 1)
+        if (jugadorQuePasaElTurno.efecto.has("fuego")){
+            Utilidades.procesarDano(this, jugadorQuePasaElTurno, null, 1, "efecto", false)
+            this.agregarRegistro(`🔥 ¡${jugadorQuePasaElTurno.personaje} se incendia y recibe 1 de daño!`)
+        }
 
         if (jugadorQuePasaElTurno.efecto.has("tocxic")){
             if (jugadorQuePasaElTurno.efecto.get("tocxic") >= 3){
                 Utilidades.procesarDano(this, jugadorQuePasaElTurno, null, 1, "efecto", false)
-                this.agregarRegistro(`☣️ ${jugadorQuePasaElTurno.personaje} recibe 1 de daño por su efecto tocxic.`)
-            }
-            jugadorQuePasaElTurno.efecto.set("tocxic", jugadorQuePasaElTurno.efecto.get("tocxic") - 1)
-            if (jugadorQuePasaElTurno.efecto.get("tocxic") <= 0){
-                jugadorQuePasaElTurno.efecto.delete("tocxic")
+                this.agregarRegistro(`☣️ ¡${jugadorQuePasaElTurno.personaje} recibe 1 de daño por su efecto tocxic!`)
             }
         }
+
+        Utilidades.restarEfecto(jugadorQuePasaElTurno, "malestar", 1)
+
+        Utilidades.restarEfecto(jugadorQuePasaElTurno, "tocxic", 1)
+
+        Utilidades.restarEfecto(jugadorQuePasaElTurno, "gravitacional", 1)
+
+        Utilidades.restarEfecto(jugadorQuePasaElTurno, "fuego", 1)
     }
 
     public getSillasFisicas(): ArraySchema<string> {

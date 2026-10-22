@@ -106,6 +106,7 @@ export class Utilidades {
 
         if (causa == "Orbita BANG!"){
             Utilidades.agregarEfecto(victima, "gravitacional", 3)
+            sala.reproducirSfx("sfxOrbitaBang")
         }
 
         sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"});
@@ -570,15 +571,7 @@ export class Utilidades {
      * Elimina todos los efectos de un jugador.
      */
     public static eliminarTodosLosEfectos(sala: IMyRoom, jugador: Jugador){
-        if (jugador.efecto.has("malestar")){
-            jugador.efecto.delete("malestar")
-        }
-        if (jugador.efecto.has("tocxic")){
-            jugador.efecto.delete("tocxic")
-        }
-        if (jugador.efecto.has("gravitacional")){
-            jugador.efecto.delete("gravitacional")
-        }
+        jugador.efecto.clear();
     }
 
     /**

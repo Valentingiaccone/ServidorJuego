@@ -84,6 +84,12 @@ export class EfectoRobar implements IEfectoCarta {
         console.log(`🃏 ${jugador.personaje} usó ${cartaJugada.nombre} y robó ${cantidad} cartas.`);
         sala.broadcast("notificacion_turno", `🃏 ${jugador.personaje} jugó ${cartaJugada.nombre}.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
+
+        if (cartaJugada.nombre == "Cofre"){
+            sala.reproducirSfx("sfxCofre")
+        } else if (cartaJugada.nombre == "Cofre super magico"){
+            sala.reproducirSfx("sfxCofreSupermagico")
+        }
         
         jugador.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
@@ -1945,6 +1951,49 @@ export class EfectoDano implements IEfectoCarta {
     }
 }
 
+export class EfectoManzanaDorada implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        if (Utilidades.puedeRecibirCuracion(sala, jugadorQueJuega)){
+            Utilidades.aplicarCuracion(sala, jugadorQueJuega, 1, "carta", false)
+
+            jugadorQueJuega.mano.splice(indiceCarta, 1);
+            sala.ejecutarAnimacionCarta(client, cartaJugada);
+            sala.agregarAlDescarte(cartaJugada);
+            sala.agregarRegistro(`🍎 ¡${jugadorQueJuega.personaje} se curó con la Manzana dorada!`)
+            return true
+        } else if (jugadorQueJuega.vidas == jugadorQueJuega.vidasMaximas){
+            jugadorQueJuega.vidasMaximas++
+
+            jugadorQueJuega.mano.splice(indiceCarta, 1);
+            sala.ejecutarAnimacionCarta(client, cartaJugada);
+            sala.agregarAlDescarte(cartaJugada);
+
+            sala.agregarRegistro(`🍎 ¡${jugadorQueJuega.personaje} aumentó su vida maxima en 1 con su Manzana dorada!`)
+
+            return true
+        } else {
+            client.send("alerta_personal", "No podes curarte ni tampoco aumentar tu vida maxima ahora mismo.");
+            return false
+        }
+    }
+}
+
+export class EfectoMechero implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let objetivo: Jugador = sala.state.jugadores.get(idObjetivo);
+
+        objetivo = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, objetivo)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, objetivo)
+
+        Utilidades.agregarEfecto(objetivo, "fuego", 1)
+
+        sala.agregarRegistro(`🔥 ¡${jugadorQueJuega.personaje} incendia a ${objetivo.personaje}!`)
+
+        return true
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -2004,6 +2053,7 @@ export class DespachadorDeCartas {
         "girasol": new EfectoGirasol(),
         "crisalida": new EfectoCrisalida(),
         "dano": new EfectoDano(),
+        "manzanaDorada": new EfectoManzanaDorada(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
