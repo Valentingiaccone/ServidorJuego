@@ -45,7 +45,7 @@ export class GestorNPC {
             if (sala.state.jugadorDesenfundando === idActual) {
                 sala.procesarVoltearCarta(this.crearClienteNpc(idActual));
             }
-        }, 1500);
+        }, 500);
     }
 
     public static verificarInteraccionUniversalNpc(sala: any) {
@@ -66,7 +66,7 @@ export class GestorNPC {
             if (opcionElegida) {
                 sala.procesarResponderInteraccion(this.crearClienteNpc(idActual), opcionElegida.idAccion);
             }
-        }, 1500);
+        }, 500);
     }
 
     public static verificarSeleccionCartaNpc(sala: any) {
@@ -91,7 +91,7 @@ export class GestorNPC {
                 // Si por algún motivo no hubiera opciones válidas, cancela para no trabar la partida
                 sala.procesarRespuestaSeleccionCarta(this.crearClienteNpc(idActual), "cancelar");
             }
-        }, 1500);
+        }, 500);
     }
 
     // =========================================================================
@@ -106,7 +106,7 @@ export class GestorNPC {
     }
 
     private static programarPasoTurnoNpc(sala: any, idNpc: string, pasada: number, indiceCarta: number) {
-        let delay = Math.floor(Math.random() * 1000) + 500;
+        let delay = Math.floor(Math.random() * 500) + 250;
 
         sala.clock.setTimeout(() => {
             if (sala.state.estadoJuego !== "Jugando") return;

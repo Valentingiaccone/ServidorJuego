@@ -29,11 +29,11 @@ export class Utilidades {
             return;
         }
 
-        if (atacante && atacante.equipamiento.has("humoseta")){
+        if (atacante && (atacante.equipamiento.has("humoseta") || atacante.boolean.get("kertley"))){
             ignoraEscudo = true;
         }
 
-        if (causa == "BANG"){
+        if (causa == "BANG" || causa == "Orbita BANG!"){
             if (atacante){
                 if (atacante.boolean.get("chispitasCargado")){
                     atacante.boolean.set("chispitasCargado", false);
@@ -87,6 +87,8 @@ export class Utilidades {
         if (pasivaVictima && pasivaVictima.onRecibirDano) {
             pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
         }
+
+        this.restarEfecto(victima, "gravitacional", 1)
 
         const y: number = this.contarCartasPorNombre(victima, "Anillo de Yoba")
         for (let i = 0; i < y; i++){
@@ -277,6 +279,9 @@ export class Utilidades {
         let barril = jugador.equipamiento.get("barril");
         if (barril && barril.nombre === "Barril") opcionesDeMejora.push("barril");
 
+        let dinamita = jugador.equipamiento.get("dinamita");
+        if (dinamita && dinamita.nombre === "Dinamita") opcionesDeMejora.push("dinamita");
+
         let girasol = jugador.equipamiento.get("girasol");
         if (girasol && girasol.nombre === "Girasol") opcionesDeMejora.push("girasol");
 
@@ -330,6 +335,12 @@ export class Utilidades {
             this.equiparCarta(sala, jugador, cartaMejorada, "barril");
             textoMejora = "su Barril";
         } 
+        else if (hueco === "dinamita") {
+            let cartaMejorada = CatalogoCartasEspeciales.crearDinamitaPro();
+            cartaMejorada.esConjurada = true
+            this.equiparCarta(sala, jugador, cartaMejorada, "dinamita");
+            textoMejora = "su Dinamita";
+        }
         else if (hueco === "arma" && datosNuevaArma) {
             let cartaArmaNueva = CatalogoCartasEspeciales.crearArma(datosNuevaArma.nombre, datosNuevaArma.alcance);
             this.equiparCarta(sala, jugador, cartaArmaNueva, "arma");
@@ -561,6 +572,9 @@ export class Utilidades {
         if (jugador.efecto.has("tocxic")){
             jugador.efecto.delete("tocxic")
         }
+        if (jugador.efecto.has("gravitacional")){
+            jugador.efecto.delete("gravitacional")
+        }
     }
 
     /**
@@ -634,10 +648,28 @@ export class Utilidades {
         if (jugador.efecto.has(efecto)){
             jugador.efecto.set(efecto, jugador.efecto.get(efecto) + cantidad)
         } else {
-            jugador.efecto.set(efecto, 1)
+            jugador.efecto.set(efecto, cantidad)
         }
 
         return jugador.efecto.get(efecto)
+    }
+
+    /**
+     * Resta efecto a un jugador
+     * Retorna la cantidad del efecto luego de restarse
+     */
+    public static restarEfecto(jugador: Jugador, efecto: string, cantidad: number): number {
+        if (jugador.efecto.has(efecto)){
+            jugador.efecto.set(efecto, jugador.efecto.get(efecto) - cantidad)
+            if (jugador.efecto.get(efecto) <= 0){
+                jugador.efecto.delete(efecto)
+                return 0
+            }
+
+            return jugador.efecto.get(efecto)
+        }
+
+        return 0
     }
 
     /**
@@ -728,5 +760,58 @@ export class Utilidades {
 
         sala.agregarRegistro(`🤖 ¡${dueno.personaje} invocó a ${npc.personaje} en la mesa!`);
         return npc;
+    }
+
+    /**
+     * Devuelve un array de jugadores ordenados físicamente en sentido horario.
+     * @param sala La referencia a la sala actual.
+     * @param jugadorInicial El jugador por el que empezará el array (índice 0).
+     * @param soloVivos Si es true, filtra automáticamente a los muertos.
+     */
+    public static obtenerJugadoresEnOrdenHorario(sala: any, jugadorInicial: any, soloVivos: boolean): Jugador[] {
+        let listaOrdenada: Jugador[] = [];
+        
+        // Usamos tu propio método para garantizar que sacamos el ID correcto
+        let idInicial = this.obtenerSessionIdDeJugador(sala, jugadorInicial);
+        if (!idInicial) return listaOrdenada;
+
+        let sillasFisicas = Array.from(sala.state.ordenSillasFisicas) as string[];
+        let idxActual = sillasFisicas.indexOf(idInicial);
+
+        if (idxActual !== -1) {
+            for (let i = 0; i < sillasFisicas.length; i++) {
+                // El módulo (%) nos permite dar la vuelta a la mesa sin salirnos del array
+                let indiceHorario = (idxActual + i) % sillasFisicas.length;
+                let idObjetivo = sillasFisicas[indiceHorario];
+                
+                let jugadorObjetivo = sala.state.jugadores.get(idObjetivo);
+                
+                if (jugadorObjetivo) {
+                    if (!soloVivos || jugadorObjetivo.estaVivo) {
+                        listaOrdenada.push(jugadorObjetivo);
+                    }
+                }
+            }
+        }
+
+        return listaOrdenada;
+    }
+
+    /**
+     * Devuelve el primer jugador con efecto gravitacional salteandote a vos
+     * Devuelve el jugador con el efecto o el jugador objetivo original
+     */
+    public static priorizarJugadorConEfectoGravitacional(sala: IMyRoom, jugadorQueJuega: Jugador, jugadorObjetivoOriginal: Jugador): Jugador {
+        const listaJugadores: Jugador[] = this.obtenerJugadoresEnOrdenHorario(sala, jugadorQueJuega, true)
+        if (listaJugadores){
+            for (let i = 0; i < listaJugadores.length; i++){
+                const j: Jugador = listaJugadores[i]
+                if (j && j != jugadorQueJuega && j.efecto.has("gravitacional")){
+                    return j
+                }
+            }
+        }
+
+        return jugadorObjetivoOriginal
     }
 }

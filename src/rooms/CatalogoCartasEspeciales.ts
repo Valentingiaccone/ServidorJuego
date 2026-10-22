@@ -1172,4 +1172,288 @@ export class CatalogoCartasEspeciales {
         clon.esConjurada = false;
         return clon;
     }
+
+    public static crearCofre(): Carta {
+        let clon = new Carta();
+        clon.id = `cofre_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        clon.nombre = "Cofre";
+        clon.descripcion = "Roba 2 cartas del mazo.";
+        clon.descripcionEnCatalan = "Roba 2 cartes de la baralla."
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "robar_2";
+        clon.esConjurada = false
+        return clon
+    }
+
+    public static crearCofreSuperMagico(): Carta {
+        let clon = new Carta();
+        clon.id = `cofre_super_magico_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        clon.nombre = "Cofre super magico";
+        clon.descripcion = "Roba 3 cartas del mazo.";
+        clon.descripcionEnCatalan = "Roba 2 cartes de la baralla."
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "robar_3";
+        clon.esConjurada = false
+        return clon
+    }
+
+    public static crearCocoroch(): Carta {
+        const cat = new Carta();
+        cat.id = `cocoroch_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        cat.nombre = "Cocoroch";
+        cat.descripcion = "Un jugador descarta una carta de la mano o equipada.";
+        cat.descripcionEnCatalan = "Un jugador descarta una carta de la mà o que tingui equipada."
+        cat.tipoDeUso = "objetivoGlobal";
+        cat.efecto = "forzar"; 
+        cat.esConjurada = false
+        return cat
+    }
+
+    public static crearMusicoterapia(): Carta {
+        const poco = new Carta();
+        poco.id = `musicoterapia_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        poco.nombre = "Musicoterapia";
+        poco.descripcion = "+1 vida para todos.";
+        poco.descripcionEnCatalan = "+1 vida per a tothom."
+        poco.tipoDeUso = "instantanea";
+        poco.efecto = "curarATodos";
+        poco.esConjurada = false
+        return poco
+    }
+
+    public static crearIndios(): Carta {
+        const indios = new Carta();
+        indios.id = `indios_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        indios.nombre = "¡Indios!";
+        indios.descripcion = "Todos los demás jugadores descartan un BANG! o pierden 1 vida.";
+        indios.descripcionEnCatalan = "Tots els altres jugadors descarten un BANG! o perden 1 punt de vida."
+        indios.tipoDeUso = "instantanea"; 
+        indios.efecto = "indios";  
+        indios.esConjurada = false
+        return indios
+    }
+
+    public static crearTiendaDeGriff(): Carta {
+        const tienda = new Carta();
+        tienda.id = `tienda_griff_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        tienda.nombre = "La tienda de Griff";
+        tienda.descripcion = "Revela cartas, empezando por vos, cada jugador elige una.";
+        tienda.descripcionEnCatalan = "Revela cartes, començant per tu; cada jugador en tria una."
+        tienda.tipoDeUso = "instantanea";
+        tienda.efecto = "tienda";
+        tienda.esConjurada = false
+        return tienda
+    }
+
+    public static crearDuelo(): Carta {
+        const duelo = new Carta();
+        duelo.id = `duelo_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        duelo.nombre = "Duelo";
+        duelo.descripcion = "Desafía a un jugador: descartan BANG! por turnos. Quien no pueda, pierde 1 vida.";
+        duelo.descripcionEnCatalan = "Desafia un jugador: descarten BANG! per torns. Qui no pugui, perd 1 vida."
+        duelo.tipoDeUso = "objetivoUniversal";
+        duelo.efecto = "duelo"; 
+        duelo.esConjurada = false
+        return duelo
+    }
+
+    public static crearCaballo(): Carta {
+        const mustang = new Carta();
+        mustang.id = `caballo_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        mustang.nombre = "Caballo";
+        mustang.descripcion = "Los demás te ven a distancia +1.";
+        mustang.descripcionEnCatalan = "Els altres et veuen a distància +1."
+        mustang.tipoDeUso = "equipamiento";
+        mustang.efecto = "equiparMustang";
+        mustang.esConjurada = false
+        return mustang
+    }
+
+    public static crearMonoAldea(): Carta {
+        const mira = new Carta();
+        mira.id = `monoAldea_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        mira.nombre = "Monoaldea";
+        mira.descripcion = "Aumenta tu alcance en 1.";
+        mira.descripcionEnCatalan = "Veus els altres a distància -1."
+        mira.tipoDeUso = "equipamiento";
+        mira.efecto = "equiparMira";
+        mira.esConjurada = false
+        return mira
+    }
+
+    public static crearBarril(): Carta {
+        const barril = new Carta();
+        barril.id = `barril_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        barril.nombre = "Barril";
+        barril.descripcion = "Podes usar el barril para tener 4/16 de esquivar un Bang!.";
+        barril.descripcionEnCatalan = "Pots fer servir el barril per tenir un 25% de probabilitat d’esquivar un tret."
+        barril.tipoDeUso = "equipamiento";
+        barril.efecto = "equiparBarril";
+        barril.esConjurada = false
+        return barril
+    }
+
+    public static crearPrision(): Carta {
+        const prision = new Carta();
+        prision.id = `prision_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        prision.nombre = "Prisión";
+        prision.descripcion = "Un jugador tiene 6/16 de salir de la carcel o perder el turno (no afecta al Sheriff).";
+        prision.descripcionEnCatalan = "Un jugador té un 37,5% de sortir de la presó o perdre el torn (no afecta el Sheriff)."
+        prision.tipoDeUso = "objetivoGlobal"; 
+        prision.efecto = "prision";
+        prision.esConjurada = false
+        return prision
+    }
+
+    public static crearDinamita(): Carta {
+        const dinamita = new Carta();
+        dinamita.id = `dinamita_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        dinamita.nombre = "Dinamita";
+        dinamita.descripcion = "Tenes 2/16 de que explote y perder 3 vidas, si no pasa al siguiente.";
+        dinamita.descripcionEnCatalan = "Tens un 12,5% que exploti i perdis 3 vides; si no, passa al següent."
+        dinamita.tipoDeUso = "equipamiento";
+        dinamita.efecto = "equiparDinamita";
+        dinamita.esConjurada = false
+        return dinamita
+    }
+
+    public static crearDinamitaPro(): Carta {
+        const dinamita = new Carta();
+        dinamita.id = `dinamita_pro_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        dinamita.nombre = "Dinamita Pro";
+        dinamita.descripcion = "Tenes 3/16 de que explote y perder 5 vidas, si no pasa al siguiente.";
+        dinamita.descripcionEnCatalan = "Tens un 12,5% que exploti i perdis 3 vides; si no, passa al següent."
+        dinamita.tipoDeUso = "equipamiento";
+        dinamita.efecto = "equiparDinamita";
+        dinamita.esConjurada = false
+        return dinamita
+    }
+
+    public static crearOrbitaBang(): Carta {
+        let clon = new Carta();
+        clon.id = `orbita_bang_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Orbita BANG!";
+        clon.descripcion = "Quita 0 vidas a un jugador a tu alcance y le agrega 5 efecto gravitacional.";
+        clon.descripcionEnCatalan = "";
+        clon.tipoDeUso = "objetivo";
+        clon.efecto = "dano_0";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static obtenerTodasLasCartas(): Carta[] {
+        let lista: Carta[] = [];
+
+        // --- CARTAS BÁSICAS Y COMUNES ---
+        lista.push(this.crearBang());
+        lista.push(this.crearFallo());
+        lista.push(this.crearCofre());
+        lista.push(this.crearCofreSuperMagico());
+        lista.push(this.crearPanico());
+        lista.push(this.crearCocoroch());
+        lista.push(this.crearTiratachuela());
+        lista.push(this.crearIndios());
+        lista.push(this.crearDuelo());
+        lista.push(this.crearTiendaDeGriff());
+        lista.push(this.crearMusicoterapia());
+        
+        // --- ARMAS BÁSICAS (Ejemplos representativos) ---
+        lista.push(this.crearArma("Pistola de Shion", 2));
+        lista.push(this.crearArma("Revolver de Casiddy", 3));
+        lista.push(this.crearArma("Rifle de Ashe", 4));
+        lista.push(this.crearArma("Francotirador", 5));
+
+        // --- EQUIPAMIENTO BÁSICO ---
+        lista.push(this.crearCaballo());
+        lista.push(this.crearMonoAldea());
+        lista.push(this.crearBarril());
+        lista.push(this.crearPrision());
+        lista.push(this.crearDinamita());
+        lista.push(this.crearDinamitaPro());
+
+        // --- MEJORAS "PRO" Y CONJURADAS ---
+        lista.push(this.crearCaballoPro());
+        lista.push(this.crearMonoaldeaPro());
+        lista.push(this.crearBarrilPro());
+        
+        // --- CARTAS DE EXTENSIONES (Juego Base / Anderlandis / Juju / Pierre) ---
+        lista.push(this.crearAnderlandis());
+        lista.push(this.crearTornado());
+        lista.push(this.crearTiendaDeJuju());
+        lista.push(this.crearTiendaDePierre());
+        lista.push(this.crearPapapum());
+        lista.push(this.crearRayo());
+        lista.push(this.crearSpooky());
+        lista.push(this.crearSuperBang());
+        lista.push(this.crearClon());
+        lista.push(this.crearEscopetasReaper());
+        lista.push(this.crearEscopetasReaperPro());
+        lista.push(this.crearPistolaDeTracerPro());
+        lista.push(this.crearMortero());
+        lista.push(this.crearValerieLadrona());
+        lista.push(this.crearGranDesaparicion());
+        lista.push(this.crearHordaDeBloons());
+        lista.push(this.crearPatadaKillo());
+        lista.push(this.crearMacetaKillo());
+        lista.push(this.crearDomoProtector());
+        lista.push(this.crearBotiquin());
+        lista.push(this.crearSecador());
+        lista.push(this.crearOrbitaBang())
+        // lista.push(this.crearEscopetazo()); // Ignorado por ser de error interno o test
+
+        // --- POOL DE PLANTAS ---
+        lista.push(this.crearLanzaguisantes());
+        lista.push(this.crearRepetidora());
+        lista.push(this.crearCalabaza());
+        lista.push(this.crearSetaBang());
+        lista.push(this.crearComePiedras());
+        lista.push(this.crearApisonaflorBang());
+        lista.push(this.crearPlantorcha());
+        lista.push(this.crearNuez());
+        lista.push(this.crearMiedicaBang());
+        lista.push(this.crearImitadora());
+        lista.push(this.crearPlantaCarnivora());
+        lista.push(this.crearTrebolador());
+        lista.push(this.crearPetaseta());
+        lista.push(this.crearHumoseta());
+        lista.push(this.crearNutriente());
+        lista.push(this.crearGirasol());
+        lista.push(this.crearBirasol());
+
+        // --- POOL DE PIERRE (Stardew Valley) ---
+        lista.push(this.crearTirachinas());
+        lista.push(this.crearTirachinasMaestro());
+        lista.push(this.crearEnsalada());
+        lista.push(this.crearEspantacocoroch());
+        lista.push(this.crearEspantacocorochPro());
+        lista.push(this.crearWarpTotem());
+        lista.push(this.crearBomba());
+        lista.push(this.crearMegaBomba());
+        lista.push(this.crearFestivalDelHuevo());
+        lista.push(this.crearHuevoBang());
+        lista.push(this.crearHuevoSano());
+        lista.push(this.crearHuevoSorpresa());
+        lista.push(this.crearTormenta());
+        lista.push(this.crearEsquirlaPrismatica());
+        lista.push(this.crearEspirituAlegre());
+        lista.push(this.crearEspirituEnojado());
+        lista.push(this.crearEspirituAlegrePro());
+        lista.push(this.crearEspirituEnojadoPro());
+        lista.push(this.crearCafe());
+        lista.push(this.crearEspadaGalactica());
+        lista.push(this.crearEspadaGalacticaPro());
+        lista.push(this.crearAnilloDeIridio());
+        lista.push(this.crearAnilloDeInmunidad());
+        lista.push(this.crearAnilloDelVampiro());
+        lista.push(this.crearAnilloDelLadron());
+        lista.push(this.crearAnilloDeLaSuerte());
+        lista.push(this.crearAnilloDeYoba());
+
+        // --- TOKENS Y MALDICIONES (Opcional, si quieres que salgan en la wiki) ---
+        lista.push(this.crearZombidito());
+        lista.push(this.crearCrisalida());
+        lista.push(this.crearHuevoExplosivo());
+
+        return lista;
+    }
 }

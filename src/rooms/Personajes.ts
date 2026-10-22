@@ -930,7 +930,7 @@ export class Mortis implements IPersonaje {
     habilidad = "Criatura de la noche:\nAl recibir daño o cuando muere otro jugador: conjura aleatoriamente 2 carta fantasma.\nAl golpear: conjura aleatoriamente 1 carta fantasma.";
     habilidadEnCatalan = "Criatura de la nit:\nEn rebre dany o quan mor un altre jugador, conjura 2 cartes fantasmals aleatòries.";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteMortis", true];
+    sfxMuerte: [string, boolean] = ["sfxMortisMuerte", true];
     sfxDefault = "sfxMortis"
 
     crearCartaFantasma(sala: IMyRoom, miJugador: Jugador, cantidad: number){
@@ -1530,6 +1530,8 @@ export class VonKarma implements IPersonaje {
             if (jugador.estaVivo) {
                 sala.repartirCartas(jugador, 2, "pasiva");
             }
+
+            sala.reproducirSfx("sfxVonKarmaBoton")
         }
     }
 }
@@ -1682,8 +1684,8 @@ export class Meg implements IPersonaje {
     habilidad = "Megamaquina:\nTiene 3 vidas.\nTiene 3 modos: MECA, CHIQUITA y CONSTRUCTORA.\nEmpieza la partida en el modo MECA.";
     habilidadEnCatalan = "Robot:\nTé 3 vides. Comença en mode ROBOT. En morir, sobreviu amb 1 vida i 1 escut, i passa al mode XIQUETA. En aquest mode, roba una carta extra durant el seu torn i utilitzar un Fall et dona un altre Fall. En passar el torn, passa al mode CONSTRUCTORA. En aquest mode, a l’inici del torn torna al mode ROBOT.";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteAmongus", false];
-    sfxDefault = "sfxMensaje";
+    sfxMuerte: [string, boolean] = ["sfxMegMuerte", false];
+    sfxDefault = "sfxMeg";
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.vidas--
@@ -1869,6 +1871,8 @@ export class Max implements IPersonaje {
     habilidad = "Max energy:\nCada 3 cartas que juegues roba una carta.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxDefault: string = "sfxMax"
+    sfxMuerte: [string, boolean, number?] = ["sfxMaxMuerte", false]
 
     onIniciarPartida(sala: any, jugador: any): void {
         if (!jugador){
@@ -1899,6 +1903,7 @@ export class Max implements IPersonaje {
             jugador.number.set("maxJugadas", 0)
             sala.repartirCartas(jugador, 1, "pasiva")
             sala.agregarRegistro(`⚡ ${jugador.personaje} roba una carta extra por su pasiva.`)
+            sala.reproducirSfx("sfxMaxHabilidad")
         }
     }
 }
@@ -2091,7 +2096,7 @@ export class Pedro implements IPersonaje {
 
 export class Amelia implements IPersonaje {
     nombre = "Amelia";
-    habilidad = "Amelia la asombrosa:\nAl final del turno: gana un escudo (no sirve en 1vs1).\nCada 4 cartas que juega: gana un escudo.\nAl perder 2 vidas por otro jugador: conjura una Gran desaparicion.\nPenalizacion 1.";
+    habilidad = "Amelia la asombrosa:\nAl final del turno: gana un escudo (no sirve en 1vs1).\nCada 5 cartas que juega: gana un escudo.\nAl perder 2 vidas por otro jugador: conjura una Gran desaparicion.\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteAmelia", false];
@@ -2151,11 +2156,11 @@ export class Amelia implements IPersonaje {
 
         jugador.number.set("ameliaJugadas", jugador.number.get("ameliaJugadas") + 1)
 
-        if (jugador.number.get("ameliaJugadas") >= 4){
+        if (jugador.number.get("ameliaJugadas") >= 5){
             jugador.number.set("ameliaJugadas", 0)
 
             Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
-            sala.agregarRegistro(`🎩 ${jugador.personaje} obtuvo un escudo por jugar 4 cartas`)
+            sala.agregarRegistro(`🎩 ${jugador.personaje} obtuvo un escudo por jugar 5 cartas`)
             const numero: number = Math.floor(Math.random() * 2);
             const sfx: string = "ameliaHabilidadAgregarEscudo" + numero
             sala.reproducirSfx(sfx)
@@ -2286,7 +2291,7 @@ export class Microbios implements IPersonaje {
 
 export class PerroNinja implements IPersonaje {
     nombre = "Perro Ninja";
-    habilidad = "Corte preciso:\nPor cada vida que vaya a perder: descarta tu Bang! de la izquierda para defenderse.";
+    habilidad = "Corte preciso:\nAl perder vida: descarta tu Bang! de la izquierda tantas veces pueda para evitar el daño.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muertePerroNinja", false];
@@ -2326,7 +2331,7 @@ export class PerroNinja implements IPersonaje {
 
 export class Monito implements IPersonaje {
     nombre = "Monito";
-    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano: roba una carta (3 usos, se recarga al final del turno).\nPenalizacion 1.";
+    habilidad = "Pandereta:\nCuando otro jugador juegue una copia de una de las cartas que tenes en tu mano (excepto BANG!): roba una carta (3 usos, se recarga al final del turno).\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteMonito", false];
@@ -2356,6 +2361,10 @@ export class Monito implements IPersonaje {
         }
         if (!cartaJugada){
             console.error("ERROR: cartaJugada no existe en onJugarCartaGlobal de Monito")
+            return
+        }
+
+        if (cartaJugada.nombre == "BANG!"){
             return
         }
 
@@ -2693,6 +2702,8 @@ export class Shelly implements IPersonaje {
     habilidad = "Escopetazo:\nBoton (1 por turno): descarta hasta 3 Bangs! y conjura un Escopetazo Bang!\nAl final del turno: si no usó su boton, conjura un Bang!.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxDefault: string = "sfxShelly"
+    sfxMuerte: [string, boolean, number?] = ["sfxShellyMuerte", false]
 
     onIniciarPartida(sala: any, jugador: any): void {
         if (!jugador){
@@ -2757,7 +2768,7 @@ export class Shelly implements IPersonaje {
                     jugador.number.set("shellyRecarga", 1);
 
                     sala.agregarRegistro(`🔫 ¡${jugador.personaje} cargó su Escopetazo descartando ${descartados} BANG!`);
-                    sala.reproducirSfx("sfxBotonShelly")
+                    sala.reproducirSfx("sfxShellyBoton")
                 }
             }
         }
@@ -3169,7 +3180,7 @@ export class Charlie implements IPersonaje {
     habilidad = "Digestion:\nCuando roba: conjura una crisalida con un % de exito.\nAl inicio de la partida: coloca el % en 50.\nSi obtiene la crisalida, el % baja en 10, si no sube en 20.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["charlieMuerte", false];
+    sfxMuerte: [string, boolean] = ["sfxCharlieMuerte", false];
     sfxDefault = "sfxCharlie";
 
     subirCharlie: number = 20
@@ -3372,6 +3383,8 @@ export class Nita implements IPersonaje {
     habilidad = "Hermano oso:\nCada 2 vidas que pierde: invoca a un NPC Bruce en su sentido antihorario.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxDefault: string = "sfxNita"
+    sfxMuerte: [string, boolean, number?] = ["sfxNitaMuerte", false]
 
     onIniciarPartida(sala: any, jugador: any): void {
         if (!jugador) return;
@@ -3391,6 +3404,7 @@ export class Nita implements IPersonaje {
             while (acumulado >= 2) {
                 acumulado -= 2;
                 Utilidades.invocarNpcEnMesa(sala, victima, "Bruce", 2, 0, "antihorario");
+                sala.reproducirSfx("sfxNitaBruce")
             }
 
             victima.number.set("nitaVidasPerdidas", acumulado);
@@ -3404,6 +3418,7 @@ export class Bruce implements IPersonaje {
     habilidadEnCatalan = ".";
     vidasBase = 2;
     esNpcInvocable = true;
+    sfxDefault: string = "sfxBruce"
 
     modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
         if (causa === "turno") {
@@ -3436,6 +3451,8 @@ export class Larry implements IPersonaje {
     habilidad = "Gemelos justicieros:\nTiene 3 vidas.\nAl inicio de la partida: obtiene 1 escudo e invoca al NPC Lawrie en su sentido antihorario.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["sfxLarryMuerte", false];
+    sfxDefault = "sfxLarry";
 
     onIniciarPartida(sala: any, jugador: any): void {
         if (!jugador || !sala) return;
@@ -3453,6 +3470,7 @@ export class Lawrie implements IPersonaje {
     habilidadEnCatalan = ".";
     vidasBase = 3;
     esNpcInvocable = true;
+    sfxDefault = "sfxLawrie";
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.boolean.set("lawrieCura", true)
@@ -3461,7 +3479,7 @@ export class Lawrie implements IPersonaje {
 
 export class Bubble implements IPersonaje {
     nombre = "Bubble";
-    habilidad = "Muchas burbujas:\nTiene 1 vida.\nAl inicio de la partida: obtiene 2 escudo e invoca a 10 NPC Bubble a sus lados.\nAlmacenamiento 1.";
+    habilidad = "Muchas burbujas:\nTiene 1 vida.\nAl empezar: gana 2 escudo e invoca a 4 NPC Bubble.\nAl inicio del turno, al recibir daño y cada 3 cartas jugadas: crea un NPC Bubble antihorario.\nAl final del turno: gana un escudo.\nAlmacenamiento 2.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
@@ -3471,14 +3489,44 @@ export class Bubble implements IPersonaje {
         jugador.vidasMaximas -= 3
 
         Utilidades.agregarEscudos(sala, jugador, 2, 1, "pasiva");
-        for (let i = 0; i < 5; i++){
-            Utilidades.invocarNpcEnMesa(sala, jugador, "Bubble_npc", 1, 1, "antihorario");
-            Utilidades.invocarNpcEnMesa(sala, jugador, "Bubble_npc", 1, 1, "horario");
+        for (let i = 0; i < 2; i++){
+            this.crearNpcBubble(sala, jugador, "horario")
+            this.crearNpcBubble(sala, jugador, "antihorario")
+        }
+
+        jugador.number.set("bubbleJugadas", 0)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        this.crearNpcBubble(sala, miJugador, "antihorario")
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
+    }
+
+    onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
+        if (victima.estaVivo){
+            this.crearNpcBubble(sala, victima, "antihorario")
         }
     }
 
+    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+        if (jugador.estaVivo){
+            jugador.number.set("bubbleJugadas", jugador.number.get("bubbleJugadas") + 1)
+            if (jugador.number.get("bubbleJugadas") >= 3){
+                jugador.number.set("bubbleJugadas", 0)
+                this.crearNpcBubble(sala, jugador, "antihorario")
+            }
+        }
+    }
+
+    crearNpcBubble(sala: IMyRoom, miJugador: Jugador, sentido: "horario" | "antihorario"){
+        Utilidades.invocarNpcEnMesa(sala, miJugador, "Bubble_npc", 1, 1, sentido);
+    }
+
     modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
-        return 1
+        return 2
     }
 }
 
@@ -3540,6 +3588,126 @@ export class Clint implements IPersonaje {
     onEquiparCarta(sala: IMyRoom, miJugador: Jugador, carta: Carta, hueco: string): void {
         sala.repartirCartas(miJugador, 1, "pasiva")
         sala.agregarRegistro(`🔨 ¡${miJugador.personaje} robó una carta por su pasiva!`)
+    }
+}
+
+export class Kertley implements IPersonaje {
+    nombre = "Kertley";
+    habilidad = "Mejor fiscal:\nSus ataques ignoran el escudo.";
+    habilidadEnCatalan: string = "."
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.boolean.set("kertley", true)
+    }
+}
+
+export class SusatoMikotoba implements IPersonaje {
+    nombre = "Susato Mikotoba";
+    habilidad = "Interesada:\nCuando roba: se le da a elegir entre el doble de cartas a robar y Susato elije las que mas le interese.";
+    habilidadEnCatalan: string = "."
+    vidasBase = 4;
+
+    onIniciarPartida(sala: any, jugador: any): void {
+        jugador.boolean.set("susato", true)
+    }
+}
+
+export class Colt implements IPersonaje {
+    nombre = "Colt";
+    habilidad = "Pistolero equipado:\nAl equipar un arma: conjura un Bang!.\nAl equipar prision, dinamita, papapum, barril o monoaldea: conjura un Fallo!.";
+    habilidadEnCatalan: string = "."
+    vidasBase = 4;
+
+    onEquiparCarta(sala: IMyRoom, miJugador: Jugador, carta: Carta, hueco: string): void {
+        if (hueco == "arma"){
+            let carta: Carta = CatalogoCartasEspeciales.crearBang()
+            if (carta){
+                carta.esConjurada = true
+                miJugador.mano.push(carta)
+                sala.agregarRegistro(`🔫 ¡${miJugador.personaje} conjuró un Bang! por su pasiva.`)
+            }
+        } else if (hueco == "prision" || hueco == "dinamita" || hueco == "papa" || hueco == "barril" || hueco == "mira"){
+            let carta: Carta = CatalogoCartasEspeciales.crearFallo()
+            if (carta){
+                carta.esConjurada = true
+                miJugador.mano.push(carta)
+                sala.agregarRegistro(`🔫 ¡${miJugador.personaje} conjuró un Fallo! por su pasiva.`)
+            }
+        }
+    }
+}
+
+export class Cosmo implements IPersonaje {
+    nombre = "Cosmo";
+    vidasBase = 4;
+    habilidad = "Campo magnetico:\nBoton (1 por turno): descarta tus 2 cartas BANG! de más a la izquierda para conjurar una Orbita BANG!, hace 0 de daño y al golpear agrega 3 efecto gravitacional.";
+    habilidadEnCatalan = ".";
+    
+    // Le damos la habilidad activa al iniciar
+    onIniciarPartida(sala: any, jugador: any): void {
+        let hab = new HabilidadActiva();
+        hab.id = "cosmo_orbita";
+        hab.textoBoton = "Órbita BANG!";
+        hab.tooltip = "Descarta 2 BANG! de tu mano para conjurar una Órbita BANG!.";
+        hab.spriteBoton = "botonCosmo"
+        jugador.habilidadesActivas.push(hab);
+
+        jugador.boolean.set("cosmo_usado", false);
+    }
+
+    // Reseteamos el uso al arrancar su turno
+    onIniciarTurno(sala: any, jugador: any): void {
+        jugador.boolean.set("cosmo_usado", false);
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
+        if (causa == "Orbita BANG!" && jugadorGolpeado.estaVivo && miJugador.estaVivo){
+            Utilidades.agregarEfecto(jugadorGolpeado, "gravitacional", 3)
+        }
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+        if (idHabilidad === "cosmo_orbita") {
+            
+            // 1. Verificamos que no la haya usado este turno
+            if (jugador.boolean.get("cosmo_usado")) {
+                client.send("alerta_personal", "Ya usaste esta habilidad en este turno.");
+                return;
+            }
+
+            // 2. Buscamos los 2 BANG! más a la izquierda (índices más bajos)
+            let indicesBang: number[] = [];
+            for (let i = 0; i < jugador.mano.length; i++) {
+                if (jugador.mano[i].nombre === "BANG!") {
+                    indicesBang.push(i);
+                    // Apenas encontramos 2, cortamos la búsqueda
+                    if (indicesBang.length === 2) break;
+                }
+            }
+
+            // 3. Verificamos que le alcance
+            if (indicesBang.length < 2) {
+                client.send("alerta_personal", "Necesitás al menos 2 cartas BANG! para usar esta habilidad.");
+                return;
+            }
+
+            // 4. Descartamos (IMPORTANTE: iterar al revés para no romper los índices al hacer splice)
+            for (let i = indicesBang.length - 1; i >= 0; i--) {
+                let indice = indicesBang[i];
+                let cartaDescartada = jugador.mano.splice(indice, 1)[0];
+                sala.descartarCarta(cartaDescartada, jugador, "pasiva");
+            }
+
+            // 5. Conjuramos la carta (Ajustá el nombre del método según cómo lo llamaste en el Catalogo)
+            let orbita = CatalogoCartasEspeciales.crearOrbitaBang(); 
+            orbita.esConjurada = true;
+            jugador.mano.push(orbita);
+
+            // 6. Marcamos como usada y avisamos
+            jugador.boolean.set("cosmo_usado", true);
+            sala.agregarRegistro(`🪐 ${jugador.nombre} sacrificó 2 BANG! para conjurar una Orbita BANG!.`);
+        }
     }
 }
 
@@ -3610,6 +3778,10 @@ export class GestorPersonajes {
         this.registrar(new Bubble())
         this.registrar(new Phoenix())
         this.registrar(new Clint())
+        this.registrar(new Kertley())
+        this.registrar(new SusatoMikotoba())
+        this.registrar(new Colt())
+        this.registrar(new Cosmo())
 
 
 

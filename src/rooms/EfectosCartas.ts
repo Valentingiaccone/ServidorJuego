@@ -38,12 +38,15 @@ export class EfectoCurarDuo implements IEfectoCarta {
             return false;
         }
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!Utilidades.puedeRecibirCuracion(sala, jugadorQueJuega)) {
             client.send("alerta_personal", "No podes curarte ahora mismo.");
             return false;
         }
         if (!Utilidades.puedeRecibirCuracion(sala, victima)) {
-            client.send("alerta_personal", "El objetivo no puede curarse ahora mismo.");
+            client.send("alerta_personal", `${victima.personaje} no puede curarse ahora mismo.`);
             return false;
         }
 
@@ -375,6 +378,9 @@ export class EfectoDesequipar implements IEfectoCarta {
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido.");
             return false;
@@ -428,6 +434,7 @@ export class EfectoDescartar implements IEfectoCarta {
         if (tipoMaldicion === "venenoso") {
             sala.broadcast("notificacion_turno", `🍄 ¡${jugador.personaje} descartó un ${carta.nombre} y el veneno le quita ${cantidad} vida (Daño directo)!`);
             Utilidades.procesarDano(sala, jugador, null, cantidad, "MALDICION", true);
+            sala.reproducirSfx("sfxHongoVenenoso")
         }
         else if (tipoMaldicion === "reductor") {
             if (jugador.vidasMaximas == jugador.vidas){
@@ -670,6 +677,9 @@ export class EfectoValerieLadrona implements IEfectoCarta {
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
             return false;
@@ -834,6 +844,9 @@ export class EfectoTrebolador implements IEfectoCarta {
             console.error("ERROR: victima es null en trebolador")
         }
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         const carta: Carta = Utilidades.descartarCartaAleatoriaDeLaMano(victima)
         if (!carta){
             if (client){
@@ -949,6 +962,9 @@ export class EfectoHordaBloons implements IEfectoCarta {
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
             return false;
@@ -984,6 +1000,9 @@ export class EfectoDuelo implements IEfectoCarta {
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
             return false;
@@ -992,6 +1011,7 @@ export class EfectoDuelo implements IEfectoCarta {
         jugadorQueJuega.mano.splice(indiceCarta, 1);
 
         sala.broadcast("notificacion_turno", `⚔️ ¡${jugadorQueJuega.nombre} retó a duelo a ${victima.nombre}!`);
+        sala.reproducirSfx("sfxDuelo")
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         
@@ -1014,6 +1034,9 @@ export class EfectoPatadaKillo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
+
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
 
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
@@ -1051,6 +1074,9 @@ export class EfectoMacetaKillo implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
+
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
 
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
@@ -1159,6 +1185,10 @@ export class EfectoSecador implements IEfectoCarta {
         if (!victima){
             console.error("ERROR: victima es null en secador")
         }
+
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima.estaVivo){
             return false
         }
@@ -1216,6 +1246,9 @@ export class EfectoForzarEnemigo implements IEfectoCarta {
         let idObjetivo = parametros[parametros.length - 1];
         let victima = sala.state.jugadores.get(idObjetivo);
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido.");
             return false;
@@ -1272,16 +1305,19 @@ export class EfectoRobarEnemigo implements IEfectoCarta {
         let idObjetivo = parametros[parametros.length - 1];
         let victima = sala.state.jugadores.get(idObjetivo);
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido.");
             return false;
         }
         if (victima.mano.length === 0 && victima.equipamiento.size === 0) {
-            client.send("alerta_personal", `${victima.nombre} no tiene nada para robarle.`);
+            client.send("alerta_personal", `${victima.personaje} no tiene nada para robarle.`);
             return false;
         }
 
-        sala.armarPanelSeleccion(client.sessionId, `¿Qué querés robarle a ${victima.nombre}?`, "normal", "panico");
+        sala.armarPanelSeleccion(client.sessionId, `¿Qué querés robarle a ${victima.personaje}?`, "normal", "panico");
         
         victima.equipamiento.forEach((carta: any, clave: string) => {
             // USAMOS |
@@ -1347,6 +1383,9 @@ export class EfectoWarpTotem implements IEfectoCarta {
         // 1. Identificamos al objetivo
         let idObjetivo = parametros[parametros.length - 1]; 
         let objetivo = sala.state.jugadores.get(idObjetivo);
+
+        objetivo = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, objetivo)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, objetivo)
 
         if (!objetivo || !objetivo.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido o ya está muerto.");
@@ -1496,44 +1535,54 @@ export class EfectoMegaBomba implements IEfectoCarta {
 }
 
 export class EfectoFestivalDelHuevo implements IEfectoCarta {
-    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
         
-        // 1. Consumimos la carta y avisamos a la mesa
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.broadcast("notificacion_turno", `🥚 ¡${jugadorQueJuega.personaje} inició el Festival del Huevo! Todos roban 1 carta.`);
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
 
-        // 2. TODOS los jugadores vivos roban 1 carta
         sala.state.jugadores.forEach((j: any) => {
             if (j.estaVivo) {
-                sala.repartirCartas(j, 1, "FESTIVAL");
+                sala.repartirCartas(j, 1, "FESTIVAL"); 
+                // <- Aquí a Susato se le abre el panel y el código sigue de largo
             }
         });
 
-        // 3. Recalculamos quién tiene MÁS cartas DESPUÉS de haber robado
+        // CALCULAR MÁXIMO CON CARTAS "VIRTUALES" DE SUSATO
         let maxCartas = -1;
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo && j.mano.length > maxCartas) {
-                maxCartas = j.mano.length;
+            let cantidadReal = j.mano.length;
+            
+            // MAGIA: Sumamos las cartas que Susato aún no eligió pero que ya son suyas
+            if (j.boolean.get("susato") && sala.susatoFaltanElegir > 0) {
+                cantidadReal += sala.susatoFaltanElegir;
+            }
+
+            if (j.estaVivo && cantidadReal > maxCartas) {
+                maxCartas = cantidadReal;
             }
         });
 
-        // 4. Repartimos el huevo misterioso a los ganadores (puede ser 1 o un empate)
+        // REPARTIR PREMIOS USANDO LA MISMA LÓGICA VIRTUAL
         let ganadores: string[] = [];
-        
         sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo && j.mano.length === maxCartas) {
+            let cantidadReal = j.mano.length;
+            
+            if (j.personaje === "Susato Mikotoba" && sala.susatoFaltanElegir > 0) {
+                cantidadReal += sala.susatoFaltanElegir;
+            }
+
+            if (j.estaVivo && cantidadReal === maxCartas) {
                 let huevo = CatalogoCartasEspeciales.crearCartaHuevoAleatorio();
                 if (huevo) {
-                    huevo.esConjurada = true; // La marcamos como conjurada para el borde brillante
-                    j.mano.push(huevo);
+                    huevo.esConjurada = true; 
+                    j.mano.push(huevo); // El huevo salta directo a la mano, no se filtra por la pasiva
                     ganadores.push(j.personaje);
                 }
             }
         });
 
-        // 5. Anunciamos a los ganadores sin revelar qué huevo les tocó
         if (ganadores.length > 0) {
             let nombres = ganadores.join(" y ");
             sala.broadcast("notificacion_turno", `🥚 ¡${nombres} tenían más cartas y ganaron un Huevo Misterioso!`);
@@ -1567,6 +1616,7 @@ export class EfectoTormenta implements IEfectoCarta {
         // 2. Consumir carta y avisar
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.broadcast("notificacion_turno", `⛈️ ¡${jugadorQueJuega.personaje} desató una Tormenta!`);
+        sala.broadcast("musica", "musicaTormenta")
         sala.ejecutarAnimacionCarta(client, cartaJugada);
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
         sala.state.atacanteActual = client.sessionId;
@@ -1645,6 +1695,9 @@ export class EfectoEspirituEnojado implements IEfectoCarta {
         let idObjetivo = parametros[parametros.length - 1];
         let victima = sala.state.jugadores.get(idObjetivo);
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido.");
             return false;
@@ -1721,6 +1774,9 @@ export class EfectoCrisalida implements IEfectoCarta {
         let idObjetivo = parametros[parametros.length - 1]; 
         let victima = sala.state.jugadores.get(idObjetivo);
 
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, jugadorQueJuega, victima)
+        idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
+
         if (!victima || !victima.estaVivo) {
             client.send("alerta_personal", "Objetivo inválido.");
             return false;
@@ -1748,6 +1804,8 @@ export class EfectoDano implements IEfectoCarta {
         // 1. Identificamos al objetivo
         let idObjetivo = parametros[parametros.length - 1];
         let victima = sala.state.jugadores.get(idObjetivo);
+
+        // el efecto gravitacional lo hago luego de las validaciones de distancia
 
         // Validación básica de supervivencia
         if (!victima || !victima.estaVivo) {
@@ -1841,7 +1899,7 @@ export class EfectoDano implements IEfectoCarta {
         }
         
         // 5. Ejecución del ataque
-        if (cartaJugada && (cartaJugada.efecto === "dano_1" || cartaJugada.efecto === "dano_2" || cartaJugada.efecto === "dano_3")) {
+        if (cartaJugada) {
             atacante.yaDisparo = true;
             
             // Retiramos la carta de la mano y la mandamos al descarte
@@ -1864,14 +1922,20 @@ export class EfectoDano implements IEfectoCarta {
             let bonusDano = (cartaJugada.efecto === "dano_1") ? statsArma.danoExtra : 0;
             
             sala.state.danoPendiente = danoBase + bonusDano; 
+
             sala.causaDePeligro = "BANG";
+            if (cartaJugada.nombre == "Orbita BANG!"){
+                sala.causaDePeligro = "Orbita BANG!"
+            }
+
             sala.state.usosBarril = 0;
             sala.spriteFlecha = "revolver"
+
+            victima = Utilidades.priorizarJugadorConEfectoGravitacional(sala, atacante, victima)
+            idObjetivo = Utilidades.obtenerSessionIdDeJugador(sala, victima)
             
             sala.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
 
-            // 6. ¡LA MAGIA DEL NUEVO SISTEMA! 
-            // Invocamos la interacción universal que creaste en MyRoom.ts
             sala.enviarInteraccionBang(idObjetivo);
             
             return true;

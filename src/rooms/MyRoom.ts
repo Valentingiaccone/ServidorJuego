@@ -19,6 +19,10 @@ export class MyRoom extends Room implements IMyRoom{
     ruletaInterna: any[] = [];
     colaInteracciones: any[] = [];
     ordenTurnos: string[] = [];
+
+    public opcionesSusato: any[] = [];
+    public susatoFaltanElegir: number = 0;
+    public idSusatoActual: string = "";
     
     
     // Instanciamos nuestros nuevos motores
@@ -107,23 +111,30 @@ export class MyRoom extends Room implements IMyRoom{
     actualizarMusicaAutomatica(){
         if (this.state.estadoJuego === "Terminado") return
 
-        let totalVivos = 0;
-        let todosVivos: boolean = true
+        let totalVivos: number = 0
+        let totalMuertos: number = 0
 
         this.state.jugadores.forEach((j) => {
-            if (j.estaVivo && !j.esNpc) {
-                totalVivos++;
-            } else {
-                todosVivos = false
+            if (!j.esNpc){
+                if (j.estaVivo) {
+                    totalVivos++;
+                } else {
+                    totalMuertos++
+                }
             }
         });
 
-        if (todosVivos){
+        if (totalMuertos == 0){
             if (this.musicaNormal){
                 this.broadcast("musica", "juego")
             } else {
                 this.broadcast("musica", "juego_V2")
             }
+            return
+        }
+
+        if (totalMuertos == 1){
+            this.broadcast("musica", "musicaPrimerMuerto")
             return
         }
 
@@ -416,141 +427,56 @@ export class MyRoom extends Room implements IMyRoom{
                 }
 
                 for (let i = 0; i < 3; i++) { // originalmente 2
-                    const diligencia = new Carta();
-                    diligencia.id = `cofre_${i}`;
-                    diligencia.nombre = "Cofre";
-                    diligencia.descripcion = "Roba 2 cartas del mazo.";
-                    diligencia.descripcionEnCatalan = "Roba 2 cartes de la baralla."
-                    diligencia.tipoDeUso = "instantanea";
-                    diligencia.efecto = "robar_2";
-                    this.state.mazo.push(diligencia);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearCofre());
                 }
 
                 for (let i = 0; i < 1; i++) {
-                    const diligencia = new Carta();
-                    diligencia.id = `cofreSuperMagico_${i}`;
-                    diligencia.nombre = "Cofre super magico";
-                    diligencia.descripcion = "Roba 3 cartas del mazo.";
-                    diligencia.descripcionEnCatalan = "Roba 3 cartes de la baralla."
-                    diligencia.tipoDeUso = "instantanea";
-                    diligencia.efecto = "robar_3";
-                    this.state.mazo.push(diligencia);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearCofreSuperMagico());
                 }
 
                 for (let i = 0; i < 4; i++) {
-                    const cat = new Carta();
-                    cat.id = `cocoroch_${i}`;
-                    cat.nombre = "Cocoroch";
-                    cat.descripcion = "Un jugador descarta una carta de la mano o equipada.";
-                    cat.descripcionEnCatalan = "Un jugador descarta una carta de la mà o que tingui equipada."
-                    cat.tipoDeUso = "objetivoGlobal";
-                    cat.efecto = "forzar"; 
-                    this.state.mazo.push(cat);
-
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearCocoroch());
                     this.state.mazo.push(CatalogoCartasEspeciales.crearPanico());
                 }
 
                 for (let i = 0; i < 1; i++) {
-                    const poco = new Carta();
-                    poco.id = `musicoterapia_${i}`;
-                    poco.nombre = "Musicoterapia";
-                    poco.descripcion = "+1 vida para todos.";
-                    poco.descripcionEnCatalan = "+1 vida per a tothom."
-                    poco.tipoDeUso = "instantanea";
-                    poco.efecto = "curarATodos";
-                    this.state.mazo.push(poco);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearMusicoterapia());
                 }
 
                 for (let i = 0; i < 1; i++) { // originalmente 1
                     this.state.mazo.push(CatalogoCartasEspeciales.crearTiratachuela());
                 }
 
-                for (let i = 0; i < 2; i++) {  // originalmente 2
-                    const indios = new Carta();
-                    indios.id = `indios_${i}`;
-                    indios.nombre = "¡Indios!";
-                    indios.descripcion = "Todos los demás jugadores descartan un BANG! o pierden 1 vida.";
-                    indios.descripcionEnCatalan = "Tots els altres jugadors descarten un BANG! o perden 1 punt de vida."
-                    indios.tipoDeUso = "instantanea"; 
-                    indios.efecto = "indios";   
-                    this.state.mazo.push(indios);
+                for (let i = 0; i < 2; i++) {  // originalmente 2 
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearIndios());
                 }
 
                 for (let i = 0; i < 2; i++) { 
-                    const tienda = new Carta();
-                    tienda.id = `tienda_griff_${i}`;
-                    tienda.nombre = "La tienda de Griff";
-                    tienda.descripcion = "Revela cartas, empezando por vos, cada jugador elige una.";
-                    tienda.descripcionEnCatalan = "Revela cartes, començant per tu; cada jugador en tria una."
-                    tienda.tipoDeUso = "instantanea";
-                    tienda.efecto = "tienda";   
-                    this.state.mazo.push(tienda);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearTiendaDeGriff());
                 }
 
                 for (let i = 0; i < 3; i++) {
-                    const duelo = new Carta();
-                    duelo.id = `duelo_${i}`;
-                    duelo.nombre = "Duelo";
-                    duelo.descripcion = "Desafía a un jugador: descartan BANG! por turnos. Quien no pueda, pierde 1 vida.";
-                    duelo.descripcionEnCatalan = "Desafia un jugador: descarten BANG! per torns. Qui no pugui, perd 1 vida."
-                    duelo.tipoDeUso = "objetivoUniversal";
-                    duelo.efecto = "duelo"; 
-                    this.state.mazo.push(duelo);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearDuelo());
                 }
 
                 for (let i = 0; i < 2; i++) {
-                    const mustang = new Carta();
-                    mustang.id = `caballo_${i}`;
-                    mustang.nombre = "Caballo";
-                    mustang.descripcion = "Los demás te ven a distancia +1.";
-                    mustang.descripcionEnCatalan = "Els altres et veuen a distància +1."
-                    mustang.tipoDeUso = "equipamiento";
-                    mustang.efecto = "equiparMustang";
-                    this.state.mazo.push(mustang);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearCaballo());
                 }
                 
                 for (let i = 0; i < 2; i++) { // originalmemte 1
-                    const mira = new Carta();
-                    mira.id = `monoAldea_${i}`;
-                    mira.nombre = "Monoaldea";
-                    mira.descripcion = "Aumenta tu alcance en 1.";
-                    mira.descripcionEnCatalan = "Veus els altres a distància -1."
-                    mira.tipoDeUso = "equipamiento";
-                    mira.efecto = "equiparMira";
-                    this.state.mazo.push(mira);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearMonoAldea());
                 }
 
                 for (let i = 0; i < 2; i++) {
-                    const barril = new Carta();
-                    barril.id = `barril_${i}`;
-                    barril.nombre = "Barril";
-                    barril.descripcion = "Podes usar el barril para tener 25% de esquivar un disparo.";
-                    barril.descripcionEnCatalan = "Pots fer servir el barril per tenir un 25% de probabilitat d’esquivar un tret."
-                    barril.tipoDeUso = "equipamiento";
-                    barril.efecto = "equiparBarril";
-                    this.state.mazo.push(barril);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearBarril());
                 }
 
                 for (let i = 0; i < 3; i++) {
-                    const prision = new Carta();
-                    prision.id = `prision_${i}`;
-                    prision.nombre = "Prisión";
-                    prision.descripcion = "Un jugador tiene 6/16 de salir de la carcel o perder el turno (no afecta al Sheriff).";
-                    prision.descripcionEnCatalan = "Un jugador té un 37,5% de sortir de la presó o perdre el torn (no afecta el Sheriff)."
-                    prision.tipoDeUso = "objetivoGlobal"; 
-                    prision.efecto = "prision";
-                    this.state.mazo.push(prision);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearPrision());
                 }
 
                 for (let i = 0; i < 1; i++) {
-                    const dinamita = new Carta();
-                    dinamita.id = `dinamita_${i}`;
-                    dinamita.nombre = "Dinamita";
-                    dinamita.descripcion = "Tenes 12,5% de que explote y perder 3 vidas, si no pasa al siguiente.";
-                    dinamita.descripcionEnCatalan = "Tens un 12,5% que exploti i perdis 3 vides; si no, passa al següent."
-                    dinamita.tipoDeUso = "equipamiento";
-                    dinamita.efecto = "equiparDinamita";
-                    this.state.mazo.push(dinamita);
+                    this.state.mazo.push(CatalogoCartasEspeciales.crearDinamita());
                 }
 
                 const armas = [
@@ -852,6 +778,18 @@ export class MyRoom extends Room implements IMyRoom{
             client.send("datos_wiki", datosWiki);
         });
 
+        this.onMessage("solicitar_wiki_cartas", (client, message) => {
+            let lista = CatalogoCartasEspeciales.obtenerTodasLasCartas()
+            
+            // Empaquetamos solo los datos visuales para no enviar funciones complejas
+            let datosWiki = lista.map((p: Carta) => ({
+                nombre: p.nombre,
+                descripcion: p.descripcion
+            }));
+            
+            client.send("datos_wiki_cartas", datosWiki);
+        });
+
         this.onMessage("reroll", (client) => {
             let jugador = this.state.jugadores.get(client.sessionId);
             jugador.reroll = true
@@ -952,6 +890,32 @@ export class MyRoom extends Room implements IMyRoom{
             
             // ¡Magia! Retomamos la cola para que la tormenta pase al siguiente jugador
             this.procesarSiguienteInteraccion();
+        } else if (tipoAccion === "susato_robar") {
+            let partes = idRespuesta.split("|");
+            let idx = parseInt(partes[1]);
+            
+            // 1. Sacamos la elegida de las opciones
+            let cartaElegida = this.opcionesSusato.splice(idx, 1)[0];
+            let susato = this.state.jugadores.get(this.idSusatoActual);
+            
+            // 2. Se la damos a la mano (y le avisamos a todos de forma encubierta)
+            if (susato) {
+                susato.mano.push(cartaElegida);
+                this.agregarRegistro(`📚 Susato eligió la carta que mas le interesaba y la agregó a su mano.`);
+            }
+            
+            // 3. Restamos las que le faltan elegir
+            this.susatoFaltanElegir--;
+            
+            // 4. ¿Terminó o sigue eligiendo?
+            if (this.susatoFaltanElegir > 0 && this.opcionesSusato.length > 0) {
+                this.enviarSeleccionSusato(); // Abre el panel de nuevo para la 2da carta
+            } else {
+                // Terminó: descartamos la basura y cerramos
+                this.opcionesSusato.forEach(c => this.agregarAlDescarte(c));
+                this.opcionesSusato = [];
+                this.state.seleccionCartasActiva.idJugadorObjetivo = ""; // Cierra el panel
+            }
         }
     }
 
@@ -1231,7 +1195,7 @@ export class MyRoom extends Room implements IMyRoom{
 
             Utilidades.procesarDano(this, victima, atacante, this.state.danoPendiente, this.causaDePeligro);
             
-            if (this.causaDePeligro == "BANG" && atacante.equipamiento.has("papa")){
+            if ((this.causaDePeligro == "BANG" || this.causaDePeligro == "Orbita BANG!") && atacante.equipamiento.has("papa")){
                 const papapum: Carta = atacante.equipamiento.get("papa")
                 if (papapum){
                     Utilidades.equiparCarta(this, victima, papapum, "papa")
@@ -1362,8 +1326,14 @@ export class MyRoom extends Room implements IMyRoom{
                         this.broadcast("notificacion_turno", `💥 ¡BOOOOOOM! Salió Rojo. La dinamita explotó en la cara de ${victima?.nombre}.`);
                         this.broadcast("sfx", "explosion");
                         
-                        Utilidades.quitarEquipamiento(victima, "dinamita");
-                        Utilidades.procesarDano(this, victima, null, 3, "DINAMITA");
+                        let cartaDinamita: Carta = Utilidades.quitarEquipamiento(victima, "dinamita");
+                        let daño: number = 3
+                        if (cartaDinamita.nombre == "Dinamita Pro"){
+                            daño = 5
+                        }
+                        Utilidades.procesarDano(this, victima, null, daño, "DINAMITA");
+
+                        this.agregarAlDescarte(cartaDinamita)
                         
                         if (victima && victima.estaVivo) this.evaluarFasePapa(client.sessionId);
                         else this.avanzarAlSiguienteTurno(client.sessionId);
@@ -1598,6 +1568,35 @@ export class MyRoom extends Room implements IMyRoom{
             cantidad += l
         }
 
+        if (jugador.boolean.get("susato")) {
+            let cantidadAExtraer = cantidad * 2;
+            let cartasExtraidas = [];
+
+            // Sacamos el doble de cartas del mazo
+            for (let i = 0; i < cantidadAExtraer; i++) {
+                // (Ajusta esto según cómo barajes tu mazo habitualmente)
+                if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
+                    let arrayDescarte = Array.from(this.state.descarte);
+                    arrayDescarte.sort(() => Math.random() - 0.5);
+                    this.state.descarte.clear();
+                    arrayDescarte.forEach((c: any) => this.state.mazo.push(c));
+                }
+                if (this.state.mazo.length > 0) {
+                    cartasExtraidas.push(this.state.mazo.pop());
+                }
+            }
+
+            // Si logró sacar cartas, armamos la selección
+            if (cartasExtraidas.length > 0) {
+                this.opcionesSusato = cartasExtraidas;
+                this.susatoFaltanElegir = cantidad; // Tiene que elegir 'cantidad' veces
+                this.idSusatoActual = Utilidades.obtenerSessionIdDeJugador(this, jugador)
+                
+                this.enviarSeleccionSusato();
+                return; // 🛑 CORTAMOS LA FUNCIÓN ACÁ para que no robe normal
+            }
+        }
+
         for (let i = 0; i < cantidad; i++) {
             if (this.state.mazo.length === 0 && this.state.descarte.length > 0) {
                 let arrayDescarte = Array.from(this.state.descarte);
@@ -1609,6 +1608,20 @@ export class MyRoom extends Room implements IMyRoom{
                 jugador.mano.push(this.state.mazo.pop());
             }
         }
+    }
+
+    public enviarSeleccionSusato() {
+        let jugador = this.state.jugadores.get(this.idSusatoActual);
+        if (!jugador) return;
+
+        // Armamos el panel
+        let titulo = `Interesada: Elegí una carta para tu mano (Faltan ${this.susatoFaltanElegir})`;
+        this.armarPanelSeleccion(this.idSusatoActual, titulo, "susato", "susato_robar");
+        
+        // Le pasamos las opciones disponibles que están en el limbo
+        this.opcionesSusato.forEach((carta: any, idx: number) => {
+            this.agregarOpcionSeleccion(`susato|${idx}`, carta, "", "");
+        });
     }
 
     avanzarAlSiguienteTurno(idJugadorActual: string) {
@@ -1806,7 +1819,14 @@ export class MyRoom extends Room implements IMyRoom{
             
             if (motivo === "Barril") { puntosVerdes = 4; this.state.ruletaVerde = ""; this.state.ruletaRojo = ""; } 
             else if (motivo === "Prision") { puntosVerdes = 6; this.state.ruletaVerde = ""; this.state.ruletaRojo = ""; } 
-            else if (motivo === "Dinamita") { puntosVerdes = 14; this.state.ruletaVerde = ""; this.state.ruletaRojo = "ruletaExplosion"; } 
+            else if (motivo === "Dinamita") { 
+                puntosVerdes = 14;
+                if (victima.equipamiento.get("dinamita")?.nombre == "Dinamita Pro"){
+                    puntosVerdes = 13
+                }
+                this.state.ruletaVerde = ""; 
+                this.state.ruletaRojo = "ruletaExplosion"; 
+            } 
             else if (motivo === "Papa") { puntosVerdes = 16 - this.state.probabilidadPapa; this.state.ruletaVerde = ""; this.state.ruletaRojo = "ruletaExplosion"; }
             else if (motivo === "Crisalida") { puntosVerdes = 9; this.state.ruletaVerde = ""; this.state.ruletaRojo = ""; } 
 
@@ -2048,12 +2068,9 @@ export class MyRoom extends Room implements IMyRoom{
             }
         }
 
-        if (jugadorQuePasaElTurno.efecto.has("malestar")){
-            jugadorQuePasaElTurno.efecto.set("malestar", jugadorQuePasaElTurno.efecto.get("malestar") - 1)
-            if (jugadorQuePasaElTurno.efecto.get("malestar") <= 0){
-                jugadorQuePasaElTurno.efecto.delete("malestar")
-            }
-        }
+        Utilidades.restarEfecto(jugadorQuePasaElTurno, "malestar", 1)
+
+        Utilidades.restarEfecto(jugadorQuePasaElTurno, "gravitacional", 1)
 
         if (jugadorQuePasaElTurno.efecto.has("tocxic")){
             if (jugadorQuePasaElTurno.efecto.get("tocxic") >= 3){
@@ -2209,6 +2226,10 @@ export class MyRoom extends Room implements IMyRoom{
 
         let atacante = this.state.jugadores.get(client.sessionId);
         let victima = this.state.jugadores.get(datos.idObjetivo);
+
+        victima = Utilidades.priorizarJugadorConEfectoGravitacional(this, atacante, victima)
+        datos.idObjetivo = Utilidades.obtenerSessionIdDeJugador(this, victima)
+
         if (!atacante || !victima) return false;
 
         let totalVivos = 0;
@@ -2227,7 +2248,7 @@ export class MyRoom extends Room implements IMyRoom{
             return false;
         }
         if (victima.equipamiento.has("prision")) {
-            client.send("alerta_personal", `${victima.nombre} ya está en prisión.`);
+            client.send("alerta_personal", `${victima.personaje} ya está en prisión.`);
             return false;
         }
 
