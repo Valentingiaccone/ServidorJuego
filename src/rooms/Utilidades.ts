@@ -13,6 +13,8 @@ export class Utilidades {
             return;
         }
 
+        console.log("Procesar daño:", victima?.personaje, atacante?.personaje, cantidad, causa, ignoraEscudo)
+
         let cartaCalabaza = victima.equipamiento.get("calabaza");
         if (cartaCalabaza){
             sala.agregarAlDescarte(cartaCalabaza, victima, null);
@@ -117,6 +119,8 @@ export class Utilidades {
         if (!jugador || !jugador.estaVivo) return;
         if (!jugador.turnosEscudos) jugador.turnosEscudos = [];
 
+        console.log("Agregar escudos:", jugador?.personaje, cantidad, duracion, causa)
+
         for (let i = 0; i < cantidad; i++) {
             if (jugador.turnosEscudos.length < 10){
                 jugador.turnosEscudos.push(duracion);
@@ -133,6 +137,8 @@ export class Utilidades {
     public static puedeRecibirCuracion(sala: any, jugador: any): boolean {
         if (!jugador || !jugador.estaVivo) return false;
         if (jugador.transformarCuraEnEscudo) return true;
+
+        console.log("Puede recibir curacion:", jugador?.personaje)
 
         let totalVivos = 0;
         sala.state.jugadores.forEach((j: any) => {
@@ -156,6 +162,8 @@ export class Utilidades {
 
     public static aplicarCuracion(sala: any, jugador: any, cantidadBase: number, causa: string, forzarCuracion: boolean): void {
         if (!jugador || !jugador.estaVivo) return;
+
+        console.log("Aplicar curacion:", jugador?.personaje, cantidadBase, causa, forzarCuracion)
 
         let cantidadFinal = cantidadBase;
         let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
@@ -201,6 +209,8 @@ export class Utilidades {
      * Huecos comunes: "arma", "mustang", "mira", "barril", "prision", "dinamita", "papa", "calabaza", "plantorcha", "humoseta".
      */
     public static equiparCarta(sala: any, jugador: Jugador, carta: Carta, hueco: string): void {
+        console.log("Equipar carta:", jugador?.personaje, carta?.nombre, hueco)
+        
         carta.idDuenoDelPerro = ""
         if (jugador.equipamiento.has(hueco)) {
             let cartaVieja = jugador.equipamiento.get(hueco);

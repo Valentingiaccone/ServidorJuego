@@ -384,6 +384,7 @@ export class CatalogoCartasEspeciales {
             { id: "domoProtector", copias: 1 },
             { id: "tiendaDePierre", copias: 1 },
             { id: "manzanaDorada", copias: 1},
+            { id: "mechero", copias: 2},
            // { id: "mortero", copias: 1 },
         ];
     }
@@ -404,6 +405,7 @@ export class CatalogoCartasEspeciales {
             case "domoProtector": return this.crearDomoProtector()
             case "tiendaDePierre": return this.crearTiendaDePierre()
             case "manzanaDorada": return this.crearManzanaDorada()
+            case "mechero": return this.crearMechero()
 
             default: return null;
         }

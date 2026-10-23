@@ -1990,6 +1990,10 @@ export class EfectoMechero implements IEfectoCarta {
 
         sala.agregarRegistro(`🔥 ¡${jugadorQueJuega.personaje} incendia a ${objetivo.personaje}!`)
 
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada);
+
         return true
     }
 }
@@ -2054,6 +2058,7 @@ export class DespachadorDeCartas {
         "crisalida": new EfectoCrisalida(),
         "dano": new EfectoDano(),
         "manzanaDorada": new EfectoManzanaDorada(),
+        "mechero": new EfectoMechero(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
