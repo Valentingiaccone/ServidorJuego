@@ -111,6 +111,8 @@ export class Utilidades {
             sala.reproducirSfx("sfxOrbitaBang")
         }
 
+        this.agregarEstadistica(atacante, cantidadDanoCuerpo + cantidadDanoEscudo, "daño")
+
         sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"});
         sala.evaluarMuerte(victima, atacante, ignoraEscudo);
     }
@@ -132,6 +134,8 @@ export class Utilidades {
         if (pasiva && pasiva.onRecibirEscudo) {
             pasiva.onRecibirEscudo(sala, jugador, cantidad, causa);
         }
+
+        this.agregarEstadistica(jugador, cantidad, "escudos")
     }
 
     public static puedeRecibirCuracion(sala: any, jugador: any): boolean {
@@ -183,6 +187,8 @@ export class Utilidades {
             Utilidades.agregarEscudos(sala, jugador, cantidadFinal, 1, "CURACION");
             sala.broadcast("notificacion_turno", `🛡️ ¡En duelo a muerte, la curación de ${jugador.personaje} se transforma en Escudo Temporal!`);
         } else {
+            const vidasAntes: number = jugador.vidas
+
             jugador.vidas += cantidadFinal;
             let excedente = Math.max(0, jugador.vidas - jugador.vidasMaximas);
             if (jugador.vidas > jugador.vidasMaximas) {
@@ -195,6 +201,11 @@ export class Utilidades {
 
             if (pasiva && pasiva.onRecibirCuracion) {
                 pasiva.onRecibirCuracion(sala, jugador);
+            }
+
+            const vidasCuradas: number = jugador.vidas - vidasAntes
+            if (vidasCuradas > 0){
+                this.agregarEstadistica(jugador, vidasCuradas, "curacion")
             }
             sala.broadcast("animacionJugador", {personaje: jugador.personaje, animacion: "recibirCuracion"});
         }
@@ -210,7 +221,7 @@ export class Utilidades {
      */
     public static equiparCarta(sala: any, jugador: Jugador, carta: Carta, hueco: string): void {
         console.log("Equipar carta:", jugador?.personaje, carta?.nombre, hueco)
-        
+
         carta.idDuenoDelPerro = ""
         if (jugador.equipamiento.has(hueco)) {
             let cartaVieja = jugador.equipamiento.get(hueco);
@@ -820,5 +831,34 @@ export class Utilidades {
         }
 
         return jugadorObjetivoOriginal
+    }
+
+    /**
+     * Agrega una cantidad a una estadistica de un jugador
+     */
+    public static agregarEstadistica(jugador: Jugador, cantidad: number, estadistica: "daño" | "curacion" | "escudos"): void {
+        if (jugador){
+            if (jugador.estadistica.has(estadistica)){
+                jugador.estadistica.set(estadistica, jugador.estadistica.get(estadistica) + cantidad)
+            } else {
+                jugador.estadistica.set(estadistica, cantidad)
+            }
+        }
+    }
+
+    /**
+     * Baja la vida maxima de un jugador y retorna su vida maxima
+     */
+    public static bajarVidaMaxima(jugador: Jugador, cantidad: number): number {
+        jugador.vidasMaximas -= cantidad
+        if (jugador.vidasMaximas < 1){
+            jugador.vidasMaximas = 1
+        }
+
+        if (jugador.vidas > jugador.vidasMaximas){
+            jugador.vidas = jugador.vidasMaximas
+        }
+
+        return jugador.vidasMaximas
     }
 }

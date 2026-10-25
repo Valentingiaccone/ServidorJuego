@@ -83,7 +83,7 @@ export class ColeCasiddy implements IPersonaje {
 
     // Fijate cómo recibimos al atacante, por si mañana querés hacer que le robe a él
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
-        if (victima.vidas > 0 && danoCuerpo > 0) {
+        if (victima.estaVivo && danoCuerpo > 0) {
             sala.repartirCartas(victima, 2, "pasiva");
             sala.agregarRegistro(`🤠 ${victima.personaje} robó 2 cartas por su pasiva.`);
             sala.reproducirSfx("habilidadColeCasiddy")
@@ -337,6 +337,7 @@ export class Luigi implements IPersonaje {
 
         if (seCuro || estaMario){
             sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} recibió curación por su pasiva.` + textoExtra);
+            sala.reproducirSfx("sfxLuigiHabilidad")
         }
     }
 }
@@ -372,6 +373,7 @@ export class Mario implements IPersonaje {
 
         sala.repartirCartas(jugador, cartas, "pasiva");
         sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} robó ${cartas} cartas por su pasiva.` + textoExtra);
+        sala.reproducirSfx("sfxMarioHabilidad")
     }
 }
 
@@ -417,7 +419,7 @@ export class Mikotoba implements IPersonaje {
         if (victima.boolean.get("mikotobaEstaGordo")){
             return
         } else {
-            if (victima.vidas > 0) {
+            if (victima.estaVivo) {
                 sala.repartirCartas(victima, 1, "pasiva");
                 sala.agregarRegistro(`${victima.personaje} robó 1 carta tras recibir daño por ${causa}.`);
             }
@@ -694,14 +696,14 @@ export class Flowery implements IPersonaje {
 
 export class Leon implements IPersonaje {
     nombre = "Leon";
-    habilidad = "Noooo leooooon:\nOculta su salud, cantidad de cartas y equipamiento a los demas.";
+    habilidad = "Noooo leooooon:\nOculta su salud, cantidad de cartas, equipamiento y la flecha central a los demas.\nBoton 1: descarta las 2 cartas de la izquierda e invoca un npc leon.\nBoton 2: intercambia de lugar con un npc aliado.";
     habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l equipament als altres."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLeon", true];
     sfxDefault = "sfxLeon"
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.ocultarEstadisticas = true
+        jugador.boolean.set("leonOcultar", true)
     }
 }
 
@@ -714,7 +716,7 @@ export class Kazuma implements IPersonaje {
     sfxDefault = "sfxKazuma"
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number) {
-        if (victima.rol === "Sheriff" && victima.vidas > 0) {
+        if (victima.rol === "Sheriff" && victima.estaVivo) {
             // 50% de probabilidad
             if (Math.random() < 0.5) {
                 const kamura = new Carta();
@@ -728,6 +730,7 @@ export class Kazuma implements IPersonaje {
                 
                 victima.mano.push(kamura);
                 sala.agregarRegistro(`🗡️ ¡${victima.personaje} ha conjurado su espada Karuma!`);
+                sala.reproducirSfx("sfxKazumaSheriffHabilidad")
             }
         }
     }
@@ -820,8 +823,7 @@ export class Luciergana implements IPersonaje {
     sfxDefault= "sfxLuciernaga"
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.vidas--
-        jugador.vidasMaximas--
+        Utilidades.bajarVidaMaxima(jugador, 1)
         jugador.boolean.set("lucierganaPrendida", false)
     }
 
@@ -1424,7 +1426,7 @@ export class Cubo implements IPersonaje {
             }
             victima.spriteAvatarOpcional = "Swing copter"
             sala.agregarRegistro(`⏹️ El Swing copter lo protege del golpe`)
-        } else if (victima.vidas > 0 && victima.geometryDashModo == "Robot" && victima.mano.length <= 3){
+        } else if (victima.estaVivo && victima.geometryDashModo == "Robot" && victima.mano.length <= 3){
             sala.repartirCartas(victima, 1, "pasiva")
             sala.agregarRegistro(`⏹️ ${victima.personaje} roba una carta por su modo Robot`)
         }
@@ -1557,7 +1559,7 @@ export class Mercy implements IPersonaje {
 
     ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string) {
         if (idHabilidad === "mercy_intercambio") {
-            if (jugador.vidas > 0){
+            if (jugador.estaVivo){
                 const bandera: boolean = jugador.boolean.get("mercyActivada")
                 jugador.boolean.set("mercyActivada", !bandera)
 
@@ -1688,8 +1690,7 @@ export class Meg implements IPersonaje {
     sfxDefault = "sfxMeg";
 
     onIniciarPartida(sala: any, jugador: any): void {
-        jugador.vidas--
-        jugador.vidasMaximas--
+        Utilidades.bajarVidaMaxima(jugador, 1)
         jugador.string.set("modoMeg", "ROBOT")
     }
 
@@ -1926,10 +1927,7 @@ export class Tracer implements IPersonaje {
         boton.spriteBoton = "botonTracer";
         jugador.habilidadesActivas.push(boton);
 
-        jugador.vidas--;
-        jugador.vidasMaximas--;
-        jugador.vidas--;
-        jugador.vidasMaximas--;
+        Utilidades.bajarVidaMaxima(jugador, 2)
         if (jugador.rol != "Sheriff"){
             Utilidades.agregarEscudos(sala, jugador, 3, 1, "pasiva");
         }
@@ -2081,7 +2079,7 @@ export class Pedro implements IPersonaje {
             return
         }
 
-        if (victima.vidas > 0){
+        if (victima.estaVivo){
             if (victima.number.get("pedroCrecimiento") > 0){
                 const numero: number = Math.floor(Math.random() * 100) + 1
                 if (numero <= 40){
@@ -2955,9 +2953,7 @@ export class Wendy implements IPersonaje {
     sfxDefault = "sfxWendy";
 
     onIniciarPartida(sala: any, jugador: any): void {
-        // Tiene -1 vida
-        jugador.vidas--;
-        jugador.vidasMaximas--;
+        Utilidades.bajarVidaMaxima(jugador, 1)
 
         let boton = new HabilidadActiva();
         boton.id = "wendy_secador";
@@ -3456,8 +3452,7 @@ export class Larry implements IPersonaje {
 
     onIniciarPartida(sala: any, jugador: any): void {
         if (!jugador || !sala) return;
-        jugador.vidas--
-        jugador.vidasMaximas--
+        Utilidades.bajarVidaMaxima(jugador, 1)
 
         Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva");
         Utilidades.invocarNpcEnMesa(sala, jugador, "Lawrie", 3, 3, "horario");
@@ -3485,8 +3480,7 @@ export class Bubble implements IPersonaje {
 
     onIniciarPartida(sala: any, jugador: any): void {
         if (!jugador || !sala) return;
-        jugador.vidas -= 3
-        jugador.vidasMaximas -= 3
+        Utilidades.bajarVidaMaxima(jugador, 3)
 
         Utilidades.agregarEscudos(sala, jugador, 2, 1, "pasiva");
         for (let i = 0; i < 2; i++){
@@ -3610,6 +3604,8 @@ export class Susato implements IPersonaje {
     habilidad = "Interesada:\nCuando roba: se le da a elegir entre +1 cartas a robar y Susato elije las que mas le interese, la carta no elejida va al descarte.";
     habilidadEnCatalan: string = "."
     vidasBase = 4;
+    sfxMuerte: [string, boolean, number?] = ["sfxSusatoMuerte", false]
+    sfxDefault: string = "sfxSusato"
 
     onIniciarPartida(sala: any, jugador: any): void {
         jugador.boolean.set("susato", true)
@@ -3618,7 +3614,7 @@ export class Susato implements IPersonaje {
 
 export class Colt implements IPersonaje {
     nombre = "Colt";
-    habilidad = "Pistolero equipado:\nAl equipar un arma: conjura un Bang!.\nAl equipar prision, dinamita, papapum, barril o monoaldea: conjura un Fallo!.";
+    habilidad = "Pistolero equipado:\nAl equipar un arma: conjura un Bang!.\nAl equipar barril, dinamita, papapum, prision o monoaldea: conjura un Fallo!.";
     habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxDefault: string = "sfxColt"
@@ -3719,11 +3715,32 @@ export class Amber implements IPersonaje {
     vidasBase = 4;
     habilidad = "Estoy caliente:\nAl golpear: agrega 1 efecto fuego al jugador golpeado.";
     habilidadEnCatalan = ".";
+    sfxDefault: string = "sfxAmber"
+    sfxMuerte: [string, boolean, number?] = ["sfxAmberMuerte", false]
     
     onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
         if (jugadorGolpeado.estaVivo){
             Utilidades.agregarEfecto(jugadorGolpeado, "fuego", 1)
             sala.agregarRegistro(`🔥 ¡${miJugador.personaje} incendia a ${jugadorGolpeado.personaje} por su pasiva!`)
+            sala.reproducirSfx("sfxFuego")
+        }
+    }
+}
+
+export class FlorAmarilla implements IPersonaje {
+    nombre = "Flor amarilla";
+    vidasBase = 4;
+    habilidad = "Has fallat:\nEn jugar un Fallo: conjura una carta Fallo.";
+    habilidadEnCatalan = ".";
+    
+    onJugarCarta(sala: IMyRoom, jugador: any, cartaJugada: any): void {
+        if (jugador.estaVivo && cartaJugada.nombre == "¡Fallo!"){
+            let carta: Carta = CatalogoCartasEspeciales.crearFallo()
+            if (carta){
+                carta.esConjurada = true
+                jugador.mano.push(carta)
+                sala.agregarRegistro(`🤠🌻 ${jugador.personaje} ha conjurat un Fallo per la seva passiva.`)
+            }
         }
     }
 }
@@ -3752,7 +3769,7 @@ export class GestorPersonajes {
         this.registrar(new Domino())
         this.registrar(new Tilink())
         this.registrar(new Flowery())
-        this.registrar(new Leon())
+        // this.registrar(new Leon())
         this.registrar(new Kazuma())
         this.registrar(new Leah())
         this.registrar(new Robin())
@@ -3800,6 +3817,7 @@ export class GestorPersonajes {
         this.registrar(new Colt())
         this.registrar(new Cosmo())
         this.registrar(new Amber())
+        this.registrar(new FlorAmarilla())
 
 
 

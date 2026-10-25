@@ -1349,7 +1349,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `manzana_dorada_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         clon.nombre = "Manzana dorada";
-        clon.descripcion = "Cura 1. Si no puede curar y tenes la vida al maximo: aumenta tu vida maxima en 1.";
+        clon.descripcion = "Cura 1. Si no puede curar: gana 2 escudo.";
         clon.descripcionEnCatalan = "";
         clon.tipoDeUso = "instantanea";
         clon.efecto = "manzanaDorada";

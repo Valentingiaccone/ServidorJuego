@@ -270,7 +270,7 @@ export class MyRoom extends Room implements IMyRoom{
 
             // --- SI ES UN NPC, DESAPARECE DE LA MESA AL MORIR ---
             if (victima.esNpc && idVictima !== "") {
-                this.broadcast("notificacion_turno", `💨 ¡${victima.nombre} fue derrotado y desapareció de la mesa!`);
+                this.broadcast("notificacion_turno", `💨 ¡${victima.personaje} fue derrotado y desapareció de la mesa!`);
                 
                 // Si justo murió durante su propio turno (ej. por Dinamita, Papapum o Hongo Venenoso),
                 // avanzamos el turno antes de borrarlo del mapa:
@@ -1393,6 +1393,10 @@ export class MyRoom extends Room implements IMyRoom{
                         }
                     } else {
                         this.broadcast("notificacion_turno", `🐚 ¡Salió Rojo! ${victima?.personaje} se queda encerrado.`);
+                        let carta: Carta = Utilidades.quitarEquipamiento(victima, "prision")
+                        if (carta){
+                            this.agregarAlDescarte(carta, victima, null)
+                        }
                         this.ejecutarAccionesAlPasarTurno(victima)
                         this.avanzarAlSiguienteTurno(client.sessionId);
                     }
@@ -1410,7 +1414,7 @@ export class MyRoom extends Room implements IMyRoom{
                             Utilidades.aplicarCuracion(this, victima, 1, "EMBRUJO", true);
                             this.broadcast("notificacion_turno", `👻 ¡El embrujo sanó a ${victima?.personaje}!`);
                         } else {
-                            this.broadcast("notificacion_turno", `👻 El embrujo intentó sanar a ${victima?.personaje}, pero ya estaba al máximo.`);
+                            this.broadcast("notificacion_turno", `👻 El embrujo intentó sanar a ${victima?.personaje}, pero no pudo.`);
                         }
                     } else if (fueExitoStr === "robar") {
                         if (victima) this.repartirCartas(victima, 1, "embrujo");
@@ -1563,10 +1567,7 @@ export class MyRoom extends Room implements IMyRoom{
             cantidad += pasivaJugadorActual.modificarRepartirCarta(this, jugador, causa)
         }
 
-        const l: number = Utilidades.contarCartasPorNombre(jugador, "Anillo del ladron")
-        if (l > 0){
-            cantidad += l
-        }
+        cantidad += Utilidades.contarCartasPorNombre(jugador, "Anillo del ladron")
 
         if (jugador.boolean.get("susato")) {
             let cantidadAExtraer = cantidad + 1
@@ -1629,6 +1630,7 @@ export class MyRoom extends Room implements IMyRoom{
         if (idsJugadores.length === 0) return;
 
         let idxActual = idsJugadores.indexOf(idJugadorActual);
+        if (idxActual === -1) return;
         let siguienteIdx = (idxActual + 1) % idsJugadores.length;
         let iteradorId = idsJugadores[siguienteIdx];
         let jugadorSiguiente = this.state.jugadores.get(iteradorId);
@@ -2073,6 +2075,7 @@ export class MyRoom extends Room implements IMyRoom{
         if (jugadorQuePasaElTurno.efecto.has("fuego")){
             Utilidades.procesarDano(this, jugadorQuePasaElTurno, null, 1, "efecto", false)
             this.agregarRegistro(`🔥 ¡${jugadorQuePasaElTurno.personaje} se incendia y recibe 1 de daño!`)
+            this.reproducirSfx("sfxFuegoActivado")
         }
 
         if (jugadorQuePasaElTurno.efecto.has("tocxic")){

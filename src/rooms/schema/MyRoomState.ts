@@ -106,13 +106,13 @@ export class Jugador extends Schema {
     @type("string") geometryDashModo: string = ""
     @type("number") usosBallEsteTurno: number = 0;
     @type("number") usosUfo: number = 0;
-    @type("boolean") ocultarEstadisticas: boolean = false
     @type("number") descartesBerry: number = 0;
     @type({ map: "number" }) number = new MapSchema<number>();
     @type({ map: "boolean" }) boolean = new MapSchema<boolean>();
     @type({ map: "string" }) string = new MapSchema<string>();
     @type({ map: Jugador }) jugador = new MapSchema<Jugador>();
     @type({ map: "number" }) efecto = new MapSchema<number>();
+    @type({ map: "number" }) estadistica = new MapSchema<number>();
     @type("boolean") esNpc: boolean = false;
     @type("string") idDueno: string = "";
     @type("boolean") reroll: boolean = false;
