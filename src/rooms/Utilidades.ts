@@ -1,5 +1,6 @@
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { IMyRoom } from "./IMyRoom.js";
+import { IPersonaje } from "./Personajes.js";
 import { Carta, Jugador } from "./schema/MyRoomState.js";
 
 export class Utilidades {
@@ -57,6 +58,10 @@ export class Utilidades {
                     return;              
                 }
             }
+        }
+
+        if (atacante.boolean.get("leon_oculto")){
+            cantidad = 0
         }
 
         let anilloInmunidad: Carta = this.buscarCartaPorNombre(victima, "Anillo de inmunidad")
@@ -174,6 +179,11 @@ export class Utilidades {
 
         if (causa === "BOTIQUIN" && pasiva && pasiva.modificarCuraBotiquin) {
             cantidadFinal += pasiva.modificarCuraBotiquin(sala, jugador);
+        }
+
+        let pasivaCuracion: IPersonaje = sala.gestorPersonajes.obtener(jugador)
+        if (pasivaCuracion && pasivaCuracion.modificarCuracion){
+            cantidadFinal += pasivaCuracion.modificarCuracion(sala, jugador)
         }
 
         let totalVivos = 0;
@@ -860,5 +870,16 @@ export class Utilidades {
         }
 
         return jugador.vidasMaximas
+    }
+
+    /**
+     * Devuelve un boolean de si es inmune o no a sabotajes
+     */
+    public static esInmuneASabotaje(jugador: Jugador): boolean {
+        if (jugador.boolean.has("pocoPasiva")){
+            return jugador.boolean.get("pocoPasiva")
+        }
+
+        return false
     }
 }

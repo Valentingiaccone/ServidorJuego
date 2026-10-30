@@ -30,6 +30,7 @@ export class MyRoom extends Room implements IMyRoom{
     gestorPersonajes = new GestorPersonajes();
 
     private musicaNormal: boolean = false
+    private bandera_musicaPrimerMuerto: boolean = true
 
     encolarInteraccion(idJugador: string, titulo: string, tema: string, opciones: any[]) {
         this.colaInteracciones.push({ idJugador, titulo, tema, opciones });
@@ -133,9 +134,15 @@ export class MyRoom extends Room implements IMyRoom{
             return
         }
 
-        if (totalMuertos == 1){
-            this.broadcast("musica", "musicaPrimerMuerto")
-            return
+        if (totalMuertos == 1 && this.bandera_musicaPrimerMuerto){
+            this.bandera_musicaPrimerMuerto = false
+            if (this.musicaNormal){
+                this.broadcast("musica", "musicaPrimerMuerto")
+                return
+            } else {
+                this.broadcast("musica", "musicaPrimerMuerto_V2")
+                return
+            }
         }
 
         if (this.musicaNormal){
@@ -311,6 +318,11 @@ export class MyRoom extends Room implements IMyRoom{
                         if (pasivaJugadorActual && pasivaJugadorActual.onMuereOtroPersonaje) {
                             pasivaJugadorActual.onMuereOtroPersonaje(this, victima, j);
                         }
+                    }
+                } else {
+                    let pasivaJugadorActual = this.gestorPersonajes.obtener(j.personaje);
+                    if (pasivaJugadorActual && pasivaJugadorActual.onMorir) {
+                        pasivaJugadorActual.onMorir(this, victima);
                     }
                 }
             });
@@ -776,6 +788,19 @@ export class MyRoom extends Room implements IMyRoom{
             }));
             
             client.send("datos_wiki", datosWiki);
+        });
+
+        this.onMessage("solicitar_wiki_npc", (client, message) => {
+            let lista = this.gestorPersonajes.obtenerTodosLosNpc();
+            
+            let datosWiki = lista.map((p: any) => ({
+                nombre: p.nombre,
+                habilidad: p.habilidad,
+                habilidadEnCatalan: p.habilidadEnCatalan,
+                sfxDefault: p.sfxDefault || "sfxMensaje"
+            }));
+            
+            client.send("datos_wiki_npc", datosWiki);
         });
 
         this.onMessage("solicitar_wiki_cartas", (client, message) => {

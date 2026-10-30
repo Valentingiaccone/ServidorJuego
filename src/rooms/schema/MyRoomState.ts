@@ -95,7 +95,6 @@ export class Jugador extends Schema {
     @type("number") modificarDistancia: number = 0; 
     @type("number") modificarAlcance: number = 0; 
     @type([HabilidadActiva]) habilidadesActivas = new ArraySchema<HabilidadActiva>();
-    @type("number") alturaFlowery: number = 0;
     @type("boolean") estaMuertoFalso: boolean = false;
     @type("number") rondasMuerto: number = 0;
     @type("boolean") beneficiarseDeSuMuerte: boolean = true

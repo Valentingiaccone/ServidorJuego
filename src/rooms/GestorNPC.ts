@@ -314,6 +314,7 @@ export class GestorNPC {
         if (atacante.number.get("pedroCrecimiento")) distancia -= atacante.number.get("pedroCrecimiento");
         if (atacante.string.get("angryBird") === "chuck") distancia -= 3;
         if (atacante.string.get("angryBird") === "blue") distancia -= 2;
+        if (atacante.string.get("volpinaActiva")) distancia -= 2;
 
         const i = Utilidades.contarCartasPorNombre(atacante, "Anillo de iridio");
         if (i > 0) distancia -= 3 * i;

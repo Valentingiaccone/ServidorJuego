@@ -1,8 +1,9 @@
 // Personajes.ts
 
+import { MapSchema } from "@colyseus/schema";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { IMyRoom } from "./IMyRoom.js";
-import { Carta, HabilidadActiva, Jugador } from "./schema/MyRoomState.js";
+import { Carta, HabilidadActiva, Jugador, OpcionPersonaje } from "./schema/MyRoomState.js";
 import { Utilidades } from "./Utilidades.js";
 
 // 1. EL CONTRATO ENRIQUECIDO: Ahora pasamos TODO el contexto de la mesa
@@ -36,15 +37,15 @@ export interface IPersonaje {
 
     modificarCuraBotiquin?(sala: IMyRoom, jugador: Jugador): number
 
-    modificarCartasEnManoAlPasarTurno?(sala: any, jugador: any): number
+    modificarCartasEnManoAlPasarTurno?(sala: IMyRoom, jugador: Jugador): number
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, miJugador: any): void
 
-    onRecibirCuracion?(sala: any, jugador: any): void
+    onRecibirCuracion?(sala: IMyRoom, jugador: Jugador): void
 
-    onRecibirEscudo?(sala: any, jugador: any, cantidad: number, causa: string): void;
+    onRecibirEscudo?(sala: IMyRoom, jugador: Jugador, cantidad: number, causa: string): void;
 
-    onJugarCarta?(sala: any, jugador: any, cartaJugada: any): void;
+    onJugarCarta?(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void;
 
     modificarSuerteGlobalBarril?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] }
 
@@ -54,11 +55,11 @@ export interface IPersonaje {
 
     modificarSuerteGlobalPapapum?(sala: any, jugadorQueTiraLaRuleta: any, miJugador: any): number | { cambio: number, fichas: string[] }
 
-    onIniciarPartida?(sala: any, jugador: any): void
+    onIniciarPartida?(sala: IMyRoom, jugador: Jugador): void
 
     onFichaEspecialSeleccionada?(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string): void;
 
-    ejecutarHabilidadActiva?(sala: any, jugador: any, client: any, idHabilidad: string): void;
+    ejecutarHabilidadActiva?(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void;
 
     modificarPuntosAlEmbrujar?(sala: any, miJugador: Jugador, victima: Jugador, embrujo: string, puntos: number): number
 
@@ -71,6 +72,10 @@ export interface IPersonaje {
     onJugarCartaGlobal?(sala: IMyRoom, miJugador: Jugador, jugadorQueJuega: Jugador, cartaJugada: Carta): void;
 
     onEquiparCarta?(sala: IMyRoom, miJugador: Jugador, carta: Carta, hueco: string): void
+
+    onMorir?(sala: IMyRoom, miJugador: Jugador): void
+
+    modificarCuracion?(sala: IMyRoom, miJugador: Jugador): number
 }
 
 export class ColeCasiddy implements IPersonaje {
@@ -134,7 +139,7 @@ export class Maton implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteMaton", false];
     sfxDefault= "sfxMaton"
     
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva")
     }
 
@@ -151,7 +156,7 @@ export class Mandy implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteMandy", false];
     sfxDefault = "sfxMandy"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.modificarAlcance += 5
     }
 }
@@ -187,7 +192,7 @@ export class Darryl implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteDarryl", false];
     sfxDefault = "sfxDarryl"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.tieneBarrilPasiva = true
     }
 }
@@ -200,7 +205,7 @@ export class JetpackCat implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteJetpackCat", false];
     sfxDefault= "sfxJetpackCat"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.number.set("jetpackCat", 1)
     }
 
@@ -235,7 +240,7 @@ export class KayFaraday implements IPersonaje {
         }
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return -1
     }
 }
@@ -265,7 +270,7 @@ export class Frank implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteFrank", true];
     sfxDefault= "sfxFrank"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.vidas += 4
         jugador.vidasMaximas += 4
         jugador.boolean.set("frankFallo", true)
@@ -287,18 +292,13 @@ export class Trucy implements IPersonaje {
 
 export class Pam implements IPersonaje {
     nombre = "Pam";
-    habilidad = "Beso materno:\nAl usar botiquin: se cura 1 extra y agrega un escudo y si sobrepasa su salud maxima lo transforma en escudo temporal.";
-    habilidadEnCatalan: string = "Beso matern:\nQuan utilitza una farmaciola, es cura 1 punt extra i obté un escut. Si supera la seva salut màxima, l excés es transforma en escut temporal."
+    habilidad = "Beso materno:\nAl recibir curacion: se cura 1 extra.";
+    habilidadEnCatalan: string = "."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muertePam", false];
     sfxDefault = "sfxPam"
 
-    onIniciarPartida(sala: any, jugador: any): void {
-        jugador.boolean.set("botiquinExcedenteAEscudo", true)
-    }
-
-    modificarCuraBotiquin(sala: IMyRoom, jugador: Jugador): number {
-        Utilidades.agregarEscudos(sala, jugador, 1, 1, "PASIVA")
+    modificarCuracion(sala: IMyRoom, miJugador: Jugador): number {
         return 1
     }
 }
@@ -313,7 +313,7 @@ export class Luigi implements IPersonaje {
 
     onMuereOtroPersonaje(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
-            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`);
+            sala.agregarRegistro(`🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`);
             return;
         }
 
@@ -336,7 +336,7 @@ export class Luigi implements IPersonaje {
         }
 
         if (seCuro || estaMario){
-            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} recibió curación por su pasiva.` + textoExtra);
+            sala.agregarRegistro(`🍄 ${jugador.personaje} recibió curación por su pasiva.` + textoExtra);
             sala.reproducirSfx("sfxLuigiHabilidad")
         }
     }
@@ -352,7 +352,7 @@ export class Mario implements IPersonaje {
 
     onMuereOtroPersonaje?(sala: any, victimaMuerta: any, jugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
-            sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
+            sala.agregarRegistro(`🍄 ${jugador.personaje} no puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
             return
         }
 
@@ -372,7 +372,7 @@ export class Mario implements IPersonaje {
         }
 
         sala.repartirCartas(jugador, cartas, "pasiva");
-        sala.broadcast("notificacion_turno", `🍄 ${jugador.personaje} robó ${cartas} cartas por su pasiva.` + textoExtra);
+        sala.agregarRegistro(`🍄 ${jugador.personaje} robó ${cartas} cartas por su pasiva.` + textoExtra);
         sala.reproducirSfx("sfxMarioHabilidad")
     }
 }
@@ -385,12 +385,12 @@ export class Mikotoba implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteMikotoba", true];
     sfxDefault = "mikotobaDeGordoAFlaco"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("mikotobaEstaGordo", true)
         this.actualizarNombre(jugador, sala)
     }
 
-    onRecibirCuracion(sala: any, jugador: any): void {
+    onRecibirCuracion(sala: IMyRoom, jugador: Jugador): void {
         this.actualizarNombre(jugador, null)
     }
 
@@ -453,7 +453,7 @@ export class Lesly implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteLesly", false];
     sfxDefault = "sfxLesly"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("leslySapa", true)
         jugador.number.set("leslyUsosHabilidad", 0)
         let boton = new HabilidadActiva();
@@ -464,7 +464,7 @@ export class Lesly implements IPersonaje {
         jugador.habilidadesActivas.push(boton);
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (jugador.estaVivo && idHabilidad == "lesly_panico"){
             if (jugador.number.get("leslyUsosHabilidad") >= 1){
                 client.send("alerta_personal", "Ya usaste la habilidad este turno.")
@@ -598,7 +598,7 @@ export class Tilink implements IPersonaje {
         jugador.clonesCreadosEsteTurno = 0;
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return -1;
     }
 }
@@ -612,45 +612,46 @@ export class Flowery implements IPersonaje {
     sfxDefault = "sfxFlowery"
     spriteFueraDeJuego: boolean = true
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador){
             console.error("ERROR: jugador es null en iniciar partida flowery")
             return
         }
 
+        jugador.number.set("alturaFlowery", 0)
         jugador.boolean.set("spriteFueraDeJuego", true)
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any) {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta) {
         if (!jugador.estaVivo){
             return
         }
         // Genera un número aleatorio entre 26 y 31, luego lo divide por 100
         let crecimiento = (Math.floor(Math.random() * 6) + 26) / 100;
-        jugador.alturaFlowery += crecimiento;
+        jugador.number.set("alturaFlowery", jugador.number.get("alturaFlowery") + crecimiento)
         
         this.evaluarCrecimiento(sala, jugador);
     }
 
-    onDescartarCarta(sala: any, jugador: any, cartaDescartada: any, motivo: string) {
-        if (jugador.alturaFlowery > 0){
-            sala.broadcast("sfx", "floweryDecrece");
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: any, motivo: string) {
+        if (jugador.number.get("alturaFlowery") > 0){
+            sala.reproducirSfx("floweryDecrece");
         }
         
         // Genera un número aleatorio entre 17 y 22, luego lo divide por 100
         let decrecimiento = (Math.floor(Math.random() * 6) + 17) / 100;
-        jugador.alturaFlowery -= decrecimiento;
+        jugador.number.set("alturaFlowery", jugador.number.get("alturaFlowery") - decrecimiento)
         
-        if (jugador.alturaFlowery < 0) {
-            jugador.alturaFlowery = 0;
+        if (jugador.number.get("alturaFlowery") < 0) {
+            jugador.number.set("alturaFlowery", 0)
         }
     }
 
-    private evaluarCrecimiento(sala: any, jugador: any) {
-        if (jugador.alturaFlowery >= 3) { // 3
-            sala.broadcast("notificacion_turno", `🌻 ¡FLOWERY HACE SU ATAQUE ESPECIAL!`);
+    private evaluarCrecimiento(sala: IMyRoom, jugador: Jugador) {
+        if (jugador.number.get("alturaFlowery") >= 3) { // 3
+            sala.agregarRegistro(`🌻 ¡FLOWERY HACE SU ATAQUE ESPECIAL!`);
 
-            sala.state.jugadores.forEach((v: any, sessionId: string) => {
+            sala.getJugadores().forEach((v: any, sessionId: string) => {
                 if (v.estaVivo && v !== jugador) {
                     Utilidades.procesarDano(sala, v, jugador, 1, "FLOWERY");
 
@@ -680,30 +681,88 @@ export class Flowery implements IPersonaje {
             // AHORA ROBA 3 CARTAS DEL MAZO
             sala.repartirCartas(jugador, 3, "pasiva");
             
-            sala.broadcast("notificacion_turno", `🌻 ${jugador.personaje} infligió daño a todos, enredó a los rivales en Prisión y robó 3 cartas del mazo.`);
+            sala.agregarRegistro(`🌻 ${jugador.personaje} infligió daño a todos, enredó a los rivales en Prisión y robó 3 cartas del mazo.`);
 
             const numero: number = Math.floor(Math.random() * 2);
             const sfx: string = "floweryHabilidad" + numero;
-            sala.broadcast("sfx", sfx);
+            sala.reproducirSfx( sfx);
 
-            jugador.alturaFlowery = 0;
+            jugador.number.set("alturaFlowery", 0)
         } else {
             // jugó una carta pero aun no llegó al final
-            sala.broadcast("sfx", "floweryCrece");
+            sala.reproducirSfx("floweryCrece");
         }
     }
 }
 
 export class Leon implements IPersonaje {
     nombre = "Leon";
-    habilidad = "Noooo leooooon:\nOculta su salud, cantidad de cartas, equipamiento y la flecha central a los demas.\nBoton 1: descarta las 2 cartas de la izquierda e invoca un npc leon.\nBoton 2: intercambia de lugar con un npc aliado.";
+    habilidad = "Noooo leooooon:\nOculta todos sus visuales a los demas.\nAl final del turno: si hay menos de 2 npc leon_oculto: crea hasta 2 npc leon_oculto en sentido antihorario, luego intercambia o no de lugar con ellos de forma aleatoria.";
     habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l equipament als altres."
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteLeon", true];
     sfxDefault = "sfxLeon"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    listaNpcLeon: Jugador[] = []
+
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("leonOcultar", true)
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        const miId: string = Utilidades.obtenerSessionIdDeJugador(sala, jugador)
+        let cantidad: number = 2
+
+        sala.getJugadores().forEach((j: Jugador) => {
+            if (j.estaVivo && j.esNpc && j.idDueno == miId && j.personaje == "Leon_oculto"){
+                cantidad--
+            }
+        })
+
+        for (let i = 0; i < cantidad; i++){
+            let npc: Jugador = Utilidades.invocarNpcEnMesa(sala, jugador, "Leon_oculto", 4, 2, "antihorario")
+            this.leonGuardarNpc(npc)
+        }
+
+        const numero: number = Math.floor(Math.random() * 4)
+        if (numero == 0 && this.listaNpcLeon.length > 0){
+            const j: Jugador = this.listaNpcLeon[0]
+            if (j){
+                Utilidades.intercambiarPosicionesFisicas(sala, jugador, j)
+            }
+        } else if (numero == 1 && this.listaNpcLeon.length > 1){
+            const j: Jugador = this.listaNpcLeon[1]
+            if (j){
+                Utilidades.intercambiarPosicionesFisicas(sala, jugador, j)
+            }
+        }
+    }
+
+    leonGuardarNpc(npc: Jugador): void {
+        this.leonLimpiarLista()
+        this.listaNpcLeon.push(npc)
+    }
+
+    leonLimpiarLista(): void {
+        this.listaNpcLeon = this.listaNpcLeon.filter(
+            (elemento: Jugador) => elemento.estaVivo
+        )
+    }
+}
+
+export class Leon_oculto implements IPersonaje {
+    nombre = "Leon_oculto";
+    habilidad = "Noooo leooooon:\nOculta todos sus visuales a los demas.\nAl final del turno: si hay menos de 2 npc leon_oculto: crea hasta 2 npc leon_oculto en sentido antihorario, luego intercambia o no de lugar con ellos de forma aleatoria.";
+    habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l equipament als altres."
+    vidasBase = 4;
+    sfxMuerte: [string, boolean] = ["muerteLeon", true];
+    sfxDefault = "sfxLeon"
+    esNpcInvocable: boolean = true
+
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.set("leonOcultar", true)
+        jugador.boolean.set("leon_oculto", true)
+        Utilidades.bajarVidaMaxima(jugador, 3)
     }
 }
 
@@ -772,7 +831,7 @@ export class Robin implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
     sfxDefault = "sfxStardew"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("robinJuegaCarta", false)
     }
 
@@ -780,7 +839,7 @@ export class Robin implements IPersonaje {
         miJugador.boolean.set("robinJuegaCarta", false)
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         jugador.boolean.set("robinJuegaCarta", true)
     }
 
@@ -822,7 +881,7 @@ export class Luciergana implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteLuciernaga", true];
     sfxDefault= "sfxLuciernaga"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         Utilidades.bajarVidaMaxima(jugador, 1)
         jugador.boolean.set("lucierganaPrendida", false)
     }
@@ -922,7 +981,7 @@ export class Maggey implements IPersonaje {
     onFichaEspecialSeleccionada(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string) {
         if (fichaVisual === "falloMaggey") {
             sala.repartirCartas(duenoDeLaFicha, 2, "pasiva");
-            sala.broadcast("notificacion_turno", `🍀 ¡La desgracia ajena alimenta a ${duenoDeLaFicha.personaje}! Roba 1 carta.`);
+            sala.agregarRegistro(`🍀 ¡La desgracia ajena alimenta a ${duenoDeLaFicha.personaje}! Roba 1 carta.`);
         }
     }
 }
@@ -958,7 +1017,7 @@ export class Mortis implements IPersonaje {
 
     onMuereOtroPersonaje(sala: any, victimaMuerta: any, miJugador: any): void {
         if (!victimaMuerta.beneficiarseDeSuMuerte){
-            sala.broadcast("notificacion_turno", `🪏 No puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
+            sala.agregarRegistro(`🪏 No puede usar su pasiva porque ${victimaMuerta.personaje} ya murió anteriormente.`)
             return
         }
 
@@ -976,7 +1035,7 @@ export class Mortis implements IPersonaje {
 
 export class Maya implements IPersonaje {
     nombre = "Maya";
-    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos.\nPenalizacion 1.\n(seguramente no funcione con flowery y Haley).";
+    habilidad = "Canalizacion:\nMientras esté viva, usa las habilidades de los muertos.\nPenalizacion 1.\n(seguramente no funcione con Haley).";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["sfxMayaMuerte", true];
@@ -1001,13 +1060,14 @@ export class Maya implements IPersonaje {
 
         // 4. Limpiamos el sprite una sola vez al terminar
         miJugador.spriteAvatarOpcional = "";
+        miJugador.boolean.set("spriteFueraDeJuego", false)
     }
     // =================================================================
 
 
     // --- HOOKS DE BOTONES ---
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.ejecutarHabilidadActiva) {
                 pasiva.ejecutarHabilidadActiva(sala, jugador, client, idHabilidad);
@@ -1024,7 +1084,7 @@ export class Maya implements IPersonaje {
         });
     }
 
-    onDescartarCarta(sala: any, jugador: any, cartaDescartada: any, motivo: string): void {
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: any, motivo: string): void {
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.onDescartarCarta) pasiva.onDescartarCarta(sala, jugador, cartaDescartada, motivo);
         });
@@ -1065,19 +1125,19 @@ export class Maya implements IPersonaje {
         }
     }
 
-    onRecibirCuracion(sala: any, jugador: any): void {
+    onRecibirCuracion(sala: IMyRoom, jugador: Jugador): void {
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.onRecibirCuracion) pasiva.onRecibirCuracion(sala, jugador);
         });
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.onJugarCarta) pasiva.onJugarCarta(sala, jugador, cartaJugada);
         });
     }
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.onIniciarPartida) pasiva.onIniciarPartida(sala, jugador);
         });
@@ -1089,7 +1149,7 @@ export class Maya implements IPersonaje {
         });
     }
 
-    onRecibirEscudo(sala: any, jugador: any, cantidad: number, causa: string): void {
+    onRecibirEscudo(sala: IMyRoom, jugador: Jugador, cantidad: number, causa: string): void {
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.onRecibirEscudo) pasiva.onRecibirEscudo(sala, jugador, cantidad, causa)
         })
@@ -1121,7 +1181,13 @@ export class Maya implements IPersonaje {
 
     onEquiparCarta(sala: IMyRoom, miJugador: Jugador, carta: Carta, hueco: string): void {
         this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
-            if (pasiva.onRecibirCuracion) pasiva.onRecibirCuracion(sala, miJugador, carta, hueco);
+            if (pasiva.onEquiparCarta) pasiva.onEquiparCarta(sala, miJugador, carta, hueco);
+        });
+    }
+
+    onMorir(sala: IMyRoom, miJugador: Jugador): void {
+        this.ejecutarCanalizacion(sala, miJugador, (pasiva) => {
+            if (pasiva.onMorir) pasiva.onMorir(sala, miJugador);
         });
     }
 
@@ -1144,7 +1210,15 @@ export class Maya implements IPersonaje {
         return modificacion;
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCuracion(sala: IMyRoom, jugador: Jugador): number {
+        let modificacion: number = 0;
+        this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
+            if (pasiva.modificarCuracion) modificacion += pasiva.modificarCuracion(sala, jugador);
+        });
+        return modificacion;
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         let modificacion: number = 0;
         this.ejecutarCanalizacion(sala, jugador, (pasiva) => {
             if (pasiva.modificarCartasEnManoAlPasarTurno) modificacion += pasiva.modificarCartasEnManoAlPasarTurno(sala, jugador);
@@ -1307,7 +1381,7 @@ export class Geraldo implements IPersonaje {
     habilidadEnCatalan = "Emmagatzematge:\nPot emmagatzemar 5 cartes addicionals a la seva mà.";
     vidasBase = 4;
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return 5
     }
 
@@ -1321,11 +1395,11 @@ export class RaymundoEscudos implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteRaymundo", true]; 
     sfxDefault = "sfxRaymundo"; 
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.transformarCuraEnEscudo = true
     }
 
-    onRecibirEscudo(sala: any, jugador: any, cantidad: number, causa: string) {
+    onRecibirEscudo(sala: IMyRoom, jugador: Jugador, cantidad: number, causa: string) {
         if (jugador.turnosEscudos) {
             for (let i = 0; i < jugador.turnosEscudos.length; i++) {
                 jugador.turnosEscudos[i] = Infinity;
@@ -1333,9 +1407,9 @@ export class RaymundoEscudos implements IPersonaje {
         }
 
         if (causa === "CURACION") {
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó la curación en un Escudo Infinito!`);
+            sala.agregarRegistro(`⚖️ ¡${jugador.personaje} transformó la curación en un Escudo Infinito!`);
         } else {
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} transformó su Escudo temporal en un Escudo Infinito!`);
+            sala.agregarRegistro(`⚖️ ¡${jugador.personaje} transformó su Escudo temporal en un Escudo Infinito!`);
         }
     }
 
@@ -1352,7 +1426,7 @@ export class Cubo implements IPersonaje {
     sfxMuerte: [string, boolean] = ["sfxCuboMuerte", false]; 
     sfxDefault = "sfxCubo";
 
-    private cambiarDeModo(sala: any, jugador: any){
+    private cambiarDeModo(sala: IMyRoom, jugador: Jugador){
         const modoAnterior: string = jugador.geometryDashModo
         const array = ["Cubo", "Nave", "Ball", "Ufo", "Wave", "Robot", "Swing copter", "Araña"]
         const variable: string = jugador.geometryDashModo
@@ -1370,7 +1444,7 @@ export class Cubo implements IPersonaje {
                 jugador.spriteAvatarOpcional = "Ufo roto"
             }
         } else if (nuevoModo == "Swing copter"){
-            if (jugador.swingCopterPuedeProteger){
+            if (jugador.boolean.get("swingCopterPuedeProteger")){
                 jugador.spriteAvatarOpcional = "Swing copter escudo"
             } else {
                 jugador.spriteAvatarOpcional = "Swing copter"
@@ -1386,7 +1460,7 @@ export class Cubo implements IPersonaje {
             jugador.modificarDistancia++
         }
 
-        sala.broadcast("notificacion_turno", `⏹️ ${jugador.personaje} cambió al modo ${nuevoModo}`)
+        sala.agregarRegistro(`⏹️ ${jugador.personaje} cambió al modo ${nuevoModo}`)
     }
 
     onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
@@ -1394,7 +1468,7 @@ export class Cubo implements IPersonaje {
         jugador.boolean.set("swingCopterPuedeProteger", true) // pensé en algo situacional a que si maya obtiene su poder, juega una carta fallo, cambia a swing copter, con esta linea la estaria protegiendo
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         if (!jugador || !jugador.estaVivo){
             return
         }
@@ -1476,7 +1550,7 @@ export class Cubo implements IPersonaje {
     onFichaEspecialSeleccionada(sala: any, duenoDeLaFicha: any, victimaQueTiro: any, fichaVisual: string) {
         if (fichaVisual === "exitoCubo") {
             sala.repartirCartas(duenoDeLaFicha, 2, "pasiva");
-            sala.broadcast("notificacion_turno", `⏹️ ${victimaQueTiro.personaje} agarra la moneda asi que ${duenoDeLaFicha.personaje} roba 2 cartas.`);
+            sala.agregarRegistro(`⏹️ ${victimaQueTiro.personaje} agarra la moneda asi que ${duenoDeLaFicha.personaje} roba 2 cartas.`);
         }
     }
 
@@ -1508,7 +1582,7 @@ export class VonKarma implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteAceAttorney", false];
     sfxDefault: string = "sfxVonKarma"
 
-    onIniciarPartida(sala: any, jugador: any) {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador) {
         let boton = new HabilidadActiva();
         boton.id = "vonKarma_falsificar";
         boton.textoBoton = "Falsificar Evidencia";
@@ -1517,7 +1591,7 @@ export class VonKarma implements IPersonaje {
         jugador.habilidadesActivas.push(boton);
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string) {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string) {
         if (idHabilidad === "vonKarma_falsificar") {
             
             if (jugador.vidas <= 1) {
@@ -1525,7 +1599,7 @@ export class VonKarma implements IPersonaje {
                 return;
             }
             
-            sala.broadcast("notificacion_turno", `⚖️ ¡${jugador.personaje} falsificó evidencia! Pierde 1 vida y roba 2 cartas.`);
+            sala.agregarRegistro(`⚖️ ¡${jugador.personaje} falsificó evidencia! Pierde 1 vida y roba 2 cartas.`);
             
             Utilidades.procesarDano(sala, jugador, jugador, 1, "FALSIFICACION", true);
 
@@ -1546,7 +1620,7 @@ export class Mercy implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteAmongus", false];
     sfxDefault = "sfxMensaje";
 
-    onIniciarPartida(sala: any, jugador: any) {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador) {
         let boton = new HabilidadActiva();
         boton.id = "mercy_intercambio";
         boton.textoBoton = "Intercambiar modo";
@@ -1588,12 +1662,12 @@ export class Chispitas implements IPersonaje {
     sfxMuerte: [string, boolean] = ["sfxChispitasMuerte", false];
     sfxDefault = "sfxChispitas";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("chispitasBandera", true)
         jugador.boolean.set("chispitasCargado", false)
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return 1
     }
 
@@ -1689,7 +1763,7 @@ export class Meg implements IPersonaje {
     sfxMuerte: [string, boolean] = ["sfxMegMuerte", false];
     sfxDefault = "sfxMeg";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         Utilidades.bajarVidaMaxima(jugador, 1)
         jugador.string.set("modoMeg", "ROBOT")
     }
@@ -1704,7 +1778,7 @@ export class Meg implements IPersonaje {
         }
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         if (!jugador.estaVivo){
             return
         }
@@ -1800,7 +1874,7 @@ export class DaveElLoco implements IPersonaje {
     sfxMuerte: [string, boolean] = ["sfxCrazyDaveMuerte", false];
     sfxDefault = "sfxCrazyDave1";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         let girasol: Carta = CatalogoCartasEspeciales.crearGirasol()
         girasol.esConjurada = true
         if (girasol){
@@ -1808,13 +1882,13 @@ export class DaveElLoco implements IPersonaje {
         }
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         if (!jugador.estaVivo){
             return
         }
         const numero: number = Math.floor(Math.random() * 12) + 1
         const sfx: string = "sfxCrazyDave" + numero
-        sala.broadcast("sfx", sfx)
+        sala.reproducirSfx( sfx)
     }
 
     modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
@@ -1862,7 +1936,7 @@ export class Junkrat implements IPersonaje {
         }
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return -1
     }
 }
@@ -1875,7 +1949,7 @@ export class Max implements IPersonaje {
     sfxDefault: string = "sfxMax"
     sfxMuerte: [string, boolean, number?] = ["sfxMaxMuerte", false]
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador){
             console.error("ERROR: jugador no existe en max iniciar partida")
             return
@@ -1884,7 +1958,7 @@ export class Max implements IPersonaje {
         jugador.number.set("maxJugadas", 0)
     }
 
-    onJugarCarta(sala: IMyRoom, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: any, cartaJugada: Carta): void {
         if (!jugador){
             console.error("ERROR: jugador no existe en max on jugar carta")
             return
@@ -1911,13 +1985,20 @@ export class Max implements IPersonaje {
 
 export class Tracer implements IPersonaje {
     nombre = "Tracer";
-    habilidad = "Lo intentaremos otra vez:\nTiene 2 vidas menos.\nSi no es Sheriff: comienza con 3 escudo temporal.\nBoton: guarda tu estado.\nAl morir: vuelve a su ultimo estado guardado (1 vez si es Sheriff, si no 2 veces).";
+    habilidad = "Lo intentaremos otra vez:\nTiene 2 vidas menos.\nAl inicio de la partida y boton: guarda tu estado.\nAl morir: vuelve a su ultimo estado guardado (1 vez si es Sheriff, si no 2 veces).";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["muerteTracer", false];
     sfxDefault = "sfxTracer";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    private vidaGuardada: number = 0
+    private vidaMaximaGuardada: number = 0
+    private escudosGuardado: number = 0
+    private listaCartasGuardadas: Carta[] = []
+    private listaEquipamientoGuardado = new MapSchema<Carta>()
+    private listaEfectoGuardado = new MapSchema<number>();
+
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.number.set("tracerVecesMuerta", 0);
 
         let boton = new HabilidadActiva();
@@ -1928,34 +2009,87 @@ export class Tracer implements IPersonaje {
         jugador.habilidadesActivas.push(boton);
 
         Utilidades.bajarVidaMaxima(jugador, 2)
-        if (jugador.rol != "Sheriff"){
-            Utilidades.agregarEscudos(sala, jugador, 3, 1, "pasiva");
+
+        this.tracerGuardarEstado(sala, jugador)
+    }
+
+    tracerRetrocederEnElTiempo(sala: IMyRoom, jugador: Jugador, limite: number): void {
+        jugador.vidasMaximas = this.vidaMaximaGuardada
+        jugador.vidas = this.vidaGuardada
+        jugador.turnosEscudos = []
+        Utilidades.agregarEscudos(sala, jugador, this.escudosGuardado, 1, "pasiva")
+        
+        for (let i = 0; i < jugador.mano.length; i++){
+            let carta: Carta = jugador.mano[i]
+            if (carta){
+                sala.agregarAlDescarte(carta, jugador, null)
+            }
         }
+
+        jugador.mano.splice(0, jugador.mano.length)
+        
+        for (let i = 0; i < this.listaCartasGuardadas.length; i++){
+            let carta: Carta = this.listaCartasGuardadas[i]
+            if (carta){
+                jugador.mano.push(carta)
+            }
+        }
+
+        Utilidades.destruirTodosLosEquipamientos(sala, jugador)
+
+        for (const [clave, carta] of this.listaEquipamientoGuardado) {
+            if (carta){
+                Utilidades.equiparCarta(sala, jugador, carta, clave)
+            }
+        }
+
+        Utilidades.eliminarTodosLosEfectos(sala, jugador)
+
+        for (const [clave, cantidad] of this.listaEfectoGuardado) {
+            Utilidades.agregarEfecto(jugador, clave, cantidad)
+        }
+
+        sala.agregarRegistro(`⏪ ¡TRACER MURIÓ PERO RETROCEDIÓ EN EL TIEMPO! (${jugador.number.get("tracerVecesMuerta")}/${limite})`);
+        sala.reproducirSfx("sfxTracerHabilidad");
+    }
+
+    tracerGuardarEstado(sala: IMyRoom, jugador: Jugador): void {
+        this.listaCartasGuardadas = []
+        this.listaEquipamientoGuardado.clear()
+
+        this.vidaGuardada = jugador.vidas
+        this.vidaMaximaGuardada = jugador.vidasMaximas
+        this.escudosGuardado = jugador.vidasEscudo
+
+        for (let i = 0; i < jugador.mano.length; i++){
+            let carta: Carta = jugador.mano[i]
+            if (carta){
+                let clon: Carta = Utilidades.clonarCarta(carta)
+                if (clon){
+                    this.listaCartasGuardadas.push(clon)
+                }
+            }
+        }
+
+        for (const [clave, carta] of jugador.equipamiento) {
+            if (carta){
+                let clon: Carta = Utilidades.clonarCarta(carta)
+                if (clon){
+                    this.listaEquipamientoGuardado.set(clave, clon)
+                }
+            }
+        }
+
+        for (const [clave, cantidad] of jugador.efecto) {
+            this.listaEfectoGuardado.set(clave, cantidad)
+        }
+
+        sala.agregarRegistro(`⏱️ ¡Tracer ha marcado un punto de retorno temporal!`);
     }
 
     ejecutarHabilidadActiva(sala: any, jugador: Jugador, client: any, idHabilidad: string): void {
         if (jugador.estaVivo && idHabilidad == "tracer_guardarEstado"){
-
-            let snapshot: any = {
-                vidas: jugador.vidas,
-                vidasMaximas: jugador.vidasMaximas,
-                vidasEscudo: jugador.vidasEscudo,
-                turnosEscudos: [...jugador.turnosEscudos], 
-                
-                efectosJugador: Array.from(jugador.efecto.entries()),
-                
-                equipamiento: Array.from(jugador.equipamiento.entries()).map(([clave, carta]) => ({
-                    clave: clave,
-                    carta: Utilidades.clonarCarta(carta, "tracer")
-                })),
-
-                mano: Array.from(jugador.mano).map((c: any) => Utilidades.clonarCarta(c, "tracer")) 
-            };
-
-            (jugador as any).tracerSnapshot = snapshot;
-
-            client.send("alerta_personal", "¡Estado temporal guardado! Si morís, volvés a este momento.");
-            sala.broadcast("notificacion_turno", `⏱️ ¡Tracer ha marcado un punto de retorno temporal!`);
+            this.tracerGuardarEstado(sala, jugador)
         }
     }
 
@@ -1967,43 +2101,11 @@ export class Tracer implements IPersonaje {
             limite = 1
         }
 
-        if (victima.vidas <= 0 && (victima as any).tracerSnapshot && victima.number.get("tracerVecesMuerta") < limite) {
+        if (victima.vidas <= 0 && victima.number.get("tracerVecesMuerta") < limite) {
             
             victima.number.set("tracerVecesMuerta", victima.number.get("tracerVecesMuerta") + 1);
-            let snap = (victima as any).tracerSnapshot;
-
-            // A) Limpiamos lo que tenía al morir
-            victima.mano.forEach((c: any) => sala.agregarAlDescarte(c, victima, null));
-            victima.mano.clear();
-            Utilidades.destruirTodosLosEquipamientos(sala, victima);
-
-            // B) Restauramos valores crudos
-            victima.vidas = snap.vidas;
-            victima.vidasMaximas = snap.vidasMaximas;
-            victima.vidasEscudo = snap.vidasEscudo;
-            victima.turnosEscudos = [...snap.turnosEscudos];
-
-            victima.efecto.clear();
-            snap.efectosJugador.forEach(([clave, valor]: [string, number]) => {
-                victima.efecto.set(clave, valor);
-            });
-
-            // C) Inyectamos el equipamiento clonado fresco (de nuevo, pasando por la Utilidad)
-            snap.equipamiento.forEach((item: any) => {
-                let cartaFresca = Utilidades.clonarCarta(item.carta, "tracer");
-                if (cartaFresca) {
-                    victima.equipamiento.set(item.clave, cartaFresca);
-                }
-            });
-
-            // D) Inyectamos la mano fresca
-            snap.mano.forEach((c: any) => {
-                let cartaFresca = Utilidades.clonarCarta(c, "tracer");
-                if (cartaFresca) victima.mano.push(cartaFresca);
-            });
-
-            sala.agregarRegistro(`⏪ ¡TRACER MURIÓ PERO RETROCEDIÓ EN EL TIEMPO! (${victima.number.get("tracerVecesMuerta")}/${limite})`);
-            sala.reproducirSfx("sfxTracerHabilidad");
+            
+            this.tracerRetrocederEnElTiempo(sala, victima, limite)
         }
     }
 }
@@ -2017,7 +2119,7 @@ export class Pedro implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muertePedro", true];
     sfxDefault = "sfxPedro"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.number.set("pedroCrecimiento", 0)
         jugador.boolean.set("mostrarPedro", true)
         jugador.boolean.set("spriteFueraDeJuego", true)
@@ -2047,7 +2149,7 @@ export class Pedro implements IPersonaje {
         }
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         if (!jugador){
             console.error("ERROR: jugador no existe en pedro modificarCartasEnManoAlPasarTurno")
             return 0
@@ -2100,7 +2202,7 @@ export class Amelia implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteAmelia", false];
     sfxDefault = "sfxAmelia"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador){
             console.error("ERROR: jugador no existe en onInicarPartida en Amelia")
             return
@@ -2138,7 +2240,7 @@ export class Amelia implements IPersonaje {
         }
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         if (!jugador){
             console.error("ERROR: jugador no existe en onJugarCarta en Amelia")
             return
@@ -2212,7 +2314,7 @@ export class Amelia implements IPersonaje {
         }
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return -1
     }
 }
@@ -2224,7 +2326,7 @@ export class Microbios implements IPersonaje {
     vidasBase = 4;
     sfxDefault = "sfxMicrobios"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador){
             console.error("ERROR: jugador no existe en microbio onIniciarPartida")
             return
@@ -2242,7 +2344,7 @@ export class Microbios implements IPersonaje {
         miJugador.number.set("microbio", 0)
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         if (!jugador){
             console.error("ERROR: jugador no existe en microbio onJugarCarta")
             return
@@ -2282,7 +2384,7 @@ export class Microbios implements IPersonaje {
         }
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return -1
     }
 }
@@ -2335,7 +2437,7 @@ export class Monito implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteMonito", false];
     sfxDefault = "sfxMonito"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador){
             console.error("ERROR: jugador es null en onIniciarPartida de monito")
             return
@@ -2382,7 +2484,7 @@ export class Monito implements IPersonaje {
         }
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return -1
     }
 
@@ -2404,7 +2506,7 @@ export class KarateKillo implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteKillo", false];
     sfxDefault = "sfxKillo"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador){
             console.error("ERROR: jugador es null en onIniciarPartida en karate killo")
             return
@@ -2440,7 +2542,7 @@ export class KarateKillo implements IPersonaje {
         }        
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         if (!jugador){
             console.error("ERROR: jugador es null en onJugarCarta en karate killo")
             return
@@ -2488,7 +2590,7 @@ export class KarateKillo implements IPersonaje {
         miJugador.number.set("killoRecargaPatada", miJugador.number.get("killoRecargaPatada") - 1)
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (!jugador){
             console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Killo");
             return;
@@ -2555,7 +2657,7 @@ export class Tripulante implements IPersonaje {
     vidasBase = 4;
     sfxDefault: string = "sfxTripulante"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador){
             console.error("ERROR: jugador es null en onIniciarPartida en Tripulante")
             return
@@ -2663,7 +2765,7 @@ export class Tripulante implements IPersonaje {
         }
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (!jugador){
             console.error("ERROR: jugador es null en ejecutarHabilidadActiva en Tripulante")
             return
@@ -2703,7 +2805,7 @@ export class Shelly implements IPersonaje {
     sfxDefault: string = "sfxShelly"
     sfxMuerte: [string, boolean, number?] = ["sfxShellyMuerte", false]
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador){
             console.error("ERROR: jugador es null en onIniciarPartida de Shelly")
             return
@@ -2723,7 +2825,7 @@ export class Shelly implements IPersonaje {
         miJugador.number.set("shellyRecarga", miJugador.number.get("shellyRecarga") - 1)
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (!jugador){
             console.error("ERROR: jugador es null en ejecutarHabilidadActiva en shelly");
             return;
@@ -2792,7 +2894,7 @@ export class Byron implements IPersonaje {
     habilidadEnCatalan = "..";
     vidasBase = 4;
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         let botonTransmutar = new HabilidadActiva();
         botonTransmutar.id = "byron_botiquin";
         botonTransmutar.textoBoton = "Transmutar";
@@ -2803,11 +2905,11 @@ export class Byron implements IPersonaje {
         jugador.boolean.set("byronUsado", false);
     }
 
-    onIniciarTurno(sala: any, jugador: any): void {
+    onIniciarTurno(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("byronUsado", false);
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (!jugador) {
             console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Byron");
             return;
@@ -2900,7 +3002,7 @@ export class Pierre implements IPersonaje {
     subirPierre: number = 20
     bajarPierre: number = 10
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.number.set("pierre", 50)
     }
 
@@ -2952,7 +3054,7 @@ export class Wendy implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteWendy", false];
     sfxDefault = "sfxWendy";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         Utilidades.bajarVidaMaxima(jugador, 1)
 
         let boton = new HabilidadActiva();
@@ -3030,7 +3132,7 @@ export class Wendy implements IPersonaje {
         }
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (!jugador || !sala) return;
 
         if (jugador.estaVivo && idHabilidad === "wendy_secador") {
@@ -3068,7 +3170,7 @@ export class Abigail implements IPersonaje {
     habilidadEnCatalan = "..";
     vidasBase = 4;
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         let botonAbigail = new HabilidadActiva();
         botonAbigail.id = "abigail_tocxic";
         botonAbigail.textoBoton = "Ouija";
@@ -3077,7 +3179,7 @@ export class Abigail implements IPersonaje {
         jugador.habilidadesActivas.push(botonAbigail);
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (!jugador) {
             console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Byron");
             return;
@@ -3095,7 +3197,7 @@ export class Abigail implements IPersonaje {
                 return;
             }
 
-            sala.state.jugadores.forEach((j: Jugador) => {
+            sala.getJugadores().forEach((j: Jugador) => {
                 if (j.estaVivo && j != jugador){
                     Utilidades.agregarEfecto(j, "tocxic", 1)
                 }
@@ -3134,7 +3236,7 @@ export class Zombistein implements IPersonaje {
     sfxMuerte: [string, boolean] = ["muerteZombistein", false];
     sfxDefault = "sfxZombistein";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("esZombistein", true)
         jugador.boolean.set("zombiditoCargado", true)
     }
@@ -3158,7 +3260,7 @@ export class Zombistein implements IPersonaje {
         }
     }
 
-    onRecibirCuracion(sala: any, jugador: any): void {
+    onRecibirCuracion(sala: IMyRoom, jugador: Jugador): void {
         this.actualizarSprite(jugador)
     }
 
@@ -3182,7 +3284,7 @@ export class Charlie implements IPersonaje {
     subirCharlie: number = 20
     bajarCharlie: number = 10
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.number.set("charlie", 50)
     }
 
@@ -3237,7 +3339,7 @@ export class ElP implements IPersonaje {
     sfxMuerte: [string, boolean] = ["sfxElpMuerto", false];
     sfxDefault = "sfxElp";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.number.set("jugo", 0)
     }
 
@@ -3288,7 +3390,7 @@ export class Tirachinas implements IPersonaje {
     sfxMuerte: [string, boolean] = ["angryBirdsMuerto", false];
     sfxDefault = "sfxAngryBirds";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.string.set("angryBird", "red")
         this.actualizarSprite(jugador)
     }
@@ -3382,7 +3484,7 @@ export class Nita implements IPersonaje {
     sfxDefault: string = "sfxNita"
     sfxMuerte: [string, boolean, number?] = ["sfxNitaMuerte", false]
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador) return;
         jugador.number.set("nitaVidasPerdidas", 0);
     }
@@ -3434,7 +3536,7 @@ export class Bruce implements IPersonaje {
         }
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         if (!jugador || !jugador.estaVivo) return;
 
         Utilidades.moverPosicionFisica(sala, jugador, "antihorario");
@@ -3450,7 +3552,7 @@ export class Larry implements IPersonaje {
     sfxMuerte: [string, boolean] = ["sfxLarryMuerte", false];
     sfxDefault = "sfxLarry";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador || !sala) return;
         Utilidades.bajarVidaMaxima(jugador, 1)
 
@@ -3467,7 +3569,7 @@ export class Lawrie implements IPersonaje {
     esNpcInvocable = true;
     sfxDefault = "sfxLawrie";
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("lawrieCura", true)
     }
 }
@@ -3478,7 +3580,7 @@ export class Bubble implements IPersonaje {
     habilidadEnCatalan = ".";
     vidasBase = 4;
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         if (!jugador || !sala) return;
         Utilidades.bajarVidaMaxima(jugador, 3)
 
@@ -3505,7 +3607,7 @@ export class Bubble implements IPersonaje {
         }
     }
 
-    onJugarCarta(sala: any, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: Jugador, cartaJugada: Carta): void {
         if (jugador.estaVivo){
             jugador.number.set("bubbleJugadas", jugador.number.get("bubbleJugadas") + 1)
             if (jugador.number.get("bubbleJugadas") >= 3){
@@ -3519,7 +3621,7 @@ export class Bubble implements IPersonaje {
         Utilidades.invocarNpcEnMesa(sala, miJugador, "Bubble_npc", 1, 1, sentido);
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return 2
     }
 }
@@ -3531,7 +3633,7 @@ export class Bubble_npc implements IPersonaje {
     vidasBase = 1;
     esNpcInvocable = true;
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return 1
     }
 }
@@ -3567,7 +3669,7 @@ export class Phoenix implements IPersonaje {
         Utilidades.invocarNpcEnMesa(sala, jugador, asistente2, 4, 3, "horario");
     }
 
-    modificarCartasEnManoAlPasarTurno(sala: any, jugador: any): number {
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return -1
     }
 }
@@ -3594,7 +3696,7 @@ export class Kertley implements IPersonaje {
     sfxDefault: string = "sfxKertley"
     sfxMuerte: [string, boolean, number?] = ["sfxKertleyMuerte", true]
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("kertley", true)
     }
 }
@@ -3607,7 +3709,7 @@ export class Susato implements IPersonaje {
     sfxMuerte: [string, boolean, number?] = ["sfxSusatoMuerte", false]
     sfxDefault: string = "sfxSusato"
 
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("susato", true)
     }
 }
@@ -3650,7 +3752,7 @@ export class Cosmo implements IPersonaje {
     sfxMuerte: [string, boolean, number?] = ["sfxCosmoMuerte", false]
     
     // Le damos la habilidad activa al iniciar
-    onIniciarPartida(sala: any, jugador: any): void {
+    onIniciarPartida(sala: IMyRoom, jugador: Jugador): void {
         let hab = new HabilidadActiva();
         hab.id = "cosmo_orbita";
         hab.textoBoton = "Órbita BANG!";
@@ -3662,11 +3764,11 @@ export class Cosmo implements IPersonaje {
     }
 
     // Reseteamos el uso al arrancar su turno
-    onIniciarTurno(sala: any, jugador: any): void {
+    onIniciarTurno(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("cosmo_usado", false);
     }
 
-    ejecutarHabilidadActiva(sala: any, jugador: any, client: any, idHabilidad: string): void {
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (idHabilidad === "cosmo_orbita") {
             
             // 1. Verificamos que no la haya usado este turno
@@ -3733,7 +3835,7 @@ export class FlorAmarilla implements IPersonaje {
     habilidad = "Has fallat:\nEn jugar un Fallo: conjura una carta Fallo.";
     habilidadEnCatalan = ".";
     
-    onJugarCarta(sala: IMyRoom, jugador: any, cartaJugada: any): void {
+    onJugarCarta(sala: IMyRoom, jugador: any, cartaJugada: Carta): void {
         if (jugador.estaVivo && cartaJugada.nombre == "¡Fallo!"){
             let carta: Carta = CatalogoCartasEspeciales.crearFallo()
             if (carta){
@@ -3744,6 +3846,76 @@ export class FlorAmarilla implements IPersonaje {
         }
     }
 }
+
+export class Volpina implements IPersonaje {
+    nombre = "Volpina";
+    vidasBase = 4;
+    habilidad = "Camuflaje:\nAl inicio de la partida: se camufla como el personaje de tu opcion de mas a la izquierda.\nBoton (1 vez a partir de tu tercer al iniciar el turno): se descamufla, conjura 2 Bangs!, gana +2 alcance y no tiene limites de Bangs! por este turno.";
+    habilidadEnCatalan = ".";
+    
+    onIniciarPartida(sala: any, jugador: Jugador): void {
+        if (!jugador || !sala) return;
+
+        const inicio = jugador.reroll ? 3 : 0;
+
+        let camuflaje: OpcionPersonaje = jugador.opcionesPersonaje[inicio]
+        if (camuflaje.nombre == this.nombre){
+            camuflaje = jugador.opcionesPersonaje[inicio + 1]
+        }
+
+        jugador.personaje = camuflaje.nombre
+        jugador.habilidad = camuflaje.habilidad
+
+        let boton = new HabilidadActiva();
+        boton.id = "boton_volpina";
+        boton.textoBoton = "Revelarse";
+        boton.tooltip = "Te revela";
+        boton.spriteBoton = "botonVolpina"
+        jugador.habilidadesActivas.push(boton);
+
+        jugador.number.set("volpinaHabilidad", 3)
+        jugador.boolean.set("volpinaActiva", false)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        miJugador.number.set("volpinaHabilidad", miJugador.number.get("volpinaHabilidad") - 1)
+    }
+
+    ejecutarHabilidadActiva(sala: any, jugador: Jugador, client: any, idHabilidad: string): void {
+        if (jugador.estaVivo && idHabilidad == "boton_volpina"){
+            if (jugador.number.get("volpinaHabilidad") > 0){
+                client.send("alerta_personal", `Esta habilidad se está recargando, faltan ${jugador.number.get("volpinaHabilidad")} rondas.`)
+                return
+            }
+
+            this.colocarDatosVolpinaReal(jugador)
+            for (let i = 0; i < 2; i++){
+                let bang: Carta = CatalogoCartasEspeciales.crearBang()
+                if (bang){
+                    bang.esConjurada = true
+                    jugador.mano.push(bang)
+                }
+            }
+            jugador.boolean.set("volpinaActiva", true)
+        }
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.set("volpinaActiva", false)
+    }
+
+    onMorir(sala: IMyRoom, miJugador: Jugador): void {
+        if (miJugador.beneficiarseDeSuMuerte){
+            this.colocarDatosVolpinaReal(miJugador)
+        }
+    }
+
+    colocarDatosVolpinaReal(miJugador: Jugador): void {
+        miJugador.personaje = "Volpina"
+        miJugador.habilidad = "Camuflaje:\nAl inicio de la partida: se camufla como el personaje de tu opcion de mas a la izquierda.\nBoton (1 vez a partir de tu tercer al iniciar el turno): se descamufla, conjura 2 Bangs!, gana +2 alcance y no tiene limites de Bangs! por este turno."
+    }
+}
+
 
 // 3. EL GESTOR DE PERSONAJES
 export class GestorPersonajes {
@@ -3769,7 +3941,7 @@ export class GestorPersonajes {
         this.registrar(new Domino())
         this.registrar(new Tilink())
         this.registrar(new Flowery())
-        // this.registrar(new Leon())
+        this.registrar(new Leon())
         this.registrar(new Kazuma())
         this.registrar(new Leah())
         this.registrar(new Robin())
@@ -3818,6 +3990,8 @@ export class GestorPersonajes {
         this.registrar(new Cosmo())
         this.registrar(new Amber())
         this.registrar(new FlorAmarilla())
+        //this.registrar(new Volpina())
+        this.registrar(new Tracer())
 
 
 
@@ -3829,12 +4003,13 @@ export class GestorPersonajes {
         this.registrar(new Lawrie());
         this.registrar(new Bruce());
         this.registrar(new Bubble_npc())
+        this.registrar(new Leon_oculto())
 
 
 
 
 
-        // this.registrar(new Tracer())
+        
     }
 
     private registrar(p: IPersonaje) {
@@ -3849,6 +4024,23 @@ export class GestorPersonajes {
         // 1. Extraemos los valores sin duplicados y excluimos a los NPCs invocables
         let valoresUnicos = new Set(
             Object.values(this.personajes).filter(p => !p.esNpcInvocable)
+        );
+        
+        // 2. Volvemos a convertir ese Set en un Array normal
+        let lista = Array.from(valoresUnicos);
+        
+        // 3. Mezclamos la lista limpia
+        for (let i = lista.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [lista[i], lista[j]] = [lista[j], lista[i]];
+        }
+        return lista;
+    }
+
+    public obtenerTodosLosNpc(): any[] {
+        // 1. Extraemos los valores sin duplicados y excluimos a los NPCs invocables
+        let valoresUnicos = new Set(
+            Object.values(this.personajes).filter(p => p.esNpcInvocable)
         );
         
         // 2. Volvemos a convertir ese Set en un Array normal

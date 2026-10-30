@@ -1828,7 +1828,8 @@ export class EfectoDano implements IEfectoCarta {
         if (atacante.yaDisparo && !puedeDispararExtra && 
             statsArma.nombre !== "Pistola de Tracer" && statsArma.nombre !== "Pistola de Tracer Pro" && 
             statsArma.nombre !== "Tirachinas" && statsArma.nombre !== "Tirachinas mestro" && 
-            statsArma.nombre !== "Espada galactica" && statsArma.nombre !== "Espada galactica Pro") {
+            statsArma.nombre !== "Espada galactica" && statsArma.nombre !== "Espada galactica Pro"
+            && !atacante.boolean.get("volpinaActiva")) {
             
             client.send("alerta_personal", "Ya disparaste un BANG! en este turno, no podés disparar dos BANG! por turno.");
             return false; 
@@ -1876,6 +1877,10 @@ export class EfectoDano implements IEfectoCarta {
 
             if (atacante && atacante.string.get("angryBird") == "chuck"){
                 distancia -= 3;
+            }
+
+            if (atacante && atacante.boolean.get("volpinaActiva")){
+                distancia -= 2
             }
 
             if (atacante && atacante.string.get("angryBird") == "blue"){
