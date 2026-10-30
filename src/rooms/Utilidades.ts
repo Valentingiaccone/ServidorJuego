@@ -60,7 +60,7 @@ export class Utilidades {
             }
         }
 
-        if (atacante.boolean.get("leon_oculto")){
+        if (atacante && atacante.boolean.get("leon_oculto")){
             cantidad = 0
         }
 
