@@ -378,12 +378,17 @@ export class MyRoom extends Room implements IMyRoom{
                 if (totalJugadores <= 2) mazoRoles = ["Sheriff", "Renegado"];
                 else if (totalJugadores === 3) mazoRoles = ["Sheriff", "Renegado", "Forajido"];
                 else if (totalJugadores === 4) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido"];
-                else if (totalJugadores === 5) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Alguacil"];
-                else if (totalJugadores === 6) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil"];
-                else if (totalJugadores === 7) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"];
-                else if (totalJugadores === 8) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"];
-                else if (totalJugadores === 9) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil"];
-                else if (totalJugadores === 10) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil"];
+                else if (totalJugadores === 5) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Alguacil"]; // a
+                else if (totalJugadores === 6) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil"]; // f
+                else if (totalJugadores === 7) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"]; // a
+                else if (totalJugadores === 8) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil"]; // f
+                else if (totalJugadores === 9) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil"]; // a
+                else if (totalJugadores === 10) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil"]; // f
+                else if (totalJugadores === 11) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil"]; // a
+                else if (totalJugadores === 12) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil"]; // f
+                else if (totalJugadores === 13) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil", "Alguacil"]; // a
+                else if (totalJugadores === 14) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil", "Alguacil"]; // f
+                else if (totalJugadores === 15) mazoRoles = ["Sheriff", "Renegado", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Forajido", "Alguacil", "Alguacil", "Alguacil", "Alguacil", "Alguacil", "Alguacil"]; // a
 
                 this.state.cantidadForajidos = mazoRoles.filter(rol => rol === "Forajido").length;
                 this.state.cantidadAlguaciles = mazoRoles.filter(rol => rol === "Alguacil").length;

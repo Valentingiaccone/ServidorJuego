@@ -176,15 +176,14 @@ export class Utilidades {
         console.log("Aplicar curacion:", jugador?.personaje, cantidadBase, causa, forzarCuracion)
 
         let cantidadFinal = cantidadBase;
-        let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
+        let pasiva: IPersonaje = sala.gestorPersonajes.obtener(jugador.personaje);
 
         if (causa === "BOTIQUIN" && pasiva && pasiva.modificarCuraBotiquin) {
             cantidadFinal += pasiva.modificarCuraBotiquin(sala, jugador);
         }
 
-        let pasivaCuracion: IPersonaje = sala.gestorPersonajes.obtener(jugador)
-        if (pasivaCuracion && pasivaCuracion.modificarCuracion){
-            cantidadFinal += pasivaCuracion.modificarCuracion(sala, jugador)
+        if (pasiva && pasiva.modificarCuracion){
+            cantidadFinal += pasiva.modificarCuracion(sala, jugador)
         }
 
         let totalVivos = 0;
@@ -723,7 +722,8 @@ export class Utilidades {
         nombrePersonajeNpc: string, 
         vidasNpc: number, 
         cartasIniciales: number = 0,
-        posicionAparicion: "antihorario" | "horario"
+        posicionAparicion: "antihorario" | "horario",
+        nombrePersonalizado: string = ""
     ): Jugador | null {
         // 1. Identificamos al Invocador Físico (usado para ubicarlo en la mesa)
         let idInvocador = this.obtenerSessionIdDeJugador(sala, dueno);
@@ -736,7 +736,7 @@ export class Utilidades {
         let idNpc = `npc_${nombrePersonajeNpc.toLowerCase()}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         let npc = new Jugador();
 
-        npc.nombre = nombrePersonajeNpc;
+        npc.nombre = (nombrePersonalizado != "") ? nombrePersonalizado : nombrePersonajeNpc
         npc.personaje = nombrePersonajeNpc;
         npc.esNpc = true;
         npc.idDueno = idDuenoRaiz;
