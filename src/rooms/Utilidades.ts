@@ -116,7 +116,8 @@ export class Utilidades {
             sala.reproducirSfx("sfxOrbitaBang")
         }
 
-        this.agregarEstadistica(atacante, cantidadDanoCuerpo + cantidadDanoEscudo, "daño")
+        this.agregarEstadistica(atacante, cantidadDanoCuerpo + cantidadDanoEscudo, "🔫daño")
+        this.agregarEstadistica(victima, cantidadDanoCuerpo + cantidadDanoEscudo, "💔daño recibido")
 
         sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"});
         sala.evaluarMuerte(victima, atacante, ignoraEscudo);
@@ -140,7 +141,7 @@ export class Utilidades {
             pasiva.onRecibirEscudo(sala, jugador, cantidad, causa);
         }
 
-        this.agregarEstadistica(jugador, cantidad, "escudos")
+        this.agregarEstadistica(jugador, cantidad, "🛡️escudos")
     }
 
     public static puedeRecibirCuracion(sala: any, jugador: any): boolean {
@@ -215,7 +216,7 @@ export class Utilidades {
 
             const vidasCuradas: number = jugador.vidas - vidasAntes
             if (vidasCuradas > 0){
-                this.agregarEstadistica(jugador, vidasCuradas, "curacion")
+                this.agregarEstadistica(jugador, vidasCuradas, "💚curacion")
             }
             sala.broadcast("animacionJugador", {personaje: jugador.personaje, animacion: "recibirCuracion"});
         }
@@ -718,14 +719,19 @@ export class Utilidades {
      */
     public static invocarNpcEnMesa(
         sala: any, 
-        dueno: Jugador, 
+        dueno: Jugador, // El que realiza la invocación físicamente
         nombrePersonajeNpc: string, 
         vidasNpc: number, 
         cartasIniciales: number = 0,
         posicionAparicion: "antihorario" | "horario"
     ): Jugador | null {
-        let idDueno = this.obtenerSessionIdDeJugador(sala, dueno);
-        if (!idDueno) return null;
+        // 1. Identificamos al Invocador Físico (usado para ubicarlo en la mesa)
+        let idInvocador = this.obtenerSessionIdDeJugador(sala, dueno);
+        if (!idInvocador) return null;
+
+        // 2. Identificamos al Dueño Raíz Supremo (el jugador real)
+        // Si el que invoca ya es un NPC, heredamos su dueño. Si no, el dueño es el propio invocador.
+        let idDuenoRaiz = (dueno.esNpc && dueno.idDueno !== "") ? dueno.idDueno : idInvocador;
 
         let idNpc = `npc_${nombrePersonajeNpc.toLowerCase()}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         let npc = new Jugador();
@@ -733,7 +739,7 @@ export class Utilidades {
         npc.nombre = nombrePersonajeNpc;
         npc.personaje = nombrePersonajeNpc;
         npc.esNpc = true;
-        npc.idDueno = idDueno;
+        npc.idDueno = idDuenoRaiz;
         npc.rol = "";
         npc.vidas = vidasNpc;
         npc.vidasMaximas = vidasNpc;
@@ -749,12 +755,12 @@ export class Utilidades {
             if (datosClase.sfxDefault) npc.sfxDefault = datosClase.sfxDefault;
         }
 
-        // Calculamos el desfase: +1 si es horario (después del dueño), 0 si es antihorario (antes del dueño)
+        // Calculamos el desfase respecto al INVOCADOR
         let offset = (posicionAparicion === "horario") ? 1 : 0;
 
-        // 1. Insertar en ordenSillasFisicas sin usar ArraySchema.splice para insertar
+        // 1. Insertar en ordenSillasFisicas apuntando al idInvocador
         let sillasTemp = Array.from(sala.state.ordenSillasFisicas) as string[];
-        let idxFisico = sillasTemp.indexOf(idDueno);
+        let idxFisico = sillasTemp.indexOf(idInvocador);
         if (idxFisico !== -1) {
             sillasTemp.splice(idxFisico + offset, 0, idNpc);
         } else {
@@ -763,17 +769,20 @@ export class Utilidades {
         sala.state.ordenSillasFisicas.clear();
         sillasTemp.forEach(id => sala.state.ordenSillasFisicas.push(id));
 
-        // 2. Insertar en el orden de turnos del servidor (array normal de JS)
-        if (sala.ordenTurnos) {
-            let idxTurno = sala.ordenTurnos.indexOf(idDueno);
-            if (idxTurno !== -1) {
-                sala.ordenTurnos.splice(idxTurno + offset, 0, idNpc);
-            } else {
-                sala.ordenTurnos.push(idNpc);
-            }
+        // 2. Insertar en el orden de turnos del servidor apuntando al idInvocador
+        let turnosTemp = Array.from(sala.state.ordenTurnos) as string[];
+        let idxTurno = turnosTemp.indexOf(idInvocador);
+
+        if (idxTurno !== -1) {
+            turnosTemp.splice(idxTurno + offset, 0, idNpc);
+        } else {
+            turnosTemp.push(idNpc);
         }
 
-        // 3. Agregar al MapSchema sin hacer .clear() de los demás jugadores
+        sala.state.ordenTurnos.clear();
+        turnosTemp.forEach(id => sala.state.ordenTurnos.push(id));
+
+        // 3. Agregar al MapSchema
         sala.state.jugadores.set(idNpc, npc);
 
         // 4. Repartir cartas iniciales si corresponde
@@ -781,9 +790,8 @@ export class Utilidades {
             sala.repartirCartas(npc, cartasIniciales, "inicio_npc");
         }
 
-        // 5. Ejecutar onIniciarPartida del NPC si tuviera
-        if (datosClase && datosClase.onIniciarPartida) {
-            datosClase.onIniciarPartida(sala, npc);
+        if (datosClase && datosClase.onAsignar) {
+            datosClase.onAsignar(sala, npc);
         }
 
         sala.agregarRegistro(`🤖 ¡${dueno.personaje} invocó a ${npc.personaje} en la mesa!`);
@@ -846,7 +854,7 @@ export class Utilidades {
     /**
      * Agrega una cantidad a una estadistica de un jugador
      */
-    public static agregarEstadistica(jugador: Jugador, cantidad: number, estadistica: "daño" | "curacion" | "escudos"): void {
+    public static agregarEstadistica(jugador: Jugador, cantidad: number, estadistica: "🔫daño" | "💚curacion" | "🛡️escudos" | "💔daño recibido" | "🃏jugadas"): void {
         if (jugador){
             if (jugador.estadistica.has(estadistica)){
                 jugador.estadistica.set(estadistica, jugador.estadistica.get(estadistica) + cantidad)
@@ -881,5 +889,51 @@ export class Utilidades {
         }
 
         return false
+    }
+
+    /**
+     * Devuelve el siguiente jugador vivo en sentido horario, basándose estrictamente en el arreglo visual de sillas físicas.
+     * @param sala La referencia a la sala (Colyseus).
+     * @param jugador El jugador desde el que se empieza a contar.
+     * @returns El siguiente Jugador vivo, o null si falló.
+     */
+    public static obtenerSiguienteVivoHorario(sala: IMyRoom, jugador: Jugador): Jugador | null {
+        let state = (sala as any).state;
+        let idOrigen = this.obtenerSessionIdDeJugador(sala, jugador);
+        
+        if (!idOrigen) return null;
+
+        let arraySillas = state.ordenSillasFisicas;
+        let idxOrigen = arraySillas.indexOf(idOrigen);
+        
+        if (idxOrigen === -1) return null;
+
+        let n = arraySillas.length;
+        
+        // Sumar 1 avanza hacia adelante en el arreglo (que visualmente es horario según tu lógica)
+        let paso = 1; 
+
+        // Buscamos la siguiente silla que tenga a alguien VIVO
+        for (let i = 1; i < n; i++) {
+            // El módulo asegura que al llegar al final del array, demos la vuelta al índice 0
+            let idxTest = (idxOrigen + (paso * i) + n) % n; 
+            let idTest = arraySillas[idxTest];
+            let jugTest = state.jugadores.get(idTest);
+            
+            // Si el jugador existe y está vivo, devolvemos solo el jugador
+            if (jugTest && jugTest.estaVivo) {
+                return jugTest;
+            }
+        }
+
+        // Si da toda la vuelta y no encuentra a nadie (o es el único en la sala), devuelve null
+        return null;
+    }
+
+    static removerBotonActivo(jugador: Jugador, idBoton: string): void {
+        let indice = jugador.habilidadesActivas.findIndex((boton: any) => boton.id === idBoton);
+        if (indice !== -1) {
+            jugador.habilidadesActivas.splice(indice, 1);
+        }
     }
 }

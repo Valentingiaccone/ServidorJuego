@@ -141,6 +141,7 @@ export class MyRoomState extends Schema {
     @type("string") ruletaRojo: string = "";
     @type("boolean") faseTransicion: boolean = false; 
     @type(["string"]) ordenSillasFisicas = new ArraySchema<string>();
+    @type(["string"]) ordenTurnos = new ArraySchema<string>();
     @type(InteraccionRequest) interaccionActiva = new InteraccionRequest();
     @type(SeleccionCartasRequest) seleccionCartasActiva = new SeleccionCartasRequest();
     @type("string") spriteFlecha: string = "";

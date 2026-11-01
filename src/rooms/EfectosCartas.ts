@@ -225,7 +225,7 @@ export class EfectoTiendaGriff implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         // 1. Encontrar a todos los vivos en orden (empezando por el que la jugó)
         let vivosIds: string[] = [];
-        let idsJugadores = sala.ordenTurnos.length > 0 ? sala.ordenTurnos : Array.from(sala.state.jugadores.keys());
+        let idsJugadores = sala.state.ordenTurnos.length > 0 ? sala.state.ordenTurnos : Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
         
         for(let i = 0; i < idsJugadores.length; i++) {
@@ -265,7 +265,7 @@ export class EfectoTiendaJuju implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         
         let vivosIds: string[] = [];
-        let idsJugadores = sala.ordenTurnos.length > 0 ? sala.ordenTurnos : Array.from(sala.state.jugadores.keys());
+        let idsJugadores = sala.state.ordenTurnos.length > 0 ? sala.state.ordenTurnos : Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
         
         // 1. Encontrar a todos los vivos (EXCEPTO al que la jugó)
@@ -546,7 +546,7 @@ export class EfectoRayo implements IEfectoCarta {
         });
 
         // 3. Obtenemos el orden de la mesa
-        let idsJugadores = sala.ordenTurnos.length > 0 ? sala.ordenTurnos : Array.from(sala.state.jugadores.keys());
+        let idsJugadores = sala.state.ordenTurnos.length > 0 ? sala.state.ordenTurnos : Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
         let ordenMesa: string[] = [];
         
@@ -878,7 +878,7 @@ export class EfectoPetaseta implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: any): boolean {
         jugadorQueJuega.mano.splice(indiceCarta, 1);
 
-        let idsJugadores = sala.ordenTurnos.length > 0 ? sala.ordenTurnos : Array.from(sala.state.jugadores.keys());
+        let idsJugadores = sala.state.ordenTurnos.length > 0 ? sala.state.ordenTurnos : Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
         let ordenMesa: string[] = [];
         
@@ -895,6 +895,7 @@ export class EfectoPetaseta implements IEfectoCarta {
         sala.broadcast("notificacion_turno", `🌋 ¡${jugadorQueJuega.personaje} invocó una Petaseta!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
         sala.agregarAlDescarte(cartaJugada, jugadorQueJuega, client);
+        sala.reproducirSfx("sfxPetaseta")
 
         victimasIds.forEach(id => {
             let victima = sala.state.jugadores.get(id);
@@ -1139,7 +1140,7 @@ export class EfectoDomoProtector implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
         jugadorQueJuega.mano.splice(indiceCarta, 1);
 
-        let idsJugadores = sala.ordenTurnos.length > 0 ? sala.ordenTurnos : Array.from(sala.state.jugadores.keys());
+        let idsJugadores = sala.state.ordenTurnos.length > 0 ? sala.state.ordenTurnos : Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
         let ordenMesa: string[] = [];
         
@@ -1215,7 +1216,7 @@ export class EfectoTiendaPierre implements IEfectoCarta {
     ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
         
         let vivosIds: string[] = [];
-        let idsJugadores = sala.ordenTurnos.length > 0 ? sala.ordenTurnos : Array.from(sala.state.jugadores.keys());
+        let idsJugadores = sala.state.ordenTurnos.length > 0 ? sala.state.ordenTurnos : Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
         
         for(let i = 0; i < idsJugadores.length; i++) {
@@ -1603,7 +1604,7 @@ export class EfectoTormenta implements IEfectoCarta {
         
         // 1. Obtener orden en base a los IDs de los jugadores en la mesa
         let vivosIds: string[] = [];
-        let idsJugadores = sala.ordenTurnos.length > 0 ? sala.ordenTurnos : Array.from(sala.state.jugadores.keys());
+        let idsJugadores = sala.state.ordenTurnos.length > 0 ? sala.state.ordenTurnos : Array.from(sala.state.jugadores.keys());
         let indiceInicial = idsJugadores.indexOf(client.sessionId);
         
         // Empezamos desde el siguiente (i = 1) y damos la vuelta completa
@@ -1948,6 +1949,10 @@ export class EfectoDano implements IEfectoCarta {
             sala.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
 
             sala.enviarInteraccionBang(idObjetivo);
+
+            if (cartaJugada.nombre == "Apisonaflor BANG!"){
+                sala.reproducirSfx("sfxApisonaflor")
+            }
             
             return true;
         }

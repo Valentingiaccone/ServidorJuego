@@ -18,7 +18,6 @@ export class MyRoom extends Room implements IMyRoom{
     colaTienda: string[] = [];
     ruletaInterna: any[] = [];
     colaInteracciones: any[] = [];
-    ordenTurnos: string[] = [];
 
     public opcionesSusato: any[] = [];
     public susatoFaltanElegir: number = 0;
@@ -292,9 +291,9 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.ordenSillasFisicas.splice(idxSilla, 1);
                 }
 
-                let idxTurno = this.ordenTurnos.indexOf(idVictima);
+                let idxTurno = this.state.ordenTurnos.indexOf(idVictima);
                 if (idxTurno !== -1) {
-                    this.ordenTurnos.splice(idxTurno, 1);
+                    this.state.ordenTurnos.splice(idxTurno, 1);
                 }
 
                 // Lo quitamos del mapa de jugadores
@@ -365,12 +364,12 @@ export class MyRoom extends Room implements IMyRoom{
                 
                 this.state.jugadores.clear();
                 this.state.ordenSillasFisicas.clear();
-                this.ordenTurnos = []; // <-- NUEVO
+                this.state.ordenTurnos.clear(); // <-- NUEVO
                 
                 arrayJugadores.forEach(([id, jug]) => {
                     this.state.jugadores.set(id, jug);
                     this.state.ordenSillasFisicas.push(id);
-                    this.ordenTurnos.push(id); // <-- NUEVO
+                    this.state.ordenTurnos.push(id); // <-- NUEVO
                 });
 
                 this.broadcast("musica", "seleccionDePersonaje")
@@ -646,8 +645,8 @@ export class MyRoom extends Room implements IMyRoom{
                 let jugadoresIniciales = Array.from(this.state.jugadores.values());
                 jugadoresIniciales.forEach((j) => {
                     let pasiva = this.gestorPersonajes.obtener(j.personaje);
-                    if (pasiva && pasiva.onIniciarPartida) {
-                        pasiva.onIniciarPartida(this, j);
+                    if (pasiva && pasiva.onAsignar) {
+                        pasiva.onAsignar(this, j, false);
                     }
                 });
 
@@ -1594,8 +1593,8 @@ export class MyRoom extends Room implements IMyRoom{
 
         cantidad += Utilidades.contarCartasPorNombre(jugador, "Anillo del ladron")
 
-        if (jugador.boolean.get("susato")) {
-            let cantidadAExtraer = cantidad + 1
+        if (jugador.boolean.get("susato") && causa == "turno") {
+            let cantidadAExtraer = cantidad + 3
             let cartasExtraidas = [];
 
             // Sacamos el doble de cartas del mazo
@@ -1651,7 +1650,7 @@ export class MyRoom extends Room implements IMyRoom{
     }
 
     avanzarAlSiguienteTurno(idJugadorActual: string) {
-        const idsJugadores = this.ordenTurnos.length > 0 ? this.ordenTurnos : Array.from(this.state.jugadores.keys());
+        const idsJugadores = this.state.ordenTurnos.length > 0 ? this.state.ordenTurnos : Array.from(this.state.jugadores.keys());
         if (idsJugadores.length === 0) return;
 
         let idxActual = idsJugadores.indexOf(idJugadorActual);
@@ -1962,7 +1961,7 @@ export class MyRoom extends Room implements IMyRoom{
     }
 
     obtenerSiguienteJugadorVivo(idActual: string): { id: string, jugador: any } {
-        const idsJugadores = this.ordenTurnos.length > 0 ? this.ordenTurnos : Array.from(this.state.jugadores.keys());
+        const idsJugadores = this.state.ordenTurnos.length > 0 ? this.state.ordenTurnos : Array.from(this.state.jugadores.keys());
         if (idsJugadores.length === 0) return { id: "", jugador: null };
 
         const indiceActual = idsJugadores.indexOf(idActual);
@@ -2082,6 +2081,8 @@ export class MyRoom extends Room implements IMyRoom{
                 }
             }
         });
+
+        Utilidades.agregarEstadistica(jugadorQueJuega, 1, "🃏jugadas")
     }
 
     private ejecutarAccionesAlPasarTurno(jugadorQuePasaElTurno: Jugador){
