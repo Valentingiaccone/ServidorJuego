@@ -1,7 +1,7 @@
 // EfectosCartas.ts
 
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
-import { GestorPersonajes } from "./Personajes.js";
+import { GestorPersonajes, IPersonaje } from "./Personajes.js";
 import { Carta, Jugador } from "./schema/MyRoomState.js";
 import { Utilidades } from "./Utilidades.js";
 
@@ -438,8 +438,8 @@ export class EfectoDescartar implements IEfectoCarta {
         let cantidad = parametros[2] ? parseInt(parametros[2]) : 1;
 
         if (tipoMaldicion === "venenoso") {
-            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.personaje} descartó un ${carta.nombre} y el veneno le quita ${cantidad} vida (Daño directo)!`);
-            Utilidades.procesarDano(sala, jugador, null, cantidad, "MALDICION", true);
+            sala.broadcast("notificacion_turno", `🍄 ¡${jugador.personaje} descartó un ${carta.nombre} y recibe ${cantidad} de daño!`);
+            Utilidades.procesarDano(sala, jugador, null, cantidad, "MALDICION", false);
             sala.reproducirSfx("sfxHongoVenenoso")
         }
         else if (tipoMaldicion === "reductor") {
@@ -1948,7 +1948,16 @@ export class EfectoDano implements IEfectoCarta {
             
             sala.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
 
-            sala.enviarInteraccionBang(idObjetivo);
+            let cantidadDeFallo: number = 1
+            
+            let pasivaAtacante: IPersonaje = sala.gestorPersonajes.obtener(atacante.personaje)
+            if (pasivaAtacante && pasivaAtacante.modificarCantidadDeFalloParaEsquivarAtacante){
+                cantidadDeFallo += pasivaAtacante.modificarCantidadDeFalloParaEsquivarAtacante(sala, atacante, victima, cartaJugada)
+            }
+
+            sala.state.fallosNecesarios = cantidadDeFallo
+
+            sala.enviarInteraccionBang(idObjetivo, cantidadDeFallo)
 
             if (cartaJugada.nombre == "Apisonaflor BANG!"){
                 sala.reproducirSfx("sfxApisonaflor")

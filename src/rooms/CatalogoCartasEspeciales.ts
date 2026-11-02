@@ -423,7 +423,7 @@ export class CatalogoCartasEspeciales {
         
         if (elegida === "venenoso") {
             clon.nombre = "Hongo Venenoso";
-            clon.descripcion = "Al descartarla perdés 1 vida.";
+            clon.descripcion = "Al descartarla recibis 1 de daño.";
             clon.descripcionEnCatalan = "En descartar-la perds 1 vida.";
             clon.efecto = "descartar_venenoso_1";
         } else if (elegida === "reductor") {

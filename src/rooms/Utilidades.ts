@@ -36,6 +36,13 @@ export class Utilidades {
             ignoraEscudo = true;
         }
 
+        if (atacante && atacante.boolean.get("roaringDaño")){
+            cantidad++
+        }
+        if (atacante && atacante.boolean.get("leon_oculto")){
+            cantidad = 0
+        }
+
         if (causa == "BANG" || causa == "Orbita BANG!"){
             if (atacante){
                 if (atacante.boolean.get("chispitasCargado")){
@@ -58,10 +65,6 @@ export class Utilidades {
                     return;              
                 }
             }
-        }
-
-        if (atacante && atacante.boolean.get("leon_oculto")){
-            cantidad = 0
         }
 
         let anilloInmunidad: Carta = this.buscarCartaPorNombre(victima, "Anillo de inmunidad")

@@ -1,4 +1,5 @@
 // GestorNPC.ts
+import { IMyRoom } from "./IMyRoom.js";
 import { Carta, Jugador } from "./schema/MyRoomState.js";
 import { Utilidades } from "./Utilidades.js";
 
@@ -40,12 +41,14 @@ export class GestorNPC {
         let jugador = sala.state.jugadores.get(idActual);
         if (!jugador || !jugador.esNpc || !jugador.estaVivo) return;
 
+        let delay: number = Math.max(100, 1500 - (100 * sala.getTotalNpc()))
+
         sala.clock.setTimeout(() => {
             if (sala.state.estadoJuego !== "Jugando") return;
             if (sala.state.jugadorDesenfundando === idActual) {
                 sala.procesarVoltearCarta(this.crearClienteNpc(idActual));
             }
-        }, 1500);
+        }, delay);
     }
 
     public static verificarInteraccionUniversalNpc(sala: any) {
@@ -54,6 +57,8 @@ export class GestorNPC {
 
         let jugador = sala.state.jugadores.get(idActual);
         if (!jugador || !jugador.esNpc || !jugador.estaVivo) return;
+
+        let delay: number = Math.max(100, 1500 - (100 * sala.getTotalNpc()))
 
         sala.clock.setTimeout(() => {
             if (sala.state.estadoJuego !== "Jugando") return;
@@ -66,7 +71,7 @@ export class GestorNPC {
             if (opcionElegida) {
                 sala.procesarResponderInteraccion(this.crearClienteNpc(idActual), opcionElegida.idAccion);
             }
-        }, 1500);
+        }, delay);
     }
 
     public static verificarSeleccionCartaNpc(sala: any) {
@@ -75,6 +80,8 @@ export class GestorNPC {
 
         let jugador = sala.state.jugadores.get(idActual);
         if (!jugador || !jugador.esNpc || !jugador.estaVivo) return;
+
+        let delay: number = Math.max(100, 1500 - (100 * sala.getTotalNpc()))
 
         sala.clock.setTimeout(() => {
             if (sala.state.estadoJuego !== "Jugando") return;
@@ -91,7 +98,7 @@ export class GestorNPC {
                 // Si por algún motivo no hubiera opciones válidas, cancela para no trabar la partida
                 sala.procesarRespuestaSeleccionCarta(this.crearClienteNpc(idActual), "cancelar");
             }
-        }, 1500);
+        }, delay);
     }
 
     // =========================================================================
@@ -106,7 +113,11 @@ export class GestorNPC {
     }
 
     private static programarPasoTurnoNpc(sala: any, idNpc: string, pasada: number, indiceCarta: number) {
-        let delay = Math.floor(Math.random() * 1000) + 500;
+        let totalNpc: number = sala.getTotalNpc()
+
+        let rango: number = Math.max(100, 1000 - (60 * totalNpc))
+        let minimo: number = Math.max(100, 500 - (30 * totalNpc))
+        let delay = Math.floor(Math.random() * rango) + minimo;
 
         sala.clock.setTimeout(() => {
             if (sala.state.estadoJuego !== "Jugando") return;

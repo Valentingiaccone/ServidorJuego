@@ -1191,18 +1191,35 @@ export class MyRoom extends Room implements IMyRoom{
             }
         }
         // --- CARTA BANG (SISTEMA UNIVERSAL) ---
-        else if (idAccion === "bang_fallo") {
-            let indiceFallo = victima.mano.findIndex((c: any) => c.efecto === "esquivar");
-            if (indiceFallo !== -1) {
-                let cartaJugada = victima.mano.splice(indiceFallo, 1)[0];
-                this.agregarAlDescarte(cartaJugada);
-                this.ejecutarAnimacionCarta(client, cartaJugada);
-                this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.personaje} usó un ¡Fallo! y esquivó el ataque.`);
-                this.reproducirSfx("sfxFallo")
-                this.ejecutarPasivasAlJugarCarta(victima, cartaJugada);
+        else if (idAccion.startsWith("bang_fallo")) {
+            let partes = idAccion.split("_");
+            let cantidadRequerida = partes.length >= 3 ? parseInt(partes[2]) : 1;
+            
+            let fallosJugados = [];
+
+            // Buscamos y removemos la cantidad de fallos indicada
+            for (let i = 0; i < cantidadRequerida; i++) {
+                let indiceFallo = victima.mano.findIndex((c: any) => c.efecto === "esquivar");
+                if (indiceFallo !== -1) {
+                    let cartaJugada = victima.mano.splice(indiceFallo, 1)[0];
+                    fallosJugados.push(cartaJugada);
+                }
             }
             
-            this.state.usosBarril = 0;
+            if (fallosJugados.length > 0) {
+                // Ejecutamos las mecánicas por cada fallo usado
+                fallosJugados.forEach(cartaJugada => {
+                    this.agregarAlDescarte(cartaJugada);
+                    this.ejecutarAnimacionCarta(client, cartaJugada);
+                    this.ejecutarPasivasAlJugarCarta(victima, cartaJugada);
+                });
+                
+                let textoChat = fallosJugados.length > 1 ? `usó ${fallosJugados.length} ¡Fallo! y esquivó` : `usó un ¡Fallo! y esquivó`;
+                this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.personaje} ${textoChat} el ataque.`);
+                this.reproducirSfx("sfxFallo");
+            }
+            
+            this.state.usosBarril = 0
             this.procesarSiguienteInteraccion();
         }
         else if (idAccion === "bang_barril") {
@@ -1232,7 +1249,7 @@ export class MyRoom extends Room implements IMyRoom{
                 }
             }
             
-            this.state.usosBarril = 0;
+            this.state.usosBarril = 0
             if (victima.vidas > 0) {
                 this.procesarSiguienteInteraccion();
             }
@@ -1343,11 +1360,11 @@ export class MyRoom extends Room implements IMyRoom{
                 if (motivoActual === "Barril") {
                     if (fueExitoStr === "exito") {
                         this.broadcast("notificacion_turno", `❤️ ¡Salió Verde! El Barril salvó a ${victima?.nombre}.`);
-                        this.state.usosBarril = 0;
+                        this.state.usosBarril = 0
                         this.procesarSiguienteInteraccion();
                     } else {
                         this.broadcast("notificacion_turno", `💥 ¡Salió Rojo! El Barril no aguantó el disparo.`);
-                        this.enviarInteraccionBang(client.sessionId);
+                        this.enviarInteraccionBang(client.sessionId, this.state.fallosNecesarios);
                     }
                 }
                 else if (motivoActual === "Dinamita") {
@@ -2032,6 +2049,11 @@ export class MyRoom extends Room implements IMyRoom{
             this.reproducirSfx("sfxPerroAtacando")
         }
 
+        if (jugador && cartaDescartada.efecto && cartaDescartada.efecto.startsWith("descartar")) {
+            let partesEfecto = cartaDescartada.efecto.split("_");
+            this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, null, jugador, cartaDescartada, -1, partesEfecto, this.gestorPersonajes);
+        }
+
         this.agregarAlDescarte(cartaDescartada, jugador, null)
     }
 
@@ -2039,11 +2061,6 @@ export class MyRoom extends Room implements IMyRoom{
         if (!cartaDescartada.esConjurada){
             cartaDescartada.idDuenoDelPerro = ""
             this.state.descarte.push(cartaDescartada);
-        }
-
-        if (jugador && cartaDescartada.efecto && cartaDescartada.efecto.startsWith("descartar")) {
-            let partesEfecto = cartaDescartada.efecto.split("_");
-            this.despachadorCartas.ejecutarEfecto(partesEfecto[0], this, client, jugador, cartaDescartada, -1, partesEfecto, this.gestorPersonajes);
         }
     }
 
@@ -2181,12 +2198,14 @@ export class MyRoom extends Room implements IMyRoom{
         }
     }
 
-    public enviarInteraccionBang(idVictima: string) {
+    public enviarInteraccionBang(idVictima: string, cantidadFallosRequeridos: number = 1) {
         let victima = this.state.jugadores.get(idVictima);
         if (!victima || !victima.estaVivo) return;
 
-        // Evaluamos si tiene ¡Fallo!
-        let tieneFallo = victima.mano.some((c: any) => c.efecto === "esquivar");
+        // Evaluamos si tiene la cantidad de ¡Fallo! requeridos
+        let cantidadFallosEnMano = victima.mano.filter((c: any) => c.efecto === "esquivar").length;
+        let tieneFallo = cantidadFallosEnMano >= cantidadFallosRequeridos;
+        
         if (!victima.puedeUsarFallo || victima.boolean.get("frankFallo")) tieneFallo = false;
 
         // Evaluamos si le quedan usos del Barril
@@ -2202,11 +2221,12 @@ export class MyRoom extends Room implements IMyRoom{
         let atacante = this.state.jugadores.get(this.state.atacanteActual);
         let nombreAtacante = atacante ? atacante.nombre : "Alguien";
 
-        let titulo = `¡${nombreAtacante.toUpperCase()} te está disparando!\nElegí cómo responder:`
+        let titulo = `¡${nombreAtacante.toUpperCase()} te está disparando!\nElegí cómo responder:`;
+        let textoFallo = cantidadFallosRequeridos > 1 ? `Usar ${cantidadFallosRequeridos} ¡Fallo!` : "Usar ¡Fallo!";
 
         // ¡Usamos tu Interacción Universal!
         this.encolarInteraccion(idVictima, titulo, "bang", [
-            { idAccion: "bang_fallo", texto: "Usar ¡Fallo!", habilitado: tieneFallo, color: "verde" },
+            { idAccion: `bang_fallo_${cantidadFallosRequeridos}`, texto: textoFallo, habilitado: tieneFallo, color: "verde" },
             { idAccion: "bang_barril", texto: "Usar Barril", habilitado: tieneBarrilDisponible, color: "blanco" },
             { idAccion: "bang_dano", texto: "Recibir daño", habilitado: true, color: "rojo" }
         ]);
@@ -2304,5 +2324,15 @@ export class MyRoom extends Room implements IMyRoom{
             return true;
         }
         return false;
+    }
+
+    public getTotalNpc(): number {
+        let totalNpc: number = 0
+        this.getJugadores().forEach((j: Jugador) => {
+            if (j && j.estaVivo && j.esNpc){
+                totalNpc++
+            }
+        })
+        return totalNpc
     }
 }

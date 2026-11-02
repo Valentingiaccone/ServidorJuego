@@ -18,4 +18,5 @@ export interface IMyRoom {
 
     getSillasFisicas(): ArraySchema<string>
     
+    getTotalNpc(): number
 }

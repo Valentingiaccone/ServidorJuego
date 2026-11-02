@@ -131,6 +131,7 @@ export class MyRoomState extends Schema {
     @type("string") motivoDesenfundar: string = ""; 
     @type(Carta) cartaDesenfundada: Carta = new Carta();
     @type("number") usosBarril: number = 0;
+    @type("number") fallosNecesarios: number = 0;
     @type(["string"]) layoutRuleta = new ArraySchema<string>();
     @type("number") cantidadAlguaciles: number = 0;
     @type("number") cantidadForajidos: number = 0;
