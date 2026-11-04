@@ -1,6 +1,7 @@
 // EfectosCartas.ts
 
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
+import { IMyRoom } from "./IMyRoom.js";
 import { GestorPersonajes, IPersonaje } from "./Personajes.js";
 import { Carta, Jugador } from "./schema/MyRoomState.js";
 import { Utilidades } from "./Utilidades.js";
@@ -152,26 +153,36 @@ export class EfectoTiratachuela implements IEfectoCarta {
                 let victima = sala.state.jugadores.get(idVictima);
                 
                 // Evaluamos defensas en el momento de encolar
-                let tieneFallo = victima.mano.some((c: any) => c.efecto === "esquivar");
-                if (!victima.puedeUsarFallo || victima.boolean.get("frankFallo")) tieneFallo = false;
+                // let tieneFallo = victima.mano.some((c: any) => c.efecto === "esquivar");
+                // if (!victima.puedeUsarFallo || victima.boolean.get("frankFallo")) tieneFallo = false;
                 
-                let maxUsosBarril = 0;
-                let barril = victima.equipamiento?.get("barril");
-                if (barril) {
-                    if (barril.nombre === "Barril Pro") maxUsosBarril += 2;
-                    else maxUsosBarril += 1;
-                }
-                if (victima.tieneBarrilPasiva) maxUsosBarril++;
-                let tieneBarrilDisponible = (maxUsosBarril > 0);
+                // let maxUsosBarril = 0;
+                // let barril = victima.equipamiento?.get("barril");
+                // if (barril) {
+                //     if (barril.nombre === "Barril Pro") maxUsosBarril += 2;
+                //     else maxUsosBarril += 1;
+                // }
+                // if (victima.tieneBarrilPasiva) maxUsosBarril++;
+                // let tieneBarrilDisponible = (maxUsosBarril > 0);
 
-                sala.encolarInteraccion(idVictima, `¡El Tiratachuela te apunta!\nElegí cómo responder:`, "bang", [
-                    { idAccion: "bang_fallo", texto: "Usar ¡Fallo!", habilitado: tieneFallo, color: "verde" },
-                    { idAccion: "bang_barril", texto: "Usar Barril", habilitado: tieneBarrilDisponible, color: "blanco" },
-                    { idAccion: "bang_dano", texto: "Recibir daño", habilitado: true, color: "rojo" }
-                ]);
+                // sala.encolarInteraccion(idVictima, `¡El Tiratachuela te apunta!\nElegí cómo responder:`, "bang", [
+                //     { idAccion: "bang_fallo", texto: "Usar ¡Fallo!", habilitado: tieneFallo, color: "verde" },
+                //     { idAccion: "bang_barril", texto: "Usar Barril", habilitado: tieneBarrilDisponible, color: "blanco" },
+                //     { idAccion: "bang_dano", texto: "Recibir daño", habilitado: true, color: "rojo" }
+                // ]);
+
+                let cantidadDeFallo: number = 1
+
+                let pasivaAtacante: IPersonaje = sala.gestorPersonajes.obtener(jugadorQueJuega.personaje)
+                if (pasivaAtacante && pasivaAtacante.modificarCantidadDeFalloParaEsquivarAtacante){
+                    cantidadDeFallo += pasivaAtacante.modificarCantidadDeFalloParaEsquivarAtacante(sala, jugadorQueJuega, victima, cartaJugada)
+                }
+
+                sala.state.fallosNecesarios = cantidadDeFallo
+
+                sala.encolarInteraccionBang(victima, jugadorQueJuega, "", "tiratachuela", cantidadDeFallo, false)
             });
 
-            sala.state.spriteFlecha = "tiratachuela";
             sala.procesarSiguienteInteraccion();
             return true;
         } else {
@@ -1949,7 +1960,7 @@ export class EfectoDano implements IEfectoCarta {
             sala.broadcast("notificacion_turno", `⚠️ ¡${atacante.nombre} le atacó a ${victima.nombre}! ¿Tendrá un ¡Fallo!?`);
 
             let cantidadDeFallo: number = 1
-            
+
             let pasivaAtacante: IPersonaje = sala.gestorPersonajes.obtener(atacante.personaje)
             if (pasivaAtacante && pasivaAtacante.modificarCantidadDeFalloParaEsquivarAtacante){
                 cantidadDeFallo += pasivaAtacante.modificarCantidadDeFalloParaEsquivarAtacante(sala, atacante, victima, cartaJugada)
@@ -1957,7 +1968,7 @@ export class EfectoDano implements IEfectoCarta {
 
             sala.state.fallosNecesarios = cantidadDeFallo
 
-            sala.enviarInteraccionBang(idObjetivo, cantidadDeFallo)
+            sala.encolarInteraccionBang(victima, atacante, "", "revolver", cantidadDeFallo, true, true)
 
             if (cartaJugada.nombre == "Apisonaflor BANG!"){
                 sala.reproducirSfx("sfxApisonaflor")

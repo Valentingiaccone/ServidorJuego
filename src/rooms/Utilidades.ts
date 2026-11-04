@@ -39,8 +39,12 @@ export class Utilidades {
         if (atacante && atacante.boolean.get("roaringDaño")){
             cantidad++
         }
+
         if (atacante && atacante.boolean.get("leon_oculto")){
             cantidad = 0
+        }
+        if (victima && victima.efecto.has("inmortalidad") && victima.efecto.get("inmortalidad") > 0){
+            cantidad  = 0
         }
 
         if (causa == "BANG" || causa == "Orbita BANG!"){

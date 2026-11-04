@@ -1,7 +1,7 @@
 import { Room, Client } from "colyseus";
 import { Carta, HabilidadActiva, Jugador, MyRoomState, OpcionCartaSeleccion, OpcionInteraccion, OpcionPersonaje } from "./schema/MyRoomState.js";
 import { DespachadorDeCartas } from "./EfectosCartas.js";
-import { GestorPersonajes } from "./Personajes.js";
+import { GestorPersonajes, IPersonaje } from "./Personajes.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { Utilidades } from "./Utilidades.js";
 import { IMyRoom } from "./IMyRoom.js";
@@ -33,6 +33,10 @@ export class MyRoom extends Room implements IMyRoom{
 
     encolarInteraccion(idJugador: string, titulo: string, tema: string, opciones: any[]) {
         this.colaInteracciones.push({ idJugador, titulo, tema, opciones });
+    }
+
+    encolarInteraccionInmediatamente(idJugador: string, titulo: string, tema: string, opciones: any[]) {
+        this.colaInteracciones.unshift({ idJugador, titulo, tema, opciones });
     }
 
     procesarSiguienteInteraccion() {
@@ -987,7 +991,8 @@ export class MyRoom extends Room implements IMyRoom{
         else if (idAccion === "indios_dano") {
             this.broadcast("notificacion_turno", `🩸 ¡${victima.personaje} recibió 1 de daño por los Indios!`);
             let asesino = this.state.jugadores.get(this.state.atacanteActual);
-            Utilidades.procesarDano(this, victima, asesino, 1, "INDIOS");
+            Utilidades.procesarDano(this, victima, asesino, 1, "INDIOS")
+            this.reproducirSfx("sfxIndiosGolpe")
             
             if (victima.vidas > 0) {
                 this.procesarSiguienteInteraccion();
@@ -1232,7 +1237,7 @@ export class MyRoom extends Room implements IMyRoom{
             this.broadcast("notificacion_turno", `🛢️ ¡${victima.personaje} tira de la ruleta del Barril!`);
         }
         else if (idAccion === "bang_dano") {
-            let atacante = this.state.jugadores.get(this.state.atacanteActual);
+            let atacante = this.state.jugadores.get(this.state.atacanteActual)
             
             this.broadcast("notificacion_turno", `💥 ¡${victima.personaje} recibió el balazo de ${atacante?.personaje}!`);
             
@@ -1363,8 +1368,9 @@ export class MyRoom extends Room implements IMyRoom{
                         this.state.usosBarril = 0
                         this.procesarSiguienteInteraccion();
                     } else {
-                        this.broadcast("notificacion_turno", `💥 ¡Salió Rojo! El Barril no aguantó el disparo.`);
-                        this.enviarInteraccionBang(client.sessionId, this.state.fallosNecesarios);
+                        this.broadcast("notificacion_turno", `💥 ¡Salió Rojo! El Barril no aguantó el disparo.`)
+                        let atacante: Jugador = this.state.jugadores.get(this.state.atacanteActual)
+                        this.encolarInteraccionBang(victima, atacante, "", "revolver", this.state.fallosNecesarios, true, true)
                     }
                 }
                 else if (motivoActual === "Dinamita") {
@@ -2133,6 +2139,15 @@ export class MyRoom extends Room implements IMyRoom{
             }
         }
 
+        if (jugadorQuePasaElTurno.efecto.has("inmortalidad")){
+            Utilidades.restarEfecto(jugadorQuePasaElTurno, "inmortalidad", 1)
+            if (!jugadorQuePasaElTurno.efecto.has("inmortalidad")){
+                jugadorQuePasaElTurno.estaVivo = false
+                jugadorQuePasaElTurno.vidas = 0
+                this.evaluarMuerte(jugadorQuePasaElTurno)
+            }
+        }
+
         Utilidades.restarEfecto(jugadorQuePasaElTurno, "malestar", 1)
 
         Utilidades.restarEfecto(jugadorQuePasaElTurno, "tocxic", 1)
@@ -2198,17 +2213,15 @@ export class MyRoom extends Room implements IMyRoom{
         }
     }
 
-    public enviarInteraccionBang(idVictima: string, cantidadFallosRequeridos: number = 1) {
-        let victima = this.state.jugadores.get(idVictima);
+    public encolarInteraccionBang(victima: Jugador, atacante: Jugador, titulo: string, flecha: string, fallosRequeridos: number, ejecutarInmediatamente: boolean, encolarInmediatamente: boolean): void {
+        let idVictima: string = Utilidades.obtenerSessionIdDeJugador(this, victima)
         if (!victima || !victima.estaVivo) return;
 
-        // Evaluamos si tiene la cantidad de ¡Fallo! requeridos
-        let cantidadFallosEnMano = victima.mano.filter((c: any) => c.efecto === "esquivar").length;
-        let tieneFallo = cantidadFallosEnMano >= cantidadFallosRequeridos;
+        let cantidadFallosEnMano = victima.mano.filter((c: any) => c.efecto === "esquivar").length
+        let tieneFallo = cantidadFallosEnMano >= fallosRequeridos
         
-        if (!victima.puedeUsarFallo || victima.boolean.get("frankFallo")) tieneFallo = false;
+        if (!victima.puedeUsarFallo || victima.boolean.get("frankFallo")) tieneFallo = false
 
-        // Evaluamos si le quedan usos del Barril
         let maxUsosBarril = 0;
         let barril = victima.equipamiento?.get("barril");
         if (barril) {
@@ -2218,21 +2231,30 @@ export class MyRoom extends Room implements IMyRoom{
         if (victima.tieneBarrilPasiva) maxUsosBarril++;
         let tieneBarrilDisponible = (maxUsosBarril > 0 && this.state.usosBarril < maxUsosBarril);
 
-        let atacante = this.state.jugadores.get(this.state.atacanteActual);
         let nombreAtacante = atacante ? atacante.nombre : "Alguien";
 
-        let titulo = `¡${nombreAtacante.toUpperCase()} te está disparando!\nElegí cómo responder:`;
-        let textoFallo = cantidadFallosRequeridos > 1 ? `Usar ${cantidadFallosRequeridos} ¡Fallo!` : "Usar ¡Fallo!";
+        titulo = `¡${nombreAtacante.toUpperCase()} te está disparando!\nElegí cómo responder:`;
+        let textoFallo = fallosRequeridos > 1 ? `Usar ${fallosRequeridos} ¡Fallo!` : "Usar ¡Fallo!";
 
-        // ¡Usamos tu Interacción Universal!
-        this.encolarInteraccion(idVictima, titulo, "bang", [
-            { idAccion: `bang_fallo_${cantidadFallosRequeridos}`, texto: textoFallo, habilitado: tieneFallo, color: "verde" },
-            { idAccion: "bang_barril", texto: "Usar Barril", habilitado: tieneBarrilDisponible, color: "blanco" },
-            { idAccion: "bang_dano", texto: "Recibir daño", habilitado: true, color: "rojo" }
-        ]);
+        if (encolarInmediatamente){
+            this.encolarInteraccionInmediatamente(idVictima, titulo, "bang", [
+                { idAccion: `bang_fallo_${fallosRequeridos}`, texto: textoFallo, habilitado: tieneFallo, color: "verde" },
+                { idAccion: "bang_barril", texto: "Usar Barril", habilitado: tieneBarrilDisponible, color: "blanco" },
+                { idAccion: "bang_dano", texto: "Recibir daño", habilitado: true, color: "rojo" }
+            ]);
+        } else {
+            this.encolarInteraccion(idVictima, titulo, "bang", [
+                { idAccion: `bang_fallo_${fallosRequeridos}`, texto: textoFallo, habilitado: tieneFallo, color: "verde" },
+                { idAccion: "bang_barril", texto: "Usar Barril", habilitado: tieneBarrilDisponible, color: "blanco" },
+                { idAccion: "bang_dano", texto: "Recibir daño", habilitado: true, color: "rojo" }
+            ]);
+        }
 
-        this.state.spriteFlecha = "revolver";
-        this.procesarSiguienteInteraccion();
+        this.state.spriteFlecha = flecha
+        
+        if (ejecutarInmediatamente){
+            this.procesarSiguienteInteraccion()
+        }
     }
 
     public procesarJugarCarta(client: any, idCarta: string): boolean {
@@ -2334,5 +2356,19 @@ export class MyRoom extends Room implements IMyRoom{
             }
         })
         return totalNpc
+    }
+
+    public getTotalJugadoresMuertos(): number {
+        let totalMuerto: number = 0
+        this.getJugadores().forEach((j: Jugador) => {
+            if (j && !j.estaVivo){
+                totalMuerto++
+            }
+        })
+        return totalMuerto
+    }
+
+    public obtenerIPersonaje(personaje: string): IPersonaje {
+        return this.gestorPersonajes.obtener(personaje)
     }
 }
