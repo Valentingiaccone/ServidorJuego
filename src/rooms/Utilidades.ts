@@ -98,7 +98,7 @@ export class Utilidades {
         }
 
         let pasivaVictima = sala.gestorPersonajes.obtener(victima.personaje);
-        if (pasivaVictima && pasivaVictima.onRecibirDano) {
+        if (pasivaVictima && pasivaVictima.onRecibirDano && cantidad > 0) {
             pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
         }
 
@@ -114,7 +114,7 @@ export class Utilidades {
         }
 
         let pasivaAtacante = sala.gestorPersonajes.obtener(atacante?.personaje);
-        if (pasivaAtacante && pasivaAtacante.onGolpear) {
+        if (pasivaAtacante && pasivaAtacante.onGolpear && cantidad > 0) {
             pasivaAtacante.onGolpear(sala, atacante, victima, causa);
         }
 
