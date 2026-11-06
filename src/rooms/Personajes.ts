@@ -273,7 +273,7 @@ export class Chester implements IPersonaje {
     sfxDefault= "sfxChester"
 
     modificarSuerteRuletaNormal(sala: IMyRoom, jugador: Jugador): number {
-        return 4
+        return 5
     }
 
     modificarSuerteRuletaDinamita(sala: IMyRoom, jugador: Jugador): number {
@@ -2918,7 +2918,7 @@ export class Wendy implements IPersonaje {
 
 export class Abigail implements IPersonaje {
     nombre = "Abigail";
-    habilidad = "Repugnante:\nComo una buena asquerosa, repulsiva, fea y molesta, al golpear a otro jugador le agrega un efecto tocxic.\nBoton: pierde 1 vida y todos los demas obtienen 1 efecto tocxic.\nAl recibir daño: le agrega un efecto tocxic.";
+    habilidad = "Repugnante:\nComo una buena asquerosa, repulsiva, fea y molesta, al golpear a otro jugador le agrega un efecto tocxic.\nBoton (1 por turno): pierde 1 vida y todos los demas obtienen 2 efecto tocxic.\nAl recibir daño: le agrega un efecto tocxic.";
     habilidadEnCatalan = "..";
     vidasBase = 4;
 
@@ -2929,6 +2929,12 @@ export class Abigail implements IPersonaje {
         botonAbigail.tooltip = "Pierde 1 vida, 1 tocxic al resto.";
         botonAbigail.spriteBoton = "botonAbigail";
         jugador.habilidadesActivas.push(botonAbigail);
+        
+        jugador.boolean.set("abigailRecarga", true)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        miJugador.boolean.set("abigailRecarga", true)
     }
 
     onRemover(sala: IMyRoom, jugador: Jugador): void {
@@ -2947,15 +2953,21 @@ export class Abigail implements IPersonaje {
 
         if (jugador.estaVivo && idHabilidad === "abigail_tocxic") {
             
+            if (!jugador.boolean.get("abigailRecarga")){
+                client.send("alerta_personal", "Solo podes usar esta habilidad una vez por turno.");
+                return;
+            }
 
             if (jugador.vidas == 1) {
                 client.send("alerta_personal", "No podes usar la habilidad con 1 de vida.");
                 return;
             }
 
+            jugador.boolean.set("abigailRecarga", false)
+
             sala.getJugadores().forEach((j: Jugador) => {
                 if (j.estaVivo && j != jugador){
-                    Utilidades.agregarEfecto(j, "tocxic", 1)
+                    Utilidades.agregarEfecto(j, "tocxic", 2)
                 }
             });
 
@@ -3094,7 +3106,7 @@ export class Charlie implements IPersonaje {
 
 export class ElP implements IPersonaje {
     nombre = "ElP";
-    habilidad = "Robotilin:\nAl perder vida: gana un jugo.";
+    habilidad = "Robotilin:\nAl perder vida: gana un jugo (limite 3).\nCuando obtiene 3 jugo: roba una carta.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
     sfxMuerte: [string, boolean] = ["sfxElpMuerto", false];
@@ -3110,6 +3122,8 @@ export class ElP implements IPersonaje {
             sala.agregarRegistro(`🤖 ${victima.personaje} ganó un jugo.`)
             this.actualizarSprite(victima)
             if (victima.number.get("jugo") >= 3){
+                sala.repartirCartas(victima, 1, "pasiva")
+                sala.agregarRegistro(`🤖 ¡${victima.personaje} roba una carta por obtener 3 jugos!`)
                 sala.reproducirSfx("sfxElpLleno")
             }
         }
@@ -3118,7 +3132,7 @@ export class ElP implements IPersonaje {
     onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
         if (miJugador.estaVivo && miJugador.number.get("jugo") >= 3){
             if (Utilidades.puedeRecibirCuracion(sala, miJugador)){
-                Utilidades.aplicarCuracion(sala, miJugador, 1, "pasiva", false)
+                Utilidades.aplicarCuracion(sala, miJugador, 2, "pasiva", false)
                 sala.reproducirSfx("curacion")
                 sala.agregarRegistro(`🤖 ¡${miJugador.personaje} se curó 1 por tener 3 jugos!`)
                 miJugador.number.set("jugo", 0)
@@ -3993,7 +4007,7 @@ export class Maya implements IPersonaje {
 export class Volpina implements IPersonaje {
     nombre = "Volpina";
     vidasBase = 4;
-    habilidad = "Camuflaje:\nBoton (jugadores vivos * 2 usos por turno): imita en secreto las habilidades del otro jugador seleccionado mientras este viva.\nPenalizacion 1.";
+    habilidad = "Camuflaje:\nBoton (jugadores vivos usos por turno): imita en secreto las habilidades del otro jugador seleccionado mientras este viva.\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     sfxDefault: string = "sfxVolpina"
     sfxMuerte: [string, boolean, number?] = ["volpinaMuerte", false]
@@ -4047,8 +4061,8 @@ export class Volpina implements IPersonaje {
 
             // 3. ASIGNAR LOS EFECTOS DEL NUEVO PERSONAJE
             if (this.imitando != null && this.imitando != jugador) {
-                client.send("alerta_personal", `Ahora estás imitando a ${this.imitando.personaje}.`);
                 jugador.number.set("volpinaUsos", jugador.number.get("volpinaUsos") - 1)
+                client.send("alerta_personal", `Ahora estás imitando a ${this.imitando.personaje}.\nTe quedan ${jugador.number.get("volpinaUsos")} usos de habilidad.`);
                 
                 let claseNueva = sala.obtenerIPersonaje(this.imitando.personaje);
                 if (claseNueva && claseNueva.onAsignar) {
@@ -4090,7 +4104,7 @@ export class Volpina implements IPersonaje {
             }
         })
 
-        miJugador.number.set("volpinaUsos", vivos * 2)
+        miJugador.number.set("volpinaUsos", vivos)
 
         this.ejecutarImitacion(sala, miJugador, (pasiva) => {
             if (pasiva.onIniciarTurno) pasiva.onIniciarTurno(sala, miJugador)
@@ -4389,7 +4403,7 @@ export class Volpina implements IPersonaje {
 export class RoaringKnight implements IPersonaje {
     nombre = "Roaring knight";
     vidasBase = 4;
-    habilidad = "Dificultad artificial:\n+1 de daño en todo.\nPenalizacion 1.";
+    habilidad = "Dificultad artificial:\nAl golpear: hace +1 de daño al primer jugador que golpea en cada turno.\nPenalizacion 1.";
     habilidadEnCatalan = ".";
     sfxDefault: string = "sfxCaballero"
     sfxMuerte: [string, boolean, number?] = ["sfxCaballeroMuerte", false]
@@ -4400,6 +4414,14 @@ export class RoaringKnight implements IPersonaje {
 
     onRemover(sala: IMyRoom, jugador: Jugador): void {
         jugador.boolean.set("roaringDaño", false)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        miJugador.boolean.set("roaringDaño", true)
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
+        miJugador.boolean.set("roaringDaño", false)
     }
 
     modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
@@ -4459,78 +4481,83 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        this.registrar(new ColeCasiddy())
-        this.registrar(new Berry())
-        this.registrar(new Maton())
-        this.registrar(new Mandy())
-        this.registrar(new Tralalero())
-        this.registrar(new Darryl())
-        this.registrar(new JetpackCat())
-        this.registrar(new KayFaraday())
-        this.registrar(new Chester())
-        this.registrar(new Frank())
-        this.registrar(new Pam())
-        this.registrar(new Trucy())
-        this.registrar(new Luigi())
-        this.registrar(new Mario())
-        this.registrar(new Lesly())
-        this.registrar(new Mikotoba())
-        this.registrar(new Domino())
-        this.registrar(new Tilink())
-        this.registrar(new Flowery())
-        this.registrar(new Leon())
-        this.registrar(new Kazuma())
-        this.registrar(new Leah())
-        this.registrar(new Robin())
-        this.registrar(new Luciergana())
-        this.registrar(new Haley())
-        this.registrar(new Maggey())
-        this.registrar(new Mortis())
-        this.registrar(new Maya())
-        this.registrar(new Geraldo())
-        this.registrar(new RaymundoEscudos())
-        this.registrar(new Cubo())
-        this.registrar(new VonKarma())
-        this.registrar(new Mercy())
-        this.registrar(new Chispitas())
-        this.registrar(new Dahlia())
-        this.registrar(new Meg())
-        this.registrar(new Perro())
-        this.registrar(new DaveElLoco())
-        this.registrar(new Junkrat())
-        this.registrar(new Max())
-        this.registrar(new Pedro())
-        this.registrar(new Amelia())
-        this.registrar(new Microbios())
-        this.registrar(new PerroNinja())
-        this.registrar(new Monito())
-        this.registrar(new KarateKillo())
-        this.registrar(new Tripulante())
-        this.registrar(new Shelly())
-        this.registrar(new Byron())
-        this.registrar(new GeiruToneido())
-        this.registrar(new Wendy())
-        this.registrar(new Pierre())
-        this.registrar(new Zombistein())
-        this.registrar(new Abigail())
-        this.registrar(new Charlie())
-        this.registrar(new ElP())
-        this.registrar(new Tirachinas())
-        this.registrar(new Nita());
-        this.registrar(new Larry());
-        this.registrar(new Bubble())
-        this.registrar(new Phoenix())
-        this.registrar(new Clint())
-        this.registrar(new Kertley())
-        this.registrar(new Susato())
-        this.registrar(new Colt())
-        this.registrar(new Cosmo())
-        this.registrar(new Amber())
-        this.registrar(new FlorAmarilla())
-        this.registrar(new Volpina())
-        this.registrar(new Tracer())
+        // this.registrar(new ColeCasiddy())
+        // this.registrar(new Berry())
+        // this.registrar(new Maton())
+        // this.registrar(new Mandy())
+        // this.registrar(new Tralalero())
+        // this.registrar(new Darryl())
+        // this.registrar(new JetpackCat())
+        // this.registrar(new KayFaraday())
+        // this.registrar(new Chester())
+        // this.registrar(new Frank())
+        // this.registrar(new Pam())
+        // this.registrar(new Trucy())
+        // this.registrar(new Luigi())
+        // this.registrar(new Mario())
+        // this.registrar(new Lesly())
+        // this.registrar(new Mikotoba())
+        // this.registrar(new Domino())
+        // this.registrar(new Tilink())
+        // this.registrar(new Flowery())
+        // this.registrar(new Leon())
+        // this.registrar(new Kazuma())
+        // this.registrar(new Leah())
+        // this.registrar(new Robin())
+        // this.registrar(new Luciergana())
+        // this.registrar(new Haley())
+        // this.registrar(new Maggey())
+        // this.registrar(new Mortis())
+        // this.registrar(new Maya())
+        // this.registrar(new Geraldo())
+        // this.registrar(new RaymundoEscudos())
+        // this.registrar(new Cubo())
+        // this.registrar(new VonKarma())
+        // this.registrar(new Mercy())
+        // this.registrar(new Chispitas())
+        // this.registrar(new Dahlia())
+        // this.registrar(new Meg())
+        // this.registrar(new Perro())
+        // this.registrar(new DaveElLoco())
+        // this.registrar(new Junkrat())
+        // this.registrar(new Max())
+        // this.registrar(new Pedro())
+        // this.registrar(new Amelia())
+        // this.registrar(new Microbios())
+        // this.registrar(new PerroNinja())
+        // this.registrar(new Monito())
+        // this.registrar(new KarateKillo())
+        // this.registrar(new Tripulante())
+        // this.registrar(new Shelly())
+        // this.registrar(new Byron())
+        // this.registrar(new GeiruToneido())
+        // this.registrar(new Wendy())
+        // this.registrar(new Pierre())
+        // this.registrar(new Zombistein())
+        // this.registrar(new Abigail())
+        // this.registrar(new Charlie())
+        // this.registrar(new ElP())
+        // this.registrar(new Tirachinas())
+        // this.registrar(new Nita());
+        // this.registrar(new Larry());
+        // this.registrar(new Bubble())
+        // this.registrar(new Phoenix())
+        // this.registrar(new Clint())
+        // this.registrar(new Kertley())
+        // this.registrar(new Susato())
+        // this.registrar(new Colt())
+        // this.registrar(new Cosmo())
+        // this.registrar(new Amber())
+        // this.registrar(new FlorAmarilla())
+        // this.registrar(new Volpina())
+        // this.registrar(new Tracer())
+        // this.registrar(new RoaringKnight())
+        // this.registrar(new ShellyDeKiller())
+        
         this.registrar(new RoaringKnight())
-        this.registrar(new ShellyDeKiller())
+        this.registrar(new Volpina())
+        this.registrar(new Abigail())
+        this.registrar(new ElP())
 
 
 
