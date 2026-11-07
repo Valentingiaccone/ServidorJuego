@@ -1826,12 +1826,16 @@ export class MyRoom extends Room implements IMyRoom{
             this.prepararDesenfundar(idJugador, "Prision");
         } else {
             if (!jugador.estaVivo) {
-                jugador.yaJugoFantasma = false;
-                for (let i = 0; i < 2; i++) {
-                    let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria();
-                    if (cartaFantasma) jugador.mano.push(cartaFantasma);
-                }
-                this.broadcast("notificacion_turno", `👻 ¡Es el turno del espíritu de ${jugador.personaje}!`);
+                jugador.yaJugoFantasma = false
+                if (this.getTotalJugadoresVivos() == 2 && this.renegadoEstaVivo()){
+                    this.avanzarAlSiguienteTurno(idJugador)
+                } else {
+                    for (let i = 0; i < 2; i++) {
+                        let cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria();
+                        if (cartaFantasma) jugador.mano.push(cartaFantasma);
+                    }
+                    this.broadcast("notificacion_turno", `👻 ¡Es el turno del espíritu de ${jugador.personaje}!`);   
+                    }
             } else {
                 this.ejecutarIniciarTurno(jugador)
                 this.broadcast("notificacion_turno", `¡Es el turno de ${jugador.personaje}!`);
@@ -2366,6 +2370,26 @@ export class MyRoom extends Room implements IMyRoom{
             }
         })
         return totalMuerto
+    }
+
+    public getTotalJugadoresVivos(): number {
+        let totalVivos: number = 0
+        this.getJugadores().forEach((j: Jugador) => {
+            if (j && j.estaVivo){
+                totalVivos++
+            }
+        })
+        return totalVivos
+    }
+
+    public renegadoEstaVivo(): boolean {
+        let bandera: boolean = false
+        this.getJugadores().forEach((j: Jugador) => {
+            if (j && j.estaVivo && j.rol == "Renegado"){
+                bandera = true
+            }
+        })
+        return bandera
     }
 
     public obtenerIPersonaje(personaje: string): IPersonaje {

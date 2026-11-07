@@ -2987,7 +2987,7 @@ export class Abigail implements IPersonaje {
     }
 
     onRecibirDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, causa: string, cantidad: number, danoCuerpo: number, danoEscudo: number): void {
-        if (victima == atacante || !victima.estaVivo || !atacante && !atacante.estaVivo){
+        if (victima == atacante || !victima.estaVivo || !atacante || !atacante.estaVivo){
             return
         }
 
