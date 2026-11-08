@@ -321,6 +321,11 @@ export class MyRoom extends Room implements IMyRoom{
                         if (pasivaJugadorActual && pasivaJugadorActual.onMuereOtroPersonaje) {
                             pasivaJugadorActual.onMuereOtroPersonaje(this, victima, j);
                         }
+                    } else {
+                        let pasivaJugadorActual = this.gestorPersonajes.obtener(j.personaje);
+                        if (pasivaJugadorActual && pasivaJugadorActual.onMuereNpc) {
+                            pasivaJugadorActual.onMuereNpc(this, j, victima);
+                        }
                     }
                 } else {
                     let pasivaJugadorActual = this.gestorPersonajes.obtener(j.personaje);

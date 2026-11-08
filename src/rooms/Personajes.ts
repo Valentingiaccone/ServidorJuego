@@ -81,6 +81,7 @@ export interface IPersonaje {
 
     modificarCantidadDeFalloParaEsquivarAtacante?(sala: IMyRoom, atacante: Jugador, victima: Jugador, carta: Carta): number
 
+    onMuereNpc?(sala: IMyRoom, jugador: Jugador, npcMuerto: Jugador): void
 }
 
 export class ColeCasiddy implements IPersonaje {
@@ -3454,8 +3455,25 @@ export class Phoenix implements IPersonaje {
 
         const [asistente1, asistente2] = elecciones.filter(nombre => nombre !== "Phoenix");
 
-        Utilidades.invocarNpcEnMesa(sala, jugador, asistente1, 4, 3, "antihorario");
-        Utilidades.invocarNpcEnMesa(sala, jugador, asistente2, 4, 3, "horario");
+        const j1: Jugador = Utilidades.invocarNpcEnMesa(sala, jugador, asistente1, 4, 3, "antihorario");
+        const j2: Jugador = Utilidades.invocarNpcEnMesa(sala, jugador, asistente2, 4, 3, "horario");
+
+        jugador.boolean.set("phoenixMeme" + j1.personaje, true)
+        jugador.boolean.set("phoenixMeme" + j2.personaje, true)
+    }
+
+    onMuereNpc(sala: IMyRoom, jugador: Jugador, npcMuerto: Jugador): void {
+        if (npcMuerto.idDueno == Utilidades.obtenerSessionIdDeJugador(sala, jugador) && jugador.boolean.has("phoenixMeme" + npcMuerto.personaje)){
+            if (!jugador.number.has("phoenixMeme")){
+                jugador.number.set("phoenixMeme", 1)
+                sala.reproducirSfx("phoenixChusquito")
+                jugador.boolean.set("phoenixMeme" + npcMuerto.personaje, false)
+            } else if (jugador.number.get("phoenixMeme") == 1){
+                jugador.number.set("phoenixMeme", 2)
+                sala.reproducirSfx("phoenixPepelucho")
+                jugador.boolean.set("phoenixMeme" + npcMuerto.personaje, false)
+            }
+        }
     }
 }
 
@@ -4481,83 +4499,79 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy())
-        // this.registrar(new Berry())
-        // this.registrar(new Maton())
-        // this.registrar(new Mandy())
-        // this.registrar(new Tralalero())
-        // this.registrar(new Darryl())
-        // this.registrar(new JetpackCat())
-        // this.registrar(new KayFaraday())
-        // this.registrar(new Chester())
-        // this.registrar(new Frank())
-        // this.registrar(new Pam())
-        // this.registrar(new Trucy())
-        // this.registrar(new Luigi())
-        // this.registrar(new Mario())
-        // this.registrar(new Lesly())
-        // this.registrar(new Mikotoba())
-        // this.registrar(new Domino())
-        // this.registrar(new Tilink())
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
-        // this.registrar(new Haley())
-        // this.registrar(new Maggey())
-        // this.registrar(new Mortis())
-        // this.registrar(new Maya())
-        // this.registrar(new Geraldo())
-        // this.registrar(new RaymundoEscudos())
-        // this.registrar(new Cubo())
-        // this.registrar(new VonKarma())
-        // this.registrar(new Mercy())
-        // this.registrar(new Chispitas())
-        // this.registrar(new Dahlia())
-        // this.registrar(new Meg())
-        // this.registrar(new Perro())
-        // this.registrar(new DaveElLoco())
-        // this.registrar(new Junkrat())
-        // this.registrar(new Max())
-        // this.registrar(new Pedro())
-        // this.registrar(new Amelia())
-        // this.registrar(new Microbios())
-        // this.registrar(new PerroNinja())
-        // this.registrar(new Monito())
-        // this.registrar(new KarateKillo())
-        // this.registrar(new Tripulante())
-        // this.registrar(new Shelly())
-        // this.registrar(new Byron())
-        // this.registrar(new GeiruToneido())
-        // this.registrar(new Wendy())
-        // this.registrar(new Pierre())
-        // this.registrar(new Zombistein())
-        // this.registrar(new Abigail())
-        // this.registrar(new Charlie())
-        // this.registrar(new ElP())
-        // this.registrar(new Tirachinas())
-        // this.registrar(new Nita());
-        // this.registrar(new Larry());
-        // this.registrar(new Bubble())
-        // this.registrar(new Phoenix())
-        // this.registrar(new Clint())
-        // this.registrar(new Kertley())
-        // this.registrar(new Susato())
-        // this.registrar(new Colt())
-        // this.registrar(new Cosmo())
-        // this.registrar(new Amber())
-        // this.registrar(new FlorAmarilla())
-        // this.registrar(new Volpina())
-        // this.registrar(new Tracer())
-        // this.registrar(new RoaringKnight())
-        // this.registrar(new ShellyDeKiller())
-        
-        this.registrar(new RoaringKnight())
-        this.registrar(new Volpina())
+        this.registrar(new ColeCasiddy())
+        this.registrar(new Berry())
+        this.registrar(new Maton())
+        this.registrar(new Mandy())
+        this.registrar(new Tralalero())
+        this.registrar(new Darryl())
+        this.registrar(new JetpackCat())
+        this.registrar(new KayFaraday())
+        this.registrar(new Chester())
+        this.registrar(new Frank())
+        this.registrar(new Pam())
+        this.registrar(new Trucy())
+        this.registrar(new Luigi())
+        this.registrar(new Mario())
+        this.registrar(new Lesly())
+        this.registrar(new Mikotoba())
+        this.registrar(new Domino())
+        this.registrar(new Tilink())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
+        this.registrar(new Haley())
+        this.registrar(new Maggey())
+        this.registrar(new Mortis())
+        this.registrar(new Maya())
+        this.registrar(new Geraldo())
+        this.registrar(new RaymundoEscudos())
+        this.registrar(new Cubo())
+        this.registrar(new VonKarma())
+        this.registrar(new Mercy())
+        this.registrar(new Chispitas())
+        this.registrar(new Dahlia())
+        this.registrar(new Meg())
+        this.registrar(new Perro())
+        this.registrar(new DaveElLoco())
+        this.registrar(new Junkrat())
+        this.registrar(new Max())
+        this.registrar(new Pedro())
+        this.registrar(new Amelia())
+        this.registrar(new Microbios())
+        this.registrar(new PerroNinja())
+        this.registrar(new Monito())
+        this.registrar(new KarateKillo())
+        this.registrar(new Tripulante())
+        this.registrar(new Shelly())
+        this.registrar(new Byron())
+        this.registrar(new GeiruToneido())
+        this.registrar(new Wendy())
+        this.registrar(new Pierre())
+        this.registrar(new Zombistein())
         this.registrar(new Abigail())
+        this.registrar(new Charlie())
         this.registrar(new ElP())
+        this.registrar(new Tirachinas())
+        this.registrar(new Nita());
+        this.registrar(new Larry());
+        this.registrar(new Bubble())
+        this.registrar(new Phoenix())
+        this.registrar(new Clint())
+        this.registrar(new Kertley())
+        this.registrar(new Susato())
+        this.registrar(new Colt())
+        this.registrar(new Cosmo())
+        this.registrar(new Amber())
+        this.registrar(new FlorAmarilla())
+        this.registrar(new Volpina())
+        this.registrar(new Tracer())
+        this.registrar(new RoaringKnight())
+        this.registrar(new ShellyDeKiller())
+
 
 
 
