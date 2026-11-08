@@ -4492,6 +4492,33 @@ export class ShellyDeKiller implements IPersonaje {
     }
 }
 
+export class Sirius implements IPersonaje {
+    nombre = "Sirius";
+    vidasBase = 4;
+    habilidad = "Invocacion espejo:\nAl golpear (2 usos): crea un npc de 1 de vida y 1 carta en sentido antihorario con las habilidades del jugador golpeado.\nAl inicio del turno: recarga sus 2 usos de la habilidad al golpear.";
+    habilidadEnCatalan = "."
+    
+    onAsignar(sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
+        jugador.number.set("siriusUsos", 2)
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        miJugador.number.set("siriusUsos", 2)
+    }
+
+    onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
+        if (!jugadorGolpeado || !miJugador){
+            return
+        }
+
+        if (miJugador.number.get("siriusUsos") > 0){
+            miJugador.number.set("siriusUsos", miJugador.number.get("siriusUsos") - 1)
+            let npc: Jugador = Utilidades.invocarNpcEnMesa(sala, miJugador, jugadorGolpeado.personaje, 1, 1, "antihorario")
+            npc.boolean.set("npcDeSirius", true)
+        }
+    }
+}
+
 
 
 // 3. EL GESTOR DE PERSONAJES
@@ -4571,6 +4598,7 @@ export class GestorPersonajes {
         this.registrar(new Tracer())
         this.registrar(new RoaringKnight())
         this.registrar(new ShellyDeKiller())
+        this.registrar(new Sirius())
 
 
 
