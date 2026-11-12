@@ -478,7 +478,7 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.mazo.push(CatalogoCartasEspeciales.crearIndios());
                 }
 
-                for (let i = 0; i < 20; i++) { 
+                for (let i = 0; i < 2; i++) { 
                     this.state.mazo.push(CatalogoCartasEspeciales.crearTiendaDeGriff());
                 }
 
@@ -1566,7 +1566,9 @@ export class MyRoom extends Room implements IMyRoom{
         if (this.state.jugadores.size === 0) {
             nuevoJugador.esAnfitrion = true;
         }
-        this.state.jugadores.set(client.sessionId, nuevoJugador);
+
+        this.state.jugadores.set(client.sessionId, nuevoJugador)
+        this.reproducirSfx("sfxJugadorEntra")
     }
 
     onLeave (client: Client, code: number) {
@@ -1579,6 +1581,7 @@ export class MyRoom extends Room implements IMyRoom{
         // Si el juego no empezó (Lobby o Selección) o ya Termino, simplemente lo borramos de la sala.
         if (this.state.estadoJuego !== "Jugando") {
             this.state.jugadores.delete(client.sessionId);
+            this.reproducirSfx("sfxJugadorSale")
         } else {
             // SI EL JUEGO ESTÁ EN CURSO, LO MATAMOS (No lo borramos del mapa para no romper distancias ni el orden)
             this.broadcast("notificacion_turno", `🏃 ${jugadorQueSeVa.nombre} ha abandonado la partida y su personaje muere.`);

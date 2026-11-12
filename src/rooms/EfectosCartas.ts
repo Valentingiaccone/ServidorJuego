@@ -254,7 +254,7 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         // 2. Sacar 1 carta por jugador vivo
         for (let i = 0; i < vivosIds.length; i++) {
         // 1% de probabilidad por cada carta generada en la tienda
-        if (Math.random() < 0.51) {
+        if (Math.random() < 0.01) {
             let cartaBalatro = CatalogoCartasEspeciales.crearAlmaBalatro();
             cartaBalatro.esConjurada = true;
             sala.state.cartasTienda.push(cartaBalatro);
@@ -1251,6 +1251,14 @@ export class EfectoTiendaPierre implements IEfectoCarta {
         sala.state.tipoTiendaActual = "Pierre";
 
         for(let i = 0; i < vivosIds.length; i++) {
+            // 1% de probabilidad por cada carta generada en la tienda
+            if (Math.random() < 0.01) {
+                let cartaBalatro = CatalogoCartasEspeciales.crearAlmaBalatro();
+                cartaBalatro.esConjurada = true;
+                sala.state.cartasTienda.push(cartaBalatro);
+                continue;
+            }
+
             let cartaPierre = CatalogoCartasEspeciales.crearCartaPierreAleatoria();
             cartaPierre.esConjurada = true
             sala.state.cartasTienda.push(cartaPierre);
@@ -1847,7 +1855,7 @@ export class EfectoDano implements IEfectoCarta {
 
         if (atacante.yaDisparo && !puedeDispararExtra && 
             statsArma.nombre !== "Pistola de Tracer" && statsArma.nombre !== "Pistola de Tracer Pro" && 
-            statsArma.nombre !== "Tirachinas" && statsArma.nombre !== "Tirachinas mestro" && 
+            statsArma.nombre !== "Tirachinas" && statsArma.nombre !== "Tirachinas maestro" && 
             statsArma.nombre !== "Espada galactica" && statsArma.nombre !== "Espada galactica Pro"
             && !atacante.boolean.get("volpinaActiva")) {
             

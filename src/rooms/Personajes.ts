@@ -786,7 +786,7 @@ export class Leon_oculto implements IPersonaje {
     habilidad = "Noooo leooooon:\nOculta todos sus visuales a los demas.\nAl final del turno: si hay menos de 2 npc leon_oculto: crea hasta 2 npc leon_oculto en sentido antihorario, luego intercambia o no de lugar con ellos de forma aleatoria.";
     habilidadEnCatalan: string = "Noooo leooooon:\nOculta la seva salut, el nombre de cartes i l equipament als altres."
     vidasBase = 4;
-    sfxMuerte: [string, boolean] = ["muerteLeon", true];
+    sfxMuerte: [string, boolean] = ["sfxLeonOcultoMuerte", true];
     sfxDefault = "sfxLeon"
     esNpcInvocable: boolean = true
 
@@ -2624,6 +2624,8 @@ export class Byron implements IPersonaje {
     habilidad = "Tratamiento completo:\nBoton (1 por turno): descarta dos Bangs! y conjura un Botiquin.\nAl golpear: agrega 1 de efecto Malestar.";
     habilidadEnCatalan = "..";
     vidasBase = 4;
+    sfxDefault: string = "sfxByron"
+    sfxMuerte: [string, boolean, number?] = ["sfxByronMuerte", true]
 
     onAsignar(sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
         let botonTransmutar = new HabilidadActiva();
@@ -2693,17 +2695,15 @@ export class Byron implements IPersonaje {
 
                 jugador.boolean.set("byronUsado", true);
 
-                sala.agregarRegistro(`🧪 ¡${jugador.personaje} convirtió 2 BANG! en un Botiquín!`);
+                sala.agregarRegistro(`🧪 ¡${jugador.personaje} convirtió 2 BANG! en un Botiquín!`)
+                sala.reproducirSfx("sfxByronHabilidad")
             }
         }
     }
 
     onGolpear(sala: IMyRoom, miJugador: Jugador, jugadorGolpeado: Jugador, causa: string): void {
-        if (jugadorGolpeado.efecto.has("malestar")){
-            jugadorGolpeado.efecto.set("malestar", jugadorGolpeado.efecto.get("malestar") + 1)
-        } else {
-            jugadorGolpeado.efecto.set("malestar", 1)
-        }
+        Utilidades.agregarEfecto(jugadorGolpeado, "malestar", 1)
+        sala.reproducirSfx("sfxByronAnticura")
     }
 }
 
@@ -2938,11 +2938,11 @@ export class Abigail implements IPersonaje {
 
     ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: any, idHabilidad: string): void {
         if (!jugador) {
-            console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Byron");
+            console.error("ERROR: jugador es null en ejecutarHabilidadActiva de Abigail");
             return;
         }
         if (!sala) {
-            console.error("ERROR: sala es null en ejecutarHabilidadActiva de Byron");
+            console.error("ERROR: sala es null en ejecutarHabilidadActiva de Abigail");
             return;
         }
 
@@ -3291,6 +3291,7 @@ export class Bruce implements IPersonaje {
     vidasBase = 2;
     esNpcInvocable = true;
     sfxDefault: string = "sfxBruce"
+    sfxMuerte: [string, boolean, number?] = ["sfxBruceMuerte", false]
 
     modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string): number {
         if (causa === "turno") {
@@ -3343,6 +3344,7 @@ export class Lawrie implements IPersonaje {
     vidasBase = 3;
     esNpcInvocable = true;
     sfxDefault = "sfxLawrie";
+    sfxMuerte: [string, boolean, number?] = ["sfxLawrieMuerte", false]
 
     onAsignar(sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
         jugador.boolean.set("lawrieCura", true)
@@ -4491,6 +4493,8 @@ export class Sirius implements IPersonaje {
     vidasBase = 4;
     habilidad = "Invocacion espejo:\nAl golpear (2 usos): crea un npc de 1 de vida y 1 carta en sentido antihorario con las habilidades del jugador golpeado.\nAl inicio del turno: recarga sus 2 usos de la habilidad al golpear.";
     habilidadEnCatalan = "."
+    sfxDefault: string = "sfxSirius"
+    sfxMuerte: [string, boolean, number?] = ["sfxSiriusMuerte", false]
     
     onAsignar(sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
         jugador.number.set("siriusUsos", 2)
@@ -4509,6 +4513,7 @@ export class Sirius implements IPersonaje {
         if (miJugador.number.get("siriusUsos") > 0){
             miJugador.number.set("siriusUsos", miJugador.number.get("siriusUsos") - 1)
             Utilidades.invocarNpcEnMesa(sala, miJugador, jugadorGolpeado.personaje, 1, 1, "antihorario")
+            sala.reproducirSfx("sfxSiriusSombra")
         }
     }
 }
@@ -4520,7 +4525,7 @@ export class MRasmodius implements IPersonaje {
     habilidadEnCatalan = "."
     sfxMuerte: [string, boolean] = ["muerteStardew", true];
     sfxDefault = "sfxStardew"
-    
+
     private INICIAR: number = 40
     private BAJAR: number = 12
     private AUMENTAR: number = 20
@@ -4583,85 +4588,81 @@ export class GestorPersonajes {
     private personajes: Record<string, IPersonaje> = {};
 
     constructor() {
-        // this.registrar(new ColeCasiddy())
-        // this.registrar(new Berry())
-        // this.registrar(new Maton())
-        // this.registrar(new Mandy())
-        // this.registrar(new Tralalero())
-        // this.registrar(new Darryl())
-        // this.registrar(new JetpackCat())
-        // this.registrar(new KayFaraday())
-        // this.registrar(new Chester())
-        // this.registrar(new Frank())
-        // this.registrar(new Pam())
-        // this.registrar(new Trucy())
-        // this.registrar(new Luigi())
-        // this.registrar(new Mario())
-        // this.registrar(new Lesly())
-        // this.registrar(new Mikotoba())
-        // this.registrar(new Domino())
-        // this.registrar(new Tilink())
-        // this.registrar(new Flowery())
-        // this.registrar(new Leon())
-        // this.registrar(new Kazuma())
-        // this.registrar(new Leah())
-        // this.registrar(new Robin())
-        // this.registrar(new Luciergana())
-        // this.registrar(new Haley())
-        // this.registrar(new Maggey())
-        // this.registrar(new Mortis())
-        // this.registrar(new Maya())
-        // this.registrar(new Geraldo())
-        // this.registrar(new RaymundoEscudos())
-        // this.registrar(new Cubo())
-        // this.registrar(new VonKarma())
-        // this.registrar(new Mercy())
-        // this.registrar(new Chispitas())
-        // this.registrar(new Dahlia())
-        // this.registrar(new Meg())
-        // this.registrar(new Perro())
-        // this.registrar(new DaveElLoco())
-        // this.registrar(new Junkrat())
-        // this.registrar(new Max())
-        // this.registrar(new Pedro())
-        // this.registrar(new Amelia())
-        // this.registrar(new Microbios())
-        // this.registrar(new PerroNinja())
-        // this.registrar(new Monito())
-        // this.registrar(new KarateKillo())
-        // this.registrar(new Tripulante())
-        // this.registrar(new Shelly())
-        // this.registrar(new Byron())
-        // this.registrar(new GeiruToneido())
-        // this.registrar(new Wendy())
-        // this.registrar(new Pierre())
-        // this.registrar(new Zombistein())
-        // this.registrar(new Abigail())
-        // this.registrar(new Charlie())
-        // this.registrar(new ElP())
-        // this.registrar(new Tirachinas())
-        // this.registrar(new Nita());
-        // this.registrar(new Larry());
-        // this.registrar(new Bubble())
-        // this.registrar(new Phoenix())
-        // this.registrar(new Clint())
-        // this.registrar(new Kertley())
-        // this.registrar(new Susato())
-        // this.registrar(new Colt())
-        // this.registrar(new Cosmo())
-        // this.registrar(new Amber())
-        // this.registrar(new FlorAmarilla())
-        // this.registrar(new Volpina())
-        // this.registrar(new Tracer())
-        // this.registrar(new RoaringKnight())
-        // this.registrar(new ShellyDeKiller())
+        this.registrar(new ColeCasiddy())
+        this.registrar(new Berry())
+        this.registrar(new Maton())
+        this.registrar(new Mandy())
+        this.registrar(new Tralalero())
+        this.registrar(new Darryl())
+        this.registrar(new JetpackCat())
+        this.registrar(new KayFaraday())
+        this.registrar(new Chester())
+        this.registrar(new Frank())
+        this.registrar(new Pam())
+        this.registrar(new Trucy())
+        this.registrar(new Luigi())
+        this.registrar(new Mario())
+        this.registrar(new Lesly())
+        this.registrar(new Mikotoba())
+        this.registrar(new Domino())
+        this.registrar(new Tilink())
+        this.registrar(new Flowery())
+        this.registrar(new Leon())
+        this.registrar(new Kazuma())
+        this.registrar(new Leah())
+        this.registrar(new Robin())
+        this.registrar(new Luciergana())
+        this.registrar(new Haley())
+        this.registrar(new Maggey())
+        this.registrar(new Mortis())
+        this.registrar(new Maya())
+        this.registrar(new Geraldo())
+        this.registrar(new RaymundoEscudos())
+        this.registrar(new Cubo())
+        this.registrar(new VonKarma())
+        this.registrar(new Mercy())
+        this.registrar(new Chispitas())
+        this.registrar(new Dahlia())
+        this.registrar(new Meg())
+        this.registrar(new Perro())
+        this.registrar(new DaveElLoco())
+        this.registrar(new Junkrat())
+        this.registrar(new Max())
+        this.registrar(new Pedro())
+        this.registrar(new Amelia())
+        this.registrar(new Microbios())
+        this.registrar(new PerroNinja())
+        this.registrar(new Monito())
+        this.registrar(new KarateKillo())
+        this.registrar(new Tripulante())
+        this.registrar(new Shelly())
+        this.registrar(new Byron())
+        this.registrar(new GeiruToneido())
+        this.registrar(new Wendy())
+        this.registrar(new Pierre())
+        this.registrar(new Zombistein())
+        this.registrar(new Abigail())
+        this.registrar(new Charlie())
+        this.registrar(new ElP())
+        this.registrar(new Tirachinas())
+        this.registrar(new Nita());
+        this.registrar(new Larry());
+        this.registrar(new Bubble())
+        this.registrar(new Phoenix())
+        this.registrar(new Clint())
+        this.registrar(new Kertley())
+        this.registrar(new Susato())
+        this.registrar(new Colt())
+        this.registrar(new Cosmo())
+        this.registrar(new Amber())
+        this.registrar(new FlorAmarilla())
+        this.registrar(new Volpina())
+        this.registrar(new Tracer())
+        this.registrar(new RoaringKnight())
+        this.registrar(new ShellyDeKiller())
         this.registrar(new Sirius())
         this.registrar(new MRasmodius())
 
-        this.registrar(new Pedro())
-        this.registrar(new Mandy())
-
-        this.registrar(new Maggey())
 
 
 
