@@ -252,15 +252,23 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         sala.state.tipoTiendaActual = "Griff";
 
         // 2. Sacar 1 carta por jugador vivo
-        for(let i = 0; i < vivosIds.length; i++) {
-            if (sala.state.mazo.length === 0 && sala.state.descarte.length > 0) {
-                let arrayDescarte = Array.from(sala.state.descarte);
-                arrayDescarte.sort(() => Math.random() - 0.5);
-                sala.state.descarte.clear();
-                arrayDescarte.forEach((c: any) => sala.state.mazo.push(c));
-            }
-            if (sala.state.mazo.length > 0) sala.state.cartasTienda.push(sala.state.mazo.pop());
+        for (let i = 0; i < vivosIds.length; i++) {
+        // 1% de probabilidad por cada carta generada en la tienda
+        if (Math.random() < 0.51) {
+            let cartaBalatro = CatalogoCartasEspeciales.crearAlmaBalatro();
+            cartaBalatro.esConjurada = true;
+            sala.state.cartasTienda.push(cartaBalatro);
+            continue;
         }
+
+        if (sala.state.mazo.length === 0 && sala.state.descarte.length > 0) {
+            let arrayDescarte = Array.from(sala.state.descarte);
+            arrayDescarte.sort(() => Math.random() - 0.5);
+            sala.state.descarte.clear();
+            arrayDescarte.forEach((c: any) => sala.state.mazo.push(c));
+        }
+        if (sala.state.mazo.length > 0) sala.state.cartasTienda.push(sala.state.mazo.pop());
+    }
 
         // 3. Consumir la carta e iniciar la tienda
         jugadorQueJuega.mano.splice(indiceCarta, 1);
@@ -2026,6 +2034,29 @@ export class EfectoMechero implements IEfectoCarta {
     }
 }
 
+export class EfectoAlmaBalatro implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugadorQueJuega: any, cartaJugada: any, indiceCarta: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {
+        let idObjetivo = parametros[parametros.length - 1]; 
+        let objetivo: Jugador = sala.state.jugadores.get(idObjetivo);
+
+        let carta: Carta = CatalogoCartasEspeciales.crearCartaBalatroAleatoria()
+        if (!carta){
+            return false
+        }
+
+        carta.esConjurada = true
+        jugadorQueJuega.mano.push(carta)
+
+        sala.agregarRegistro(`🃏 ¡${jugadorQueJuega.personaje} conjura una carta de balatro!`)
+
+        jugadorQueJuega.mano.splice(indiceCarta, 1);
+        sala.ejecutarAnimacionCarta(client, cartaJugada);
+        sala.agregarAlDescarte(cartaJugada);
+
+        return true
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -2087,6 +2118,7 @@ export class DespachadorDeCartas {
         "dano": new EfectoDano(),
         "manzanaDorada": new EfectoManzanaDorada(),
         "mechero": new EfectoMechero(),
+        "almaBalatro": new EfectoAlmaBalatro(),
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

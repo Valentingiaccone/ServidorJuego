@@ -1,6 +1,7 @@
 import { ArraySchema, MapSchema } from "@colyseus/schema"
 import { Carta, Jugador } from "./schema/MyRoomState.js"
 import { IPersonaje } from "./Personajes.js"
+import { GestorCartas, ICarta } from "./CartasHabilidades.js"
 
 export interface IMyRoom {
 
@@ -26,4 +27,10 @@ export interface IMyRoom {
     encolarInteraccionBang(victima: Jugador, atacante: Jugador, titulo: string, flecha: string, fallosRequeridos: number, ejecutarInmediatamente: boolean, encolarinmediatamente: boolean): void
 
     obtenerIPersonaje(personaje: string): IPersonaje
+
+    obtenerGestorCartas(): GestorCartas
+
+    animacionJugador(x: any): void
+
+    evaluarMuerte(victima: any, asesino: Jugador, fueDanoVerdadero: boolean): void
 }

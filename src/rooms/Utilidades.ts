@@ -1,3 +1,4 @@
+import { ICarta } from "./CartasHabilidades.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { IMyRoom } from "./IMyRoom.js";
 import { IPersonaje } from "./Personajes.js";
@@ -5,7 +6,7 @@ import { Carta, Jugador } from "./schema/MyRoomState.js";
 
 export class Utilidades {
 
-    public static procesarDano(sala: any, victima: Jugador, atacante: Jugador, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
+    public static procesarDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
         if (!victima){
             console.error("ERROR: victima no existe en procesarDano");
             return;
@@ -20,7 +21,7 @@ export class Utilidades {
         if (cartaCalabaza){
             sala.agregarAlDescarte(cartaCalabaza, victima, null);
             victima.equipamiento.delete("calabaza");
-            sala.broadcast("notificacion_turno", `🎃 La Calabaza de ${victima.personaje} lo protege del ataque.`);
+            sala.agregarRegistro(`🎃 La Calabaza de ${victima.personaje} lo protege del ataque.`);
             return;
         }
 
@@ -28,8 +29,13 @@ export class Utilidades {
         if (cartaCrisalida){
             sala.agregarAlDescarte(cartaCrisalida, victima, null);
             victima.equipamiento.delete("crisalida");
-            sala.broadcast("notificacion_turno", `🐚 La Crisalida de ${victima.personaje} lo protege del ataque.`);
+            sala.agregarRegistro( `🐚 La Crisalida de ${victima.personaje} lo protege del ataque.`);
             return;
+        }
+
+        if (atacante){
+            ignoraEscudo = sala.obtenerGestorCartas().ejecutar(atacante, "modificarTraspasarEscudo", sala, atacante, victima, causa)
+            cantidad += sala.obtenerGestorCartas().ejecutar(atacante, "modificarDañoComoAtacante", sala, atacante, victima, causa)
         }
 
         if (atacante && (atacante.equipamiento.has("humoseta") || atacante.boolean.get("kertley"))){
@@ -97,7 +103,7 @@ export class Utilidades {
             victima.vidas -= cantidadDanoCuerpo;
         }
 
-        let pasivaVictima = sala.gestorPersonajes.obtener(victima.personaje);
+        let pasivaVictima = sala.obtenerIPersonaje(victima.personaje);
         if (pasivaVictima && pasivaVictima.onRecibirDano && cantidad > 0) {
             pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
         }
@@ -113,9 +119,13 @@ export class Utilidades {
             }
         }
 
-        let pasivaAtacante = sala.gestorPersonajes.obtener(atacante?.personaje);
+        let pasivaAtacante = sala.obtenerIPersonaje(atacante?.personaje);
         if (pasivaAtacante && pasivaAtacante.onGolpear && cantidad > 0) {
             pasivaAtacante.onGolpear(sala, atacante, victima, causa);
+        }
+
+        if (atacante){
+            sala.obtenerGestorCartas().ejecutar(atacante, "onGolpear", sala, atacante, victima, causa)
         }
 
         if (causa == "Orbita BANG!"){
@@ -126,7 +136,7 @@ export class Utilidades {
         this.agregarEstadistica(atacante, cantidadDanoCuerpo + cantidadDanoEscudo, "🔫daño")
         this.agregarEstadistica(victima, cantidadDanoCuerpo + cantidadDanoEscudo, "💔daño recibido")
 
-        sala.broadcast("animacionJugador", {personaje: victima.personaje, animacion: "recibirDano"});
+        sala.animacionJugador({personaje: victima.personaje, animacion: "recibirDano"})
         sala.evaluarMuerte(victima, atacante, ignoraEscudo);
     }
 
@@ -236,7 +246,7 @@ export class Utilidades {
      * Equipa una carta en el mapa. Si ya había una en ese hueco, la descarta.
      * Huecos comunes: "arma", "mustang", "mira", "barril", "prision", "dinamita", "papa", "calabaza", "plantorcha", "humoseta".
      */
-    public static equiparCarta(sala: any, jugador: Jugador, carta: Carta, hueco: string): void {
+    public static equiparCarta(sala: IMyRoom, jugador: Jugador, carta: Carta, hueco: string): void {
         console.log("Equipar carta:", jugador?.personaje, carta?.nombre, hueco)
 
         carta.idDuenoDelPerro = ""
@@ -246,10 +256,12 @@ export class Utilidades {
         }
         jugador.equipamiento.set(hueco, carta);
 
-        let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
+        let pasiva = sala.obtenerIPersonaje(jugador.personaje);
         if (pasiva && pasiva.onEquiparCarta) {
             pasiva.onEquiparCarta(sala, jugador, carta, hueco);
         }
+
+        sala.obtenerGestorCartas().ejecutar(jugador, "onEquiparCarta", sala, jugador, hueco)
     }
 
     /**
@@ -602,6 +614,18 @@ export class Utilidades {
         clon.idGranDesaparicion = cartaOriginal.idGranDesaparicion;
         clon.esPlanta = cartaOriginal.esPlanta;
 
+        if (cartaOriginal.number) {
+            cartaOriginal.number.forEach((valor, clave) => {
+                clon.number.set(clave, valor);
+            });
+        }
+
+        if (cartaOriginal.string) {
+            cartaOriginal.string.forEach((valor, clave) => {
+                clon.string.set(clave, valor);
+            });
+        }
+
         return clon;
     }
 
@@ -795,6 +819,11 @@ export class Utilidades {
         // 4. Repartir cartas iniciales si corresponde
         if (cartasIniciales > 0) {
             sala.repartirCartas(npc, cartasIniciales, "inicio_npc");
+        }
+
+        if (dueno.boolean.get("npcSombra")){
+            npc.boolean.set("npcDeSirius", true)
+            npc.boolean.set("npcSombra", true)
         }
 
         if (datosClase && datosClase.onAsignar) {

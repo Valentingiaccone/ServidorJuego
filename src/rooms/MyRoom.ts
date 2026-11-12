@@ -7,6 +7,7 @@ import { Utilidades } from "./Utilidades.js";
 import { IMyRoom } from "./IMyRoom.js";
 import { GestorNPC } from "./GestorNPC.js";
 import { ArraySchema, MapSchema, Encoder } from "@colyseus/schema";
+import { GestorCartas } from "./CartasHabilidades.js";
 Encoder.BUFFER_SIZE = 64 * 1024; // 64 KB
 
 export class MyRoom extends Room implements IMyRoom{
@@ -26,7 +27,8 @@ export class MyRoom extends Room implements IMyRoom{
     
     // Instanciamos nuestros nuevos motores
     despachadorCartas = new DespachadorDeCartas();
-    gestorPersonajes = new GestorPersonajes();
+    gestorPersonajes = new GestorPersonajes()
+    gestorCartas = new GestorCartas()
 
     private musicaNormal: boolean = false
     private bandera_musicaPrimerMuerto: boolean = true
@@ -175,7 +177,7 @@ export class MyRoom extends Room implements IMyRoom{
         }
     }
 
-    evaluarMuerte(victima: any, asesino: any = null, fueDanoVerdadero: boolean = false) {
+    evaluarMuerte(victima: any, asesino: Jugador = null, fueDanoVerdadero: boolean = false) {
         let totalVivos = 0;
 
         this.state.jugadores.forEach((j: any) => {
@@ -476,7 +478,7 @@ export class MyRoom extends Room implements IMyRoom{
                     this.state.mazo.push(CatalogoCartasEspeciales.crearIndios());
                 }
 
-                for (let i = 0; i < 2; i++) { 
+                for (let i = 0; i < 20; i++) { 
                     this.state.mazo.push(CatalogoCartasEspeciales.crearTiendaDeGriff());
                 }
 
@@ -2399,5 +2401,13 @@ export class MyRoom extends Room implements IMyRoom{
 
     public obtenerIPersonaje(personaje: string): IPersonaje {
         return this.gestorPersonajes.obtener(personaje)
+    }
+
+    public animacionJugador(x: any): void {
+        this.broadcast("animacionJugador", x)
+    }
+
+    public obtenerGestorCartas(): GestorCartas {
+        return this.gestorCartas
     }
 }

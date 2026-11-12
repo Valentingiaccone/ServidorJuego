@@ -44,6 +44,8 @@ export class Carta extends Schema {
     @type("string") idDuenoDelPerro: string = "";
     @type("string") idGranDesaparicion: string = "";
     @type("boolean") esPlanta: boolean = false;
+    @type({ map: "number" }) number = new MapSchema<number>();
+    @type({ map: "string" }) string = new MapSchema<string>();
 }
 
 export class HabilidadActiva extends Schema {

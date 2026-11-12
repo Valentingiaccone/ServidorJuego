@@ -411,88 +411,160 @@ export class CatalogoCartasEspeciales {
         }
     }
 
-    public static crearCartaMalditaAleatoria(): Carta {
-        let opciones = ["venenoso", "reductor", "comilon", "maldita"];
-        let elegida = opciones[Math.floor(Math.random() * opciones.length)];
-        
+    public static crearGolpeFantasmal(): Carta {
         let clon = new Carta();
-        // Generamos IDs únicos para que no choquen en la interfaz
-        clon.id = `maldicion_${elegida}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        clon.esConjurada = true; 
-        clon.tipoDeUso = "oculto"; 
-        
-        if (elegida === "venenoso") {
-            clon.nombre = "Hongo Venenoso";
-            clon.descripcion = "Al descartarla recibis 1 de daño.";
-            clon.descripcionEnCatalan = "En descartar-la perds 1 vida.";
-            clon.efecto = "descartar_venenoso_1";
-        } else if (elegida === "reductor") {
-            clon.nombre = "Reductor";
-            clon.descripcion = "Al descartarla si tu vida no está al maximo, tu vida máxima baja en 1.";
-            clon.descripcionEnCatalan = "En descartar-la, si la teva vida no està al màxim, la teva vida màxima baixa en 1.";
-            clon.efecto = "descartar_reductor_1";
-        } else if (elegida === "comilon") {
-            clon.nombre = "Slime Comilón";
-            clon.descripcion = "Al descartarla elimina un equipamiento aleatorio tuyo.";
-            clon.descripcionEnCatalan = "En descartar-la elimina un equipament aleatori teu.";
-            clon.efecto = "descartar_comilon_1";
-        } else if (elegida === "maldita") {
-            clon.nombre = "Carta Maldita";
-            clon.descripcion = "Al descartarla descarta otra carta aleatoria de tu mano.";
-            clon.descripcionEnCatalan = "En descartar-la et descarta una altra carta aleatòria de la teva mà.";
-            clon.efecto = "descartar_maldita_1";
-        }
-        
+        clon.id = `golpe_fantasmal_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Golpe fantasmal";
+        clon.descripcion = "Agrega 2 espacios de daño en la ruleta de un jugador vivo.";
+        clon.descripcionEnCatalan = "Afegeix 2 espais de dany a la ruleta d'un jugador viu.";
+        clon.tipoDeUso = "objetivoUniversal";
+        clon.efecto = "embrujar_dano_2";
+        clon.tipoEmbrujo = "malo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearMilagro(): Carta {
+        let clon = new Carta();
+        clon.id = `milagro_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Milagro";
+        clon.descripcion = "Agrega 2 espacios de +1 vida en la ruleta de un jugador vivo.";
+        clon.descripcionEnCatalan = "Afegeix 2 espais de curació a la ruleta d'un jugador viu.";
+        clon.tipoDeUso = "objetivoUniversal";
+        clon.efecto = "embrujar_curar_2";
+        clon.tipoEmbrujo = "bueno";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearRegaloDivino(): Carta {
+        let clon = new Carta();
+        clon.id = `regalo_divino_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Regalo divino";
+        clon.descripcion = "Agrega 4 espacios de robo en la ruleta de un jugador vivo.";
+        clon.descripcionEnCatalan = "Afegeix 4 espais de robatori a la ruleta d'un jugador viu.";
+        clon.tipoDeUso = "objetivoUniversal";
+        clon.efecto = "embrujar_robar_4";
+        clon.tipoEmbrujo = "bueno";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearCocorochFantasma(): Carta {
+        let clon = new Carta();
+        clon.id = `cocoroch_fantasma_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Cocoroch fantasma";
+        clon.descripcion = "Agrega 4 espacios de descarte en la ruleta de un jugador vivo.";
+        clon.descripcionEnCatalan = "Afegeix 4 espais de descart a la ruleta d'un jugador viu.";
+        clon.tipoDeUso = "objetivoUniversal";
+        clon.efecto = "embrujar_descartar_4";
+        clon.tipoEmbrujo = "malo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearFantasmaComilon(): Carta {
+        let clon = new Carta();
+        clon.id = `fantasma_comilon_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Fantasma comilon";
+        clon.descripcion = "Agrega 3 espacios de eliminacion de equipamiento en la ruleta de un jugador vivo.";
+        clon.descripcionEnCatalan = "Afegeix 3 espais d eliminació d equipament a la ruleta d un jugador viu.";
+        clon.tipoDeUso = "objetivoUniversal";
+        clon.efecto = "embrujar_comilon_3";
+        clon.tipoEmbrujo = "malo";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearLibroEncantado(): Carta {
+        let clon = new Carta();
+        clon.id = `libro_encantado_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Libro encantado";
+        clon.descripcion = "Agrega 3 espacios de mejora de equipamiento en la ruleta de un jugador vivo.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "objetivoUniversal";
+        clon.efecto = "embrujar_libro_3";
+        clon.tipoEmbrujo = "bueno";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearHongoVenenoso(): Carta {
+        let clon = new Carta();
+        clon.id = `hongo_venenoso_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Hongo Venenoso";
+        clon.descripcion = "Al descartarla recibis 1 de daño.";
+        clon.descripcionEnCatalan = "En descartar-la perds 1 vida.";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "descartar_venenoso_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearReductor(): Carta {
+        let clon = new Carta();
+        clon.id = `reductor_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Reductor";
+        clon.descripcion = "Al descartarla si tu vida no está al maximo, tu vida máxima baja en 1.";
+        clon.descripcionEnCatalan = "En descartar-la, si la teva vida no està al màxim, la teva vida màxima baixa en 1.";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "descartar_reductor_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearSlimeComilon(): Carta {
+        let clon = new Carta();
+        clon.id = `slime_comilon_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Slime Comilón";
+        clon.descripcion = "Al descartarla elimina un equipamiento aleatorio tuyo.";
+        clon.descripcionEnCatalan = "En descartar-la elimina un equipament aleatori teu.";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "descartar_comilon_1";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearCartaMaldita(): Carta {
+        let clon = new Carta();
+        clon.id = `carta_maldita_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Carta Maldita";
+        clon.descripcion = "Al descartarla descarta otra carta aleatoria de tu mano.";
+        clon.descripcionEnCatalan = "En descartar-la et descarta una altra carta aleatòria de la teva mà.";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "descartar_maldita_1";
+        clon.esConjurada = false;
         return clon;
     }
 
     public static crearCartaFantasmaAleatoria(): Carta {
-        let opciones = ["dano", "curar", "robar", "descartar", "comilon", "libro"];
-        let elegida = opciones[Math.floor(Math.random() * opciones.length)];
+        const opciones = [
+            this.crearGolpeFantasmal,
+            this.crearMilagro,
+            this.crearRegaloDivino,
+            this.crearCocorochFantasma,
+            this.crearFantasmaComilon,
+            this.crearLibroEncantado
+        ];
         
-        let clon = new Carta();
-        clon.id = `fantasma_${elegida}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        clon.esConjurada = true; 
-        clon.tipoDeUso = "objetivoUniversal"; 
+        const fnElegida = opciones[Math.floor(Math.random() * opciones.length)];
+        const carta = fnElegida.call(this);
+        carta.esConjurada = true;
+        return carta;
+    }
+
+    public static crearCartaMalditaAleatoria(): Carta {
+        const opciones = [
+            this.crearHongoVenenoso,
+            this.crearReductor,
+            this.crearSlimeComilon,
+            this.crearCartaMaldita
+        ];
         
-        if (elegida === "dano") {
-            clon.nombre = "Golpe fantasmal";
-            clon.descripcion = "Agrega 2 espacios de daño en la ruleta de un jugador vivo.";
-            clon.descripcionEnCatalan = "Afegeix 2 espais de dany a la ruleta d'un jugador viu.";
-            clon.efecto = "embrujar_dano_2";
-            clon.tipoEmbrujo = "malo"
-        } else if (elegida === "curar") {
-            clon.nombre = "Milagro";
-            clon.descripcion = "Agrega 2 espacios de +1 vida en la ruleta de un jugador vivo.";
-            clon.descripcionEnCatalan = "Afegeix 2 espais de curació a la ruleta d'un jugador viu.";
-            clon.efecto = "embrujar_curar_2";
-            clon.tipoEmbrujo = "bueno"
-        } else if (elegida === "robar") {
-            clon.nombre = "Regalo divino";
-            clon.descripcion = "Agrega 4 espacios de robo en la ruleta de un jugador vivo.";
-            clon.descripcionEnCatalan = "Afegeix 4 espais de robatori a la ruleta d'un jugador viu.";
-            clon.efecto = "embrujar_robar_4";
-            clon.tipoEmbrujo = "bueno"
-        } else if (elegida === "descartar") {
-            clon.nombre = "Cocoroch fantasma";
-            clon.descripcion = "Agrega 4 espacios de descarte en la ruleta de un jugador vivo.";
-            clon.descripcionEnCatalan = "Afegeix 4 espais de descart a la ruleta d'un jugador viu.";
-            clon.efecto = "embrujar_descartar_4";
-            clon.tipoEmbrujo = "malo"
-        } else if (elegida === "comilon") {
-            clon.nombre = "Fantasma comilon";
-            clon.descripcion = "Agrega 3 espacios de eliminacion de equipamiento en la ruleta de un jugador vivo.";
-            clon.descripcionEnCatalan = "Afegeix 3 espais d eliminació d equipament a la ruleta d un jugador viu.";
-            clon.efecto = "embrujar_comilon_3";
-            clon.tipoEmbrujo = "malo"
-        } else if (elegida === "libro") {
-            clon.nombre = "Libro encantado";
-            clon.descripcion = "Agrega 3 espacios de mejora de equipamiento en la ruleta de un jugador vivo.";
-            clon.descripcionEnCatalan = ".";
-            clon.efecto = "embrujar_libro_3";
-            clon.tipoEmbrujo = "bueno"
-        }
-        return clon;
+        const fnElegida = opciones[Math.floor(Math.random() * opciones.length)];
+        const carta = fnElegida.call(this);
+        carta.esConjurada = true;
+        return carta;
     }
 
     public static crearCartaPlantaAleatoria(): Carta | null {
@@ -1369,8 +1441,48 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearAlmaBalatro(): Carta {
+        let clon = new Carta();
+        clon.id = `alma_balatro_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Alma";
+        clon.descripcion = "Conjura una carta balatro aleatoria.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "instantanea"; 
+        clon.efecto = "almaBalatro";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearCartaBalatroAleatoria(): Carta | null {
+        const numero: number = Math.floor(Math.random() * 1)
+        let carta: Carta = null
+        switch (numero){
+            case 0:
+                return this.crearCanio()
+                
+            default: 
+                return null
+        }
+    }
+
+    public static crearCanio(): Carta {
+        let clon = new Carta();
+        clon.id = `canio_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Canio";
+        clon.number.set("canioEquipamiento", 2)
+        clon.number.set("canioNivel", 0)
+        clon.descripcion = `Al equipar ${clon.number.get("canioEquipamiento")} carta: se mejora. Nivel actual: ${clon.number.get("canioNivel")}/3.`
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto"; 
+        clon.efecto = "oculto";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     public static obtenerTodasLasCartas(): Carta[] {
         let lista: Carta[] = [];
+
+        lista.push(this.crearCanio())
 
         // --- CARTAS BÁSICAS Y COMUNES ---
         lista.push(this.crearBang());
@@ -1392,6 +1504,7 @@ export class CatalogoCartasEspeciales {
         lista.push(this.crearArma("Revolver de Casiddy", 3));
         lista.push(this.crearArma("Rifle de Ashe", 4));
         lista.push(this.crearArma("Francotirador", 5));
+        lista.push(this.crearMortero())
 
         // --- EQUIPAMIENTO BÁSICO ---
         lista.push(this.crearCaballo());
@@ -1419,7 +1532,6 @@ export class CatalogoCartasEspeciales {
         lista.push(this.crearEscopetasReaper());
         lista.push(this.crearEscopetasReaperPro());
         lista.push(this.crearPistolaDeTracerPro());
-        lista.push(this.crearMortero());
         lista.push(this.crearValerieLadrona());
         lista.push(this.crearGranDesaparicion());
         lista.push(this.crearHordaDeBloons());
@@ -1479,10 +1591,21 @@ export class CatalogoCartasEspeciales {
         lista.push(this.crearAnilloDeLaSuerte());
         lista.push(this.crearAnilloDeYoba());
 
-        // --- TOKENS Y MALDICIONES (Opcional, si quieres que salgan en la wiki) ---
         lista.push(this.crearZombidito());
         lista.push(this.crearCrisalida());
         lista.push(this.crearHuevoExplosivo());
+
+        lista.push(this.crearGolpeFantasmal())
+        lista.push(this.crearMilagro())
+        lista.push(this.crearRegaloDivino())
+        lista.push(this.crearCocorochFantasma())
+        lista.push(this.crearFantasmaComilon())
+        lista.push(this.crearLibroEncantado())
+
+        lista.push(this.crearHongoVenenoso())
+        lista.push(this.crearReductor())
+        lista.push(this.crearSlimeComilon())
+        lista.push(this.crearCartaMaldita())
 
         return lista;
     }
