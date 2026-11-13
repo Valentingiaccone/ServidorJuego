@@ -254,7 +254,7 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         // 2. Sacar 1 carta por jugador vivo
         for (let i = 0; i < vivosIds.length; i++) {
         // 1% de probabilidad por cada carta generada en la tienda
-        if (Math.random() < 0.01) {
+        if (Math.random() < 0.5) {
             let cartaBalatro = CatalogoCartasEspeciales.crearAlmaBalatro();
             cartaBalatro.esConjurada = true;
             sala.state.cartasTienda.push(cartaBalatro);
@@ -1919,6 +1919,9 @@ export class EfectoDano implements IEfectoCarta {
             if (i > 0){
                 distancia -= 3 * i;
             }
+
+            distancia -= sala.obtenerGestorCartas().ejecutar(atacante, "modificarAlcance", sala, atacante, victima);
+            distancia += sala.obtenerGestorCartas().ejecutar(victima, "modificarDistanciaDefensiva", sala, atacante, victima);
         }
 
         // Pasivas de distancia de los personajes

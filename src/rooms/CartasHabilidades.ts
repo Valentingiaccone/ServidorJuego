@@ -16,6 +16,24 @@ export interface ICarta {
     modificarTraspasarEscudo?(sala: IMyRoom, jugador: Jugador, victima: Jugador, causa: string, carta: Carta): boolean
 
     onGolpear?(sala: IMyRoom, jugador: Jugador, victima: Jugador, causa: string, carta: Carta): void
+
+    onDescartarCarta?(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string, carta: Carta): void
+
+    onPasarTurno?(sala: IMyRoom, jugador: Jugador, carta: Carta): void
+
+    modificarAlcance?(sala: IMyRoom, atacante: Jugador, victima: Jugador, carta: Carta): number
+
+    modificarDistanciaDefensiva?(sala: IMyRoom, atacante: Jugador, victima: Jugador, carta: Carta): number
+
+    modificarCartasEnManoAlPasarTurno?(sala: IMyRoom, jugador: Jugador, carta: Carta): number
+
+    modificarRepartirCarta?(sala: IMyRoom, jugador: Jugador, causa: string, carta: Carta): number
+
+    modificarSuerteLocal?(sala: IMyRoom, jugador: Jugador, motivo: string, carta: Carta): number | { cambio: number, fichas: string[] }
+
+    onFichaEspecialSeleccionada?(sala: IMyRoom, duenoDeLaFicha: Jugador, victimaQueTiro: Jugador, fichaVisual: string, carta: Carta): void
+
+    onIniciarTurno?(sala: IMyRoom, jugador: Jugador, carta: Carta): void
 }
 
 export class Canio implements ICarta {
@@ -83,6 +101,138 @@ export class Canio implements ICarta {
     }
 }
 
+export class Yorick implements ICarta {
+    nombre = "Yorick"
+
+    onIniciarTurno(sala: IMyRoom, jugador: Jugador, carta: Carta): void {
+        carta.number.set("yorickDescartes", 0);
+    }
+
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string, carta: Carta): void {
+        if (motivo !== "VOLUNTARIO") return;
+
+        let descartes = (carta.number.get("yorickDescartes") || 0) + 1;
+        carta.number.set("yorickDescartes", descartes);
+
+        // Primeros 2 descartes del turno: roba 1 carta (se suma al robo de Leah si la tiene)
+        if (descartes <= 2) {
+            sala.repartirCartas(jugador, 1, "carta");
+            sala.agregarRegistro(`🃏 ${jugador.personaje} descartó una carta y Yorick le otorgó 1 carta nueva (${descartes}/2).`);
+        }
+
+        // Al 4to descarte en el mismo turno: cura 1 (en 1vs1 se convierte en escudo automáticamente)
+        if (descartes === 4) {
+            if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
+                Utilidades.aplicarCuracion(sala, jugador, 1, "YORICK", false);
+                sala.agregarRegistro(`🃏 ¡${jugador.personaje} descartó 4 cartas en este turno y Yorick lo curó 1!`);
+                sala.reproducirSfx("curacion");
+            }
+        }
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador, carta: Carta): void {
+        carta.number.set("yorickDescartes", 0);
+    }
+}
+
+export class Triboulet implements ICarta {
+    nombre = "Triboulet"
+
+    modificarAlcance(sala: IMyRoom, atacante: Jugador, victima: Jugador, carta: Carta): number {
+        return 1;
+    }
+
+    modificarDistanciaDefensiva(sala: IMyRoom, atacante: Jugador, victima: Jugador, carta: Carta): number {
+        return 1;
+    }
+
+    modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador, carta: Carta): number {
+        return 1;
+    }
+
+    modificarRepartirCarta(sala: IMyRoom, jugador: Jugador, causa: string, carta: Carta): number {
+        return 1;
+    }
+
+    modificarSuerteLocal(sala: IMyRoom, jugador: Jugador, motivo: string, carta: Carta): { cambio: number, fichas: string[] } {
+        return { cambio: 1, fichas: ["exitoTriboulet"] };
+    }
+
+    onFichaEspecialSeleccionada(sala: IMyRoom, duenoDeLaFicha: Jugador, victimaQueTiro: Jugador, fichaVisual: string, carta: Carta): void {
+        if (fichaVisual === "exitoTriboulet") {
+            if (Utilidades.puedeRecibirCuracion(sala, duenoDeLaFicha)) {
+                Utilidades.aplicarCuracion(sala, duenoDeLaFicha, 1, "TRIBOULET", false);
+                sala.agregarRegistro(`🃏 ¡Salió la ficha de Triboulet! ${duenoDeLaFicha.personaje} se cura 1.`);
+                sala.reproducirSfx("curacion");
+            }
+        }
+    }
+}
+
+export class Perkeo implements ICarta {
+    nombre = "Perkeo"
+
+    onDescartarCarta(sala: IMyRoom, jugador: Jugador, cartaDescartada: Carta, motivo: string, carta: Carta): void {
+        if (motivo !== "VOLUNTARIO") return;
+        if (cartaDescartada.esConjurada) return;
+
+        // Si el jugador es Tilink o tiene otro Perkeo que acaba de clonar una carta en este mismo descarte,
+        // este Perkeo duplica el efecto sobre esa misma carta sin sacrificar otra distinta
+        let cartaPrevia = (jugador as any).ultimaCartaClonadaTilink as Carta | null;
+        if (cartaPrevia) {
+            let clonExtra = Utilidades.clonarCarta(cartaPrevia, "clon");
+            clonExtra.esConjurada = true;
+            jugador.mano.push(clonExtra);
+
+            sala.agregarRegistro(`🃏 ¡Perkeo potenció la clonación y creó un clon adicional de ${cartaPrevia.nombre}!`);
+            sala.reproducirSfx("tilinkPasiva");
+            return;
+        }
+
+        // Funcionamiento normal del primer Perkeo (sin límite por turno y sin penalización)
+        let cartasOriginalesEnMano = jugador.mano.filter((c: any) => !c.esConjurada && c.id !== carta.id && c.nombre !== "Perkeo");
+
+        if (cartasOriginalesEnMano.length > 0) {
+            let indiceAleatorio = Math.floor(Math.random() * cartasOriginalesEnMano.length);
+            let cartaAClonar = cartasOriginalesEnMano[indiceAleatorio];
+
+            let indiceEnMano = jugador.mano.findIndex((c: any) => c.id === cartaAClonar.id);
+            if (indiceEnMano !== -1) {
+                jugador.mano.splice(indiceEnMano, 1);
+                sala.agregarAlDescarte(cartaAClonar, jugador, null);
+            }
+
+            for (let i = 0; i < 2; i++) {
+                let clon = Utilidades.clonarCarta(cartaAClonar, "clon");
+                clon.esConjurada = true;
+                jugador.mano.push(clon);
+            }
+
+            // Guardamos la referencia para que si tiene un 2do o 3er Perkeo en mano,
+            // agreguen clones de esta misma carta en vez de sacrificar otra
+            (jugador as any).ultimaCartaClonadaTilink = cartaAClonar;
+
+            sala.agregarRegistro(`🃏 ¡Perkeo sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones!`);
+            sala.reproducirSfx("tilinkPasiva");
+        }
+    }
+}
+
+export class Chicot implements ICarta {
+    nombre = "Chicot"
+
+    modificarSuerteLocal(sala: IMyRoom, jugador: Jugador, motivo: string, carta: Carta): { cambio: number, fichas: string[] } {
+        return { cambio: 3, fichas: ["exitoChicot", "exitoChicot", "exitoChicot"] };
+    }
+
+    onFichaEspecialSeleccionada(sala: IMyRoom, duenoDeLaFicha: Jugador, victimaQueTiro: Jugador, fichaVisual: string, carta: Carta): void {
+        if (fichaVisual === "exitoChicot") {
+            sala.repartirCartas(duenoDeLaFicha, 2, "carta");
+            sala.agregarRegistro(`🃏 ¡Salió la ficha de Chicot! ${duenoDeLaFicha.personaje} roba 2 cartas.`);
+        }
+    }
+}
+
 
 
 
@@ -95,6 +245,10 @@ export class GestorCartas {
 
     constructor() {
         this.registrar(new Canio());
+        this.registrar(new Yorick());
+        this.registrar(new Triboulet());
+        this.registrar(new Perkeo());
+        this.registrar(new Chicot());
     }
 
     private registrar(c: ICarta) {
@@ -123,7 +277,8 @@ export class GestorCartas {
 
         let sumaNumeros = 0;
         let algunTrue = false;
-        let tipoResultado: "number" | "boolean" | "void" = "void";
+        let fichasAcumuladas: string[] = [];
+        let tipoResultado: "number" | "boolean" | "object" | "void" = "void";
 
         for (const carta of todasLasCartas) {
             const claseCarta = this.obtener(carta.nombre);
@@ -139,13 +294,20 @@ export class GestorCartas {
                         algunTrue = true;
                     }
                 } else if (typeof resultado === "number") {
-                    tipoResultado = "number";
+                    if (tipoResultado !== "object") tipoResultado = "number";
                     sumaNumeros += resultado;
+                } else if (resultado && typeof resultado === "object") {
+                    tipoResultado = "object";
+                    if (resultado.cambio !== undefined) sumaNumeros += resultado.cambio;
+                    if (resultado.fichas && Array.isArray(resultado.fichas)) {
+                        fichasAcumuladas.push(...resultado.fichas);
+                    }
                 }
             }
         }
 
         if (tipoResultado === "boolean") return algunTrue as RetornoMetodo<K>;
+        if (tipoResultado === "object") return { cambio: sumaNumeros, fichas: fichasAcumuladas } as RetornoMetodo<K>;
         if (tipoResultado === "number") return sumaNumeros as RetornoMetodo<K>;
         
         // Si ninguna carta ejecutó nada, devolvemos 0 (sirve como 0 en sumas y como false en un if)

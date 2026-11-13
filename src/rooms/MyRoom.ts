@@ -756,6 +756,57 @@ export class MyRoom extends Room implements IMyRoom{
         this.onMessage("enviarComando", (client, datos) => {
             let comando = datos.comando;
             let parametro = datos.parametro;
+            let miJugador = this.state.jugadores.get(client.sessionId);
+
+            // --- COMANDOS DE PRUEBA (DEBUG) ---
+            // Uso en chat: admin comando carta Triboulet
+            if (comando === "carta" && miJugador) {
+                let todas = CatalogoCartasEspeciales.obtenerTodasLasCartas();
+                todas.push(CatalogoCartasEspeciales.crearAlmaBalatro());
+                let encontrada = todas.find(c => c.nombre.toLowerCase() === parametro.toLowerCase());
+                if (encontrada) {
+                    encontrada.esConjurada = true;
+                    miJugador.mano.push(encontrada);
+                    client.send("alerta_personal", `Recibiste: ${encontrada.nombre}`);
+                } else {
+                    client.send("alerta_personal", `No existe la carta: ${parametro}`);
+                }
+                return;
+            }
+
+            // Uso en chat: admin comando original BANG! (te da una carta NO conjurada para probar a Perkeo/Tilink)
+            if (comando === "original" && miJugador) {
+                let todas = CatalogoCartasEspeciales.obtenerTodasLasCartas();
+                let encontrada = todas.find(c => c.nombre.toLowerCase() === parametro.toLowerCase());
+                if (encontrada) {
+                    encontrada.esConjurada = false;
+                    miJugador.mano.push(encontrada);
+                    client.send("alerta_personal", `Recibiste (Original): ${encontrada.nombre}`);
+                }
+                return;
+            }
+
+            // Uso en chat: admin comando vida 2
+            if (comando === "vida" && miJugador) {
+                miJugador.vidas = parseInt(parametro) || 1;
+                return;
+            }
+
+            // Uso en chat: admin comando personaje Tilink
+            if (comando === "personaje" && miJugador) {
+                let claseVieja = this.gestorPersonajes.obtener(miJugador.personaje);
+                if (claseVieja && claseVieja.onRemover) claseVieja.onRemover(this, miJugador);
+
+                let nuevaClase = this.gestorPersonajes.obtener(parametro);
+                if (nuevaClase) {
+                    miJugador.personaje = nuevaClase.nombre;
+                    miJugador.habilidad = nuevaClase.habilidad;
+                    if (nuevaClase.onAsignar) nuevaClase.onAsignar(this, miJugador, false);
+                    client.send("alerta_personal", `Cambiaste a: ${nuevaClase.nombre}`);
+                }
+                return;
+            }
+            // ----------------------------------
 
             if (comando === "kick") {
                 let idObjetivo = "";
@@ -1365,6 +1416,18 @@ export class MyRoom extends Room implements IMyRoom{
                         if (pasivaDueno && pasivaDueno.onFichaEspecialSeleccionada) {
                             pasivaDueno.onFichaEspecialSeleccionada(this, dueno, victima, nombreRealFicha);
                         }
+
+                        // Ejecutamos solo en la primera coincidencia de la carta dueña de la ficha para no duplicar si tiene 2 copias en mano
+                        const cartaEnMano = dueno.mano.find((c: Carta) => this.gestorCartas.obtener(c.nombre)?.onFichaEspecialSeleccionada !== undefined);
+                        if (cartaEnMano) {
+                            for (const c of dueno.mano) {
+                                const claseCarta = this.gestorCartas.obtener(c.nombre);
+                                if (claseCarta?.onFichaEspecialSeleccionada && nombreRealFicha.toLowerCase().includes(c.nombre.toLowerCase())) {
+                                    claseCarta.onFichaEspecialSeleccionada(this, dueno, victima, nombreRealFicha, c);
+                                    break;
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1535,6 +1598,7 @@ export class MyRoom extends Room implements IMyRoom{
             if (pasivaJugadorActual && pasivaJugadorActual.modificarCartasEnManoAlPasarTurno) {
                 modificacion = pasivaJugadorActual.modificarCartasEnManoAlPasarTurno(this, jugadorActual);
             }
+            modificacion += this.gestorCartas.ejecutar(jugadorActual, "modificarCartasEnManoAlPasarTurno", this, jugadorActual);
 
             if (jugadorActual) {
                 if (jugadorActual.mano.length > jugadorActual.vidas + modificacion && jugadorActual.mano.length !== 0) {
@@ -1630,6 +1694,7 @@ export class MyRoom extends Room implements IMyRoom{
         }
 
         cantidad += Utilidades.contarCartasPorNombre(jugador, "Anillo del ladron")
+        cantidad += this.gestorCartas.ejecutar(jugador, "modificarRepartirCarta", this, jugador, causa)
 
         if (jugador.boolean.get("susato") && causa == "turno") {
             let cantidadAExtraer = cantidad + 3
@@ -1946,6 +2011,7 @@ export class MyRoom extends Room implements IMyRoom{
             if (s > 0){
                 puntosVerdes += 3 * s
             }
+            procesarSuerte(this.gestorCartas.ejecutar(victima, "modificarSuerteLocal", this, victima, motivo), idJugador);
 
             //Suerte Global
             this.state.jugadores.forEach((j: any, sessionId: string) => {
@@ -2050,10 +2116,15 @@ export class MyRoom extends Room implements IMyRoom{
             return;
         }
 
+        (jugador as any).ultimaCartaClonadaTilink = null;
+
         let pasiva = this.gestorPersonajes.obtener(jugador.personaje)
         if (pasiva && pasiva.onDescartarCarta){
             pasiva.onDescartarCarta(this, jugador, cartaDescartada, motivo)
         }
+
+        this.gestorCartas.ejecutar(jugador, "onDescartarCarta", this, jugador, cartaDescartada, motivo)
+        ;(jugador as any).ultimaCartaClonadaTilink = null;
 
         Utilidades.restarEfecto(jugador, "fuego", 1)
 
@@ -2133,6 +2204,8 @@ export class MyRoom extends Room implements IMyRoom{
             pasiva.onPasarTurno(this, jugadorQuePasaElTurno)
         }
 
+        this.gestorCartas.ejecutar(jugadorQuePasaElTurno, "onPasarTurno", this, jugadorQuePasaElTurno)
+
         if (Utilidades.getDatosArma(jugadorQuePasaElTurno) && Utilidades.getDatosArma(jugadorQuePasaElTurno).nombre == "Espada galactica"){
             const espada: Carta = Utilidades.quitarEquipamiento(jugadorQuePasaElTurno, "arma")
             if (espada){
@@ -2199,6 +2272,7 @@ export class MyRoom extends Room implements IMyRoom{
         let pasiva = this.gestorPersonajes.obtener(jugador.personaje)
         if (pasiva && pasiva.onIniciarTurno){
             pasiva.onIniciarTurno(this, jugador)
+            this.gestorCartas.ejecutar(jugador, "onIniciarTurno", this, jugador)
         }
 
         let anilloInmunidad: Carta = Utilidades.buscarCartaPorNombre(jugador, "Anillo de inmunidad descargado")

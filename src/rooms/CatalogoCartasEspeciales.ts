@@ -1445,7 +1445,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `alma_balatro_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         clon.nombre = "Alma";
-        clon.descripcion = "Conjura una carta balatro aleatoria.";
+        clon.descripcion = "Conjura uno de los 5 comodines legendarios.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "instantanea"; 
         clon.efecto = "almaBalatro";
@@ -1454,11 +1454,19 @@ export class CatalogoCartasEspeciales {
     }
 
     public static crearCartaBalatroAleatoria(): Carta | null {
-        const numero: number = Math.floor(Math.random() * 1)
+        const numero: number = Math.floor(Math.random() * 5)
         let carta: Carta = null
         switch (numero){
             case 0:
                 return this.crearCanio()
+            case 1:
+                return this.crearYorick()
+            case 2:
+                return this.crearTriboulet()
+            case 3:
+                return this.crearPerkeo()
+            case 4:
+                return this.crearChicot()
                 
             default: 
                 return null
@@ -1479,10 +1487,63 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearYorick(): Carta {
+        let clon = new Carta();
+        clon.id = `yorick_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Yorick";
+        clon.number.set("yorickDescartes", 0);
+        clon.descripcion = "En mano: Cuando descartas (2 por turno) robas 1. Si descartas 4 cartas en un mismo turno, te cura 1.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "oculto";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearTriboulet(): Carta {
+        let clon = new Carta();
+        clon.id = `triboulet_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Triboulet";
+        clon.descripcion = "En mano: +1 alcance, +1 distancia defensiva, +1 almacenamiento, +1 al robar cartas y +1 suerte con ficha Triboulet (cura 1).";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "oculto";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearPerkeo(): Carta {
+        let clon = new Carta();
+        clon.id = `perkeo_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Perkeo";
+        clon.descripcion = "En mano: Al descartar una carta original, sacrifica otra carta original de tu mano y crea 2 clones de ella.";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "oculto";
+        clon.esConjurada = false;
+        return clon;
+    }
+
+    public static crearChicot(): Carta {
+        let clon = new Carta();
+        clon.id = `chicot_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+        clon.nombre = "Chicot";
+        clon.descripcion = "En mano: Evita Cocoroch, Prisión y Pánico. Otorga +3 de suerte con fichas Canio (roba 2) ";
+        clon.descripcionEnCatalan = ".";
+        clon.tipoDeUso = "oculto";
+        clon.efecto = "oculto";
+        clon.esConjurada = false;
+        return clon;
+    }
+
     public static obtenerTodasLasCartas(): Carta[] {
         let lista: Carta[] = [];
 
         lista.push(this.crearCanio())
+        lista.push(this.crearYorick())
+        lista.push(this.crearTriboulet())
+        lista.push(this.crearPerkeo())
+        lista.push(this.crearChicot())
 
         // --- CARTAS BÁSICAS Y COMUNES ---
         lista.push(this.crearBang());

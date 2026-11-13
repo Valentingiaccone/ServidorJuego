@@ -179,6 +179,7 @@ export class GestorNPC {
             if (pasiva && pasiva.modificarCartasEnManoAlPasarTurno) {
                 modificacion = pasiva.modificarCartasEnManoAlPasarTurno(sala, npc);
             }
+            modificacion += sala.obtenerGestorCartas().ejecutar(npc, "modificarCartasEnManoAlPasarTurno", sala, npc);
             let limiteManoActual = Math.max(0, npc.vidas + modificacion);
 
             // 3. Si ya cumplimos la regla de salud = cartas, rompemos el bucle
@@ -329,6 +330,9 @@ export class GestorNPC {
 
         const i = Utilidades.contarCartasPorNombre(atacante, "Anillo de iridio");
         if (i > 0) distancia -= 3 * i;
+
+        distancia -= sala.obtenerGestorCartas().ejecutar(atacante, "modificarAlcance", sala, atacante, victima);
+        distancia += sala.obtenerGestorCartas().ejecutar(victima, "modificarDistanciaDefensiva", sala, atacante, victima);
 
         let pasivaAtacante = sala.gestorPersonajes.obtener(atacante.personaje);
         if (pasivaAtacante && pasivaAtacante.modificarDistancia) {
