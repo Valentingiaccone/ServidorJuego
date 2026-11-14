@@ -254,7 +254,7 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         // 2. Sacar 1 carta por jugador vivo
         for (let i = 0; i < vivosIds.length; i++) {
         // 1% de probabilidad por cada carta generada en la tienda
-        if (Math.random() < 0.01) {
+        if (Math.random() < 0.05) {
             let cartaBalatro = CatalogoCartasEspeciales.crearAlmaBalatro();
             cartaBalatro.esConjurada = true;
             sala.state.cartasTienda.push(cartaBalatro);
