@@ -254,7 +254,7 @@ export class EfectoTiendaGriff implements IEfectoCarta {
         // 2. Sacar 1 carta por jugador vivo
         for (let i = 0; i < vivosIds.length; i++) {
         // 1% de probabilidad por cada carta generada en la tienda
-        if (Math.random() < 0.03) {
+        if (Math.random() < 0.01) {
             let cartaBalatro = CatalogoCartasEspeciales.crearAlmaBalatro();
             cartaBalatro.esConjurada = true;
             sala.state.cartasTienda.push(cartaBalatro);
@@ -1288,11 +1288,15 @@ export class EfectoForzarEnemigo implements IEfectoCarta {
             return false;
         }
         if (victima.mano.length === 0 && victima.equipamiento.size === 0) {
-            client.send("alerta_personal", `${victima.nombre} no tiene nada para descartar.`);
+            client.send("alerta_personal", `${victima.personaje} no tiene nada para descartar.`);
             return false;
         }
         if (victima.equipamiento.has("espantacocoroch")){
-            client.send("alerta_personal", `${victima.nombre} tiene un Espantacocoroch, no podes usar un Cocoroch en este jugador.`)
+            client.send("alerta_personal", `${victima.personaje} tiene un Espantacocoroch, no podes usar un Cocoroch en este jugador.`)
+            return false
+        }
+        if (sala.obtenerGestorCartas().ejecutar(victima, "esInmuneACocoroch", sala, victima)){
+            client.send("alerta_personal", `${victima.personaje} tiene algo que lo protege del Cocoroch.`)
             return false
         }
 
@@ -1349,6 +1353,10 @@ export class EfectoRobarEnemigo implements IEfectoCarta {
         if (victima.mano.length === 0 && victima.equipamiento.size === 0) {
             client.send("alerta_personal", `${victima.personaje} no tiene nada para robarle.`);
             return false;
+        }
+        if (sala.obtenerGestorCartas().ejecutar(victima, "esInmuneAPanico", sala, victima)){
+            client.send("alerta_personal", `${victima.personaje} tiene algo que lo protege del Panico.`)
+            return false
         }
 
         sala.armarPanelSeleccion(client.sessionId, `¿Qué querés robarle a ${victima.personaje}?`, "normal", "panico");

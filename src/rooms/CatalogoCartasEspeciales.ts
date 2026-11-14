@@ -1479,7 +1479,7 @@ export class CatalogoCartasEspeciales {
         clon.nombre = "Canio";
         clon.number.set("canioEquipamiento", 2)
         clon.number.set("canioNivel", 0)
-        clon.descripcion = `Al equipar ${clon.number.get("canioEquipamiento")} carta: se mejora. Nivel actual: ${clon.number.get("canioNivel")}/3.`
+        clon.descripcion = `En mano: al equipar ${clon.number.get("canioEquipamiento")} carta: se mejora. Nivel actual: ${clon.number.get("canioNivel")}/3.`
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto"; 
         clon.efecto = "oculto";
@@ -1492,7 +1492,7 @@ export class CatalogoCartasEspeciales {
         clon.id = `yorick_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         clon.nombre = "Yorick";
         clon.number.set("yorickDescartes", 0);
-        clon.descripcion = "En mano: Cuando descartas (2 por turno) robas 1. Si descartas 4 cartas en un mismo turno, te cura 1.";
+        clon.descripcion = "En mano: Al descartar: robas 1 (2 por turno). Al descartar 4 cartas en un mismo turno: te cura 1.";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = "oculto";
@@ -1528,7 +1528,7 @@ export class CatalogoCartasEspeciales {
         let clon = new Carta();
         clon.id = `chicot_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         clon.nombre = "Chicot";
-        clon.descripcion = "En mano: Evita Cocoroch, Prisión y Pánico. Otorga +3 de suerte con fichas Canio (roba 2) ";
+        clon.descripcion = "En mano: evita Cocoroch, Prisión y Pánico. Otorga +3 de suerte con fichas Chicot (roba 2) ";
         clon.descripcionEnCatalan = ".";
         clon.tipoDeUso = "oculto";
         clon.efecto = "oculto";

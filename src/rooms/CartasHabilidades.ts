@@ -34,6 +34,12 @@ export interface ICarta {
     onFichaEspecialSeleccionada?(sala: IMyRoom, duenoDeLaFicha: Jugador, victimaQueTiro: Jugador, fichaVisual: string, carta: Carta): void
 
     onIniciarTurno?(sala: IMyRoom, jugador: Jugador, carta: Carta): void
+
+    esInmuneACocoroch?(sala: IMyRoom, jugador: Jugador, carta: Carta): boolean
+
+    esInmuneAPanico?(sala: IMyRoom, jugador: Jugador, carta: Carta): boolean
+
+    esInmuneAPrision?(sala: IMyRoom, jugador: Jugador, carta: Carta): boolean
 }
 
 export class Canio implements ICarta {
@@ -176,19 +182,6 @@ export class Perkeo implements ICarta {
         if (motivo !== "VOLUNTARIO") return;
         if (cartaDescartada.esConjurada) return;
 
-        // Si el jugador es Tilink o tiene otro Perkeo que acaba de clonar una carta en este mismo descarte,
-        // este Perkeo duplica el efecto sobre esa misma carta sin sacrificar otra distinta
-        let cartaPrevia = (jugador as any).ultimaCartaClonadaTilink as Carta | null;
-        if (cartaPrevia) {
-            let clonExtra = Utilidades.clonarCarta(cartaPrevia, "clon");
-            clonExtra.esConjurada = true;
-            jugador.mano.push(clonExtra);
-
-            sala.agregarRegistro(`🃏 ¡Perkeo potenció la clonación y creó un clon adicional de ${cartaPrevia.nombre}!`);
-            sala.reproducirSfx("tilinkPasiva");
-            return;
-        }
-
         // Funcionamiento normal del primer Perkeo (sin límite por turno y sin penalización)
         let cartasOriginalesEnMano = jugador.mano.filter((c: any) => !c.esConjurada && c.id !== carta.id && c.nombre !== "Perkeo");
 
@@ -208,10 +201,6 @@ export class Perkeo implements ICarta {
                 jugador.mano.push(clon);
             }
 
-            // Guardamos la referencia para que si tiene un 2do o 3er Perkeo en mano,
-            // agreguen clones de esta misma carta en vez de sacrificar otra
-            (jugador as any).ultimaCartaClonadaTilink = cartaAClonar;
-
             sala.agregarRegistro(`🃏 ¡Perkeo sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones!`);
             sala.reproducirSfx("tilinkPasiva");
         }
@@ -230,6 +219,18 @@ export class Chicot implements ICarta {
             sala.repartirCartas(duenoDeLaFicha, 2, "carta");
             sala.agregarRegistro(`🃏 ¡Salió la ficha de Chicot! ${duenoDeLaFicha.personaje} roba 2 cartas.`);
         }
+    }
+
+    esInmuneACocoroch(sala: IMyRoom, jugador: Jugador, carta: Carta): boolean {
+        return true
+    }
+
+    esInmuneAPanico(sala: IMyRoom, jugador: Jugador, carta: Carta): boolean {
+        return true
+    }
+
+    esInmuneAPrision(sala: IMyRoom, jugador: Jugador, carta: Carta): boolean {
+        return true
     }
 }
 

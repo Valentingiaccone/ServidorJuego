@@ -622,7 +622,6 @@ export class Tilink implements IPersonaje {
                 }
                 
                 jugador.clonesCreadosEsteTurno++;
-                (jugador as any).ultimaCartaClonadaTilink = cartaAClonar;
                 
                 sala.agregarRegistro(`🪞 ¡${jugador.personaje} sacrificó ${cartaAClonar.nombre} original y fabricó 2 clones! (${jugador.clonesCreadosEsteTurno}/2)`);
                 sala.reproducirSfx("tilinkPasiva");

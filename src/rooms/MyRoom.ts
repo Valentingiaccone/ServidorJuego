@@ -2422,6 +2422,10 @@ export class MyRoom extends Room implements IMyRoom{
             client.send("alerta_personal", `${victima.personaje} ya está en prisión.`);
             return false;
         }
+        if (this.obtenerGestorCartas().ejecutar(victima, "esInmuneAPrision", this, victima)){
+            client.send("alerta_personal", `${victima.personaje} tiene algo que lo protege de la prision.`)
+            return false
+        }
 
         let indiceCartaJugada = atacante.mano.findIndex((c: any) => c.id === datos.idCartaJugada);
         if (indiceCartaJugada !== -1) {
