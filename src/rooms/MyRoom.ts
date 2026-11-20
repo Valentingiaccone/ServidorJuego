@@ -1279,7 +1279,8 @@ export class MyRoom extends Room implements IMyRoom{
                 
                 let textoChat = fallosJugados.length > 1 ? `usó ${fallosJugados.length} ¡Fallo! y esquivó` : `usó un ¡Fallo! y esquivó`;
                 this.broadcast("notificacion_turno", `🛡️ ¡Uf! ${victima.personaje} ${textoChat} el ataque.`);
-                this.reproducirSfx("sfxFallo");
+                const numero: number = Math.floor(Math.random() * 2);
+                this.reproducirSfx("sfxFallo" + numero);
             }
             
             this.state.usosBarril = 0
@@ -1531,6 +1532,8 @@ export class MyRoom extends Room implements IMyRoom{
                     if (fueExitoStr === "dano") {
                         this.broadcast("notificacion_turno", `👻 ¡El embrujo hirió a ${victima?.personaje}! Pierde 1 vida.`);
                         Utilidades.procesarDano(this, victima, null, 1, "EMBRUJO", true);
+                        this.reproducirSfx("sfxEmbrujoMalo")
+
                     } else if (fueExitoStr === "curar") {
                         if (victima && Utilidades.puedeRecibirCuracion(this, victima)) {
                             Utilidades.aplicarCuracion(this, victima, 1, "EMBRUJO", true);
@@ -1538,9 +1541,13 @@ export class MyRoom extends Room implements IMyRoom{
                         } else {
                             this.broadcast("notificacion_turno", `👻 El embrujo intentó sanar a ${victima?.personaje}, pero no pudo.`);
                         }
+                        this.reproducirSfx("sfxEmbrujoBueno")
+
                     } else if (fueExitoStr === "robar") {
                         if (victima) this.repartirCartas(victima, 1, "embrujo");
                         this.broadcast("notificacion_turno", `👻 ¡El embrujo le dio una carta extra a ${victima?.personaje}!`);
+                        this.reproducirSfx("sfxEmbrujoBueno")
+
                     } else if (fueExitoStr === "descartar") {
                         if (victima && victima.mano.length > 0) {
                             let c = victima.mano.splice(Math.floor(Math.random() * victima.mano.length), 1)[0];
@@ -1549,6 +1556,8 @@ export class MyRoom extends Room implements IMyRoom{
                         } else {
                             this.broadcast("notificacion_turno", `👻 El embrujo falló, la mano de ${victima?.personaje} estaba vacía.`);
                         }
+                        this.reproducirSfx("sfxEmbrujoMalo")
+
                     } else if (fueExitoStr === "comilon") {
                         let cartaDevorada = Utilidades.descartarEquipamientoAleatorio(this, victima, client);
                         if (cartaDevorada) {
@@ -1556,6 +1565,8 @@ export class MyRoom extends Room implements IMyRoom{
                         } else {
                             this.broadcast("notificacion_turno", `👻 El embrujo falló, ${victima?.personaje} no tenía ningún equipamiento.`);
                         }
+                        this.reproducirSfx("sfxEmbrujoMalo")
+
                     } else if (fueExitoStr === "libro") {
                         let textoMejora: string = Utilidades.mejorarEquipamientoAleatorio(this, victima)
                         if (textoMejora != "") {
@@ -1563,6 +1574,8 @@ export class MyRoom extends Room implements IMyRoom{
                         } else {
                             this.broadcast("notificacion_turno", `👻 El embrujo falló, ${victima?.personaje} no tenía ningún equipamiento que se pueda mejorar.`);
                         }
+                        this.reproducirSfx("sfxEmbrujoBueno")
+                        
                     } else {
                         this.broadcast("notificacion_turno", `💨 ¡${victima?.personaje} tuvo suerte y se salvó del embrujo!`);
                     }

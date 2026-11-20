@@ -56,7 +56,12 @@ export class EfectoCurarDuo implements IEfectoCarta {
 
         sala.broadcast("notificacion_turno", `🤝 ¡${jugadorQueJuega.personaje} y ${victima.personaje} compartieron curación!`);
         sala.ejecutarAnimacionCarta(client, cartaJugada)
-        sala.broadcast("sfx", "curacion");
+        sala.broadcast("sfx", "curacion")
+        if (Math.random() < 0.01) {
+            sala.reproducirSfx("Anderland")
+        } else {
+            sala.reproducirSfx("sfxAnderlandis")
+        }
 
         jugadorQueJuega.mano.splice(indiceCarta, 1);
         sala.agregarAlDescarte(cartaJugada);
@@ -2076,6 +2081,25 @@ export class EfectoAlmaBalatro implements IEfectoCarta {
     }
 }
 
+export class EfectoCofreLegendario implements IEfectoCarta {
+    ejecutar(sala: any, client: any, jugador: any, cartaJugada: any, indiceCarta: number, parametros: string[]): boolean {
+        
+        console.log(`🃏 ${jugador.personaje} usó ${cartaJugada.nombre} y conjuró una carta aleatoria del juego.`);
+        sala.broadcast("notificacion_turno", `🃏 ${jugador.personaje} usó ${cartaJugada.nombre} y conjuró una carta aleatoria del juego.`);
+        sala.ejecutarAnimacionCarta(client, cartaJugada)
+
+        if (cartaJugada.nombre == "Cofre"){
+            sala.reproducirSfx("sfxCofre")
+        } else if (cartaJugada.nombre == "Cofre super magico"){
+            sala.reproducirSfx("sfxCofreSupermagico")
+        }
+        
+        jugador.mano.splice(indiceCarta, 1);
+        sala.agregarAlDescarte(cartaJugada);
+        return true
+    }
+}
+
 // 3. EL DESPACHADOR: Es el encargado de buscar la clase correcta
 export class DespachadorDeCartas {
     private efectos: Record<string, IEfectoCarta> = {
@@ -2137,7 +2161,7 @@ export class DespachadorDeCartas {
         "dano": new EfectoDano(),
         "manzanaDorada": new EfectoManzanaDorada(),
         "mechero": new EfectoMechero(),
-        "almaBalatro": new EfectoAlmaBalatro(),
+        "almaBalatro": new EfectoAlmaBalatro()
     };
 
     public ejecutarEfecto(accion: string, sala: any, client: any, jugador: any, carta: any, indice: number, parametros: string[], gestorPersonajes: GestorPersonajes): boolean {

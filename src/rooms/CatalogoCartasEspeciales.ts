@@ -385,6 +385,7 @@ export class CatalogoCartasEspeciales {
             { id: "tiendaDePierre", copias: 1 },
             { id: "manzanaDorada", copias: 1},
             { id: "mechero", copias: 2},
+            // { id: "cofreLegendario", copias: 1},
            // { id: "mortero", copias: 1 },
         ];
     }
@@ -406,6 +407,7 @@ export class CatalogoCartasEspeciales {
             case "tiendaDePierre": return this.crearTiendaDePierre()
             case "manzanaDorada": return this.crearManzanaDorada()
             case "mechero": return this.crearMechero()
+            case "cofreLegendario": return this.crearCofreLegendario()
 
             default: return null;
         }
@@ -1536,8 +1538,22 @@ export class CatalogoCartasEspeciales {
         return clon;
     }
 
+    public static crearCofreLegendario(): Carta {
+        let clon = new Carta();
+        clon.id = `cofre_legendario_${Date.now()}_${Math.floor(Math.random() * 100000)}`
+        clon.nombre = "Cofre legendario";
+        clon.descripcion = "Conjura una carta aleatoria de todo el juego.";
+        clon.descripcionEnCatalan = "."
+        clon.tipoDeUso = "instantanea";
+        clon.efecto = "cofreLegendario";
+        clon.esConjurada = false
+        return clon
+    }
+
     public static obtenerTodasLasCartas(): Carta[] {
         let lista: Carta[] = [];
+
+        lista.push(this.crearCofreLegendario())
 
         lista.push(this.crearCanio())
         lista.push(this.crearYorick())

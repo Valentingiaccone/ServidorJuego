@@ -1932,7 +1932,7 @@ export class Pedro implements IPersonaje {
                 if (numero <= 40){
                     victima.number.set("pedroCrecimiento", victima.number.get("pedroCrecimiento") - 1)
                     sala.agregarRegistro(`🌿 ${victima.personaje} decrece ${victima.number.get("pedroCrecimiento")}/5`)
-                    sala.reproducirSfx("sfxPedroEncogiendose")
+                    sala.reproducirSfx("oscuro-pedro")
                 }
             }
         }
@@ -3360,6 +3360,7 @@ export class Bubble implements IPersonaje {
     habilidad = "Muchas burbujas:\nTiene 1 vida.\nAl empezar: gana 2 escudo e invoca a 4 NPC Bubble.\nAl inicio del turno, al recibir daño y cada 3 cartas jugadas: crea un NPC Bubble antihorario.\nAl final del turno: gana un escudo.\nAlmacenamiento 2.";
     habilidadEnCatalan = ".";
     vidasBase = 4;
+    sfxMuerte: [string, boolean, number?] = ["sfxBubblenpcMuerte", false]
 
     onAsignar(sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
         if (!jugador || !sala) return;
@@ -3414,6 +3415,7 @@ export class Bubble_npc implements IPersonaje {
     habilidadEnCatalan = ".";
     vidasBase = 1;
     esNpcInvocable = true;
+    sfxMuerte: [string, boolean, number?] = ["sfxBubblenpcMuerte", false]
 
     modificarCartasEnManoAlPasarTurno(sala: IMyRoom, jugador: Jugador): number {
         return 1
