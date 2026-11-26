@@ -1,627 +1,336 @@
-import { ICarta } from "./CartasHabilidades.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
-import { IMyRoom } from "./IMyRoom.js";
-import { IPersonaje } from "./Personajes.js";
+import type { IMyRoom } from "./IMyRoom.js";
 import { Carta, Jugador } from "./schema/MyRoomState.js";
 
+export type TipoEstadistica =
+    | "🔫daño"
+    | "💚curacion"
+    | "🛡️escudos"
+    | "💔daño recibido"
+    | "🃏jugadas";
+
+interface ReglaMejoraEquipamiento {
+    hueco: string;
+    texto: string;
+    crear: () => Carta;
+}
+
+const SECUENCIA_ARMAS_BASICAS: ReadonlyArray<{ nombre: string; alcance: number }> = [
+    { nombre: "Colt .45", alcance: 1 },
+    { nombre: "Pistola de Shion", alcance: 2 },
+    { nombre: "Revolver de Casiddy", alcance: 3 },
+    { nombre: "Rifle de Ashe", alcance: 4 },
+    { nombre: "Francotirador", alcance: 5 }
+];
+
+const TABLA_MEJORAS: Record<string, ReglaMejoraEquipamiento> = {
+    "Caballo": {
+        hueco: "mustang",
+        texto: "su Caballo",
+        crear: () => CatalogoCartasEspeciales.crearCaballoPro()
+    },
+    "Monoaldea": {
+        hueco: "mira",
+        texto: "su Monoaldea",
+        crear: () => CatalogoCartasEspeciales.crearMonoaldeaPro()
+    },
+    "Barril": {
+        hueco: "barril",
+        texto: "su Barril",
+        crear: () => CatalogoCartasEspeciales.crearBarrilPro()
+    },
+    "Dinamita": {
+        hueco: "dinamita",
+        texto: "su Dinamita",
+        crear: () => CatalogoCartasEspeciales.crearDinamitaPro()
+    },
+    "Girasol": {
+        hueco: "girasol",
+        texto: "su Girasol",
+        crear: () => CatalogoCartasEspeciales.crearBirasol()
+    },
+    "Espiritu alegre": {
+        hueco: "espiritu",
+        texto: "su Espiritu alegre",
+        crear: () => CatalogoCartasEspeciales.crearEspirituAlegrePro()
+    },
+    "Espiritu enojado": {
+        hueco: "espiritu",
+        texto: "su Espiritu enojado",
+        crear: () => CatalogoCartasEspeciales.crearEspirituEnojadoPro()
+    },
+    "Espantacocoroch": {
+        hueco: "espantacocoroch",
+        texto: "su Espantacocoroch",
+        crear: () => CatalogoCartasEspeciales.crearEspantacocorochPro()
+    },
+    "Pistola de Tracer": {
+        hueco: "arma",
+        texto: "su arma a Pistola de Tracer Pro",
+        crear: () => CatalogoCartasEspeciales.crearPistolaDeTracerPro()
+    },
+    "Escopetas de Reaper": {
+        hueco: "arma",
+        texto: "su arma a Escopetas de Reaper Pro",
+        crear: () => CatalogoCartasEspeciales.crearEscopetasReaperPro()
+    },
+    "Tirachinas": {
+        hueco: "arma",
+        texto: "su arma a Tirachinas maestro",
+        crear: () => CatalogoCartasEspeciales.crearTirachinasMaestro()
+    },
+    "Espada galactica": {
+        hueco: "arma",
+        texto: "su arma a Espada galactica Pro",
+        crear: () => CatalogoCartasEspeciales.crearEspadaGalacticaPro()
+    }
+};
+
 export class Utilidades {
+    // =========================================================================
+    // 1. IDENTIDAD VISUAL Y BÚSQUEDA DE JUGADORES
+    // =========================================================================
 
-    public static procesarDano(sala: IMyRoom, victima: Jugador, atacante: Jugador, cantidad: number, causa: string, ignoraEscudo: boolean = false): void {
-        if (!victima){
-            console.error("ERROR: victima no existe en procesarDano");
-            return;
-        }
-        if (!victima.estaVivo){
-            return;
-        }
-
-        console.log("Procesar daño:", victima?.personaje, atacante?.personaje, cantidad, causa, ignoraEscudo)
-
-        let cartaCalabaza = victima.equipamiento.get("calabaza");
-        if (cartaCalabaza){
-            sala.agregarAlDescarte(cartaCalabaza, victima, null);
-            victima.equipamiento.delete("calabaza");
-            sala.agregarRegistro(`🎃 La Calabaza de ${victima.personaje} lo protege del ataque.`);
-            return;
-        }
-
-        let cartaCrisalida = victima.equipamiento.get("crisalida");
-        if (cartaCrisalida){
-            sala.agregarAlDescarte(cartaCrisalida, victima, null);
-            victima.equipamiento.delete("crisalida");
-            sala.agregarRegistro( `🐚 La Crisalida de ${victima.personaje} lo protege del ataque.`);
-            return;
-        }
-
-        if (atacante){
-            ignoraEscudo = sala.obtenerGestorCartas().ejecutar(atacante, "modificarTraspasarEscudo", sala, atacante, victima, causa)
-            cantidad += sala.obtenerGestorCartas().ejecutar(atacante, "modificarDañoComoAtacante", sala, atacante, victima, causa)
-        }
-
-        if (atacante && (atacante.equipamiento.has("humoseta") || atacante.boolean.get("kertley"))){
-            ignoraEscudo = true;
-        }
-
-        if (atacante && atacante.boolean.get("roaringDaño")){
-            cantidad++
-        }
-
-        if (atacante && atacante.boolean.get("leon_oculto")){
-            cantidad = 0
-        }
-        if (victima && victima.efecto.has("inmortalidad") && victima.efecto.get("inmortalidad") > 0){
-            cantidad  = 0
-        }
-
-        if (causa == "BANG" || causa == "Orbita BANG!"){
-            if (atacante){
-                if (atacante.boolean.get("chispitasCargado")){
-                    atacante.boolean.set("chispitasCargado", false);
-                    cantidad = 999;
-                    sala.reproducirSfx("sfxChispitasBang")
-                }
-                if (atacante.equipamiento.has("plantorcha") && (this.getDatosArma(atacante).nombre == "Lanzaguisantes" || this.getDatosArma(atacante).nombre == "Repetidora")){
-                    cantidad += 1;
-                }
-                if (atacante.boolean.get("esZombistein") && atacante.vidas <= 2){
-                    cantidad += 1
-                }
-                if (atacante.string.get("angryBird") == "terrence"){
-                    cantidad += 1
-                }
-                if (atacante.boolean.get("mercyActivada")){
-                    this.aplicarCuracion(sala, victima, cantidad, causa, false);
-                    this.aplicarCuracion(sala, atacante, 1, causa, false)
-                    return;              
-                }
-            }
-        }
-
-        let anilloInmunidad: Carta = this.buscarCartaPorNombre(victima, "Anillo de inmunidad")
-        if (anilloInmunidad && cantidad > 0){
-            cantidad = 0
-            this.agregarEscudos(sala, victima, 2, 1, "anillo")
-            this.eliminarCartaDeLaMano(victima, anilloInmunidad)
-            sala.descartarCarta(anilloInmunidad, victima, "anillo")
-            sala.agregarRegistro(`💍 ${victima.personaje} redujo el daño a 0 por su Anillo de inmunidad, este le dió 2 escudos y luego se descartó.`)
-        }
-
-        let danoRestante = cantidad;
-        let cantidadDanoEscudo = 0;
-
-        if (!ignoraEscudo) {
-            while (danoRestante > 0 && victima.turnosEscudos && victima.turnosEscudos.length > 0) {
-                victima.turnosEscudos.shift(); 
-                victima.vidasEscudo--;         
-                cantidadDanoEscudo++;
-                danoRestante--;
-            }
-        }
-
-        let cantidadDanoCuerpo = danoRestante;
-        if (cantidadDanoCuerpo > 0) {
-            victima.vidas -= cantidadDanoCuerpo;
-        }
-
-        let pasivaVictima = sala.obtenerIPersonaje(victima.personaje);
-        if (pasivaVictima && pasivaVictima.onRecibirDano && cantidad > 0) {
-            pasivaVictima.onRecibirDano(sala, victima, atacante, causa, cantidad, cantidadDanoCuerpo, cantidadDanoEscudo);
-        }
-
-        this.restarEfecto(victima, "gravitacional", 1)
-
-        const y: number = this.contarCartasPorNombre(victima, "Anillo de Yoba")
-        for (let i = 0; i < y; i++){
-            const numero: number = Math.floor(Math.random() * 3)
-            if (numero == 0){
-                this.agregarEscudos(sala, victima, 1, 1, "anillo")
-                sala.agregarRegistro(`💍 ${victima.personaje} generó un escudo por su anillo de Yoba.`)
-            }
-        }
-
-        let pasivaAtacante = sala.obtenerIPersonaje(atacante?.personaje);
-        if (pasivaAtacante && pasivaAtacante.onGolpear && cantidad > 0) {
-            pasivaAtacante.onGolpear(sala, atacante, victima, causa);
-        }
-
-        if (atacante){
-            sala.obtenerGestorCartas().ejecutar(atacante, "onGolpear", sala, atacante, victima, causa)
-        }
-
-        if (causa == "Orbita BANG!"){
-            Utilidades.agregarEfecto(victima, "gravitacional", 3)
-            sala.reproducirSfx("sfxOrbitaBang")
-        }
-
-        this.agregarEstadistica(atacante, cantidadDanoCuerpo + cantidadDanoEscudo, "🔫daño")
-        this.agregarEstadistica(victima, cantidadDanoCuerpo + cantidadDanoEscudo, "💔daño recibido")
-
-        sala.animacionJugador({personaje: victima.personaje, animacion: "recibirDano"})
-        sala.evaluarMuerte(victima, atacante, ignoraEscudo);
+    public static obtenerNombreVisual(jugador: Jugador | null | undefined): string {
+        if (!jugador) return "Alguien";
+        return jugador.nombreMostrar || jugador.personaje || jugador.nombre || "Alguien";
     }
 
-    public static agregarEscudos(sala: any, jugador: any, cantidad: number, duracion: number, causa: string): void {
-        if (!jugador || !jugador.estaVivo) return;
+    public static obtenerSessionIdDeJugador(sala: IMyRoom, jugadorBuscado: Jugador): string {
+        if (!sala || !jugadorBuscado) return "";
+
+        let idEncontrado = "";
+        sala.getJugadores().forEach((j: Jugador, sessionId: string) => {
+            if (j === jugadorBuscado) {
+                idEncontrado = sessionId;
+            }
+        });
+        return idEncontrado;
+    }
+
+    public static obtenerJugadorPorSessionId(sala: IMyRoom, sessionId: string): Jugador | null {
+        if (!sala || !sessionId) return null;
+        return sala.getJugadores().get(sessionId) ?? null;
+    }
+
+    // =========================================================================
+    // 2. ESCUDOS Y CURACIÓN
+    // =========================================================================
+
+    public static agregarEscudos(
+        sala: IMyRoom,
+        jugador: Jugador,
+        cantidad: number,
+        duracion: number,
+        causa: string
+    ): void {
+        if (!jugador || !jugador.estaVivo || cantidad <= 0) return;
         if (!jugador.turnosEscudos) jugador.turnosEscudos = [];
 
-        console.log("Agregar escudos:", jugador?.personaje, cantidad, duracion, causa)
-
         for (let i = 0; i < cantidad; i++) {
-            if (jugador.turnosEscudos.length < 10){
+            if (jugador.turnosEscudos.length < 10) {
                 jugador.turnosEscudos.push(duracion);
             }
         }
         jugador.vidasEscudo = jugador.turnosEscudos.length;
 
-        let pasiva = sala.gestorPersonajes.obtener(jugador.personaje);
-        if (pasiva && pasiva.onRecibirEscudo) {
-            pasiva.onRecibirEscudo(sala, jugador, cantidad, causa);
-        }
-
-        this.agregarEstadistica(jugador, cantidad, "🛡️escudos")
+        sala.motorEventos.disparar(jugador, "onRecibirEscudo", jugador, cantidad, causa);
+        this.agregarEstadistica(jugador, cantidad, "🛡️escudos");
     }
 
-    public static puedeRecibirCuracion(sala: any, jugador: any): boolean {
+    public static puedeRecibirCuracion(sala: IMyRoom, jugador: Jugador): boolean {
         if (!jugador || !jugador.estaVivo) return false;
         if (jugador.transformarCuraEnEscudo) return true;
+        if (jugador.esNpc && !jugador.boolean.get("lawrieCura")) return false;
+        if (jugador.efecto.has("malestar")) return false;
 
-        console.log("Puede recibir curacion:", jugador?.personaje)
-
-        let totalVivos = 0;
-        sala.state.jugadores.forEach((j: any) => {
-            if (j && j.estaVivo) totalVivos++;
-        });
-
-        if (jugador.esNpc && !jugador.boolean.get("lawrieCura")){
-            return false
-        }
-
-        if (jugador.efecto.has("malestar")){
-            return false
-        }
-
-        if (totalVivos === 2) {
-            return true;
-        }
-
+        if (sala.getTotalJugadoresVivos() === 2) return true;
         return jugador.vidas < jugador.vidasMaximas;
     }
 
-    public static aplicarCuracion(sala: any, jugador: any, cantidadBase: number, causa: string, forzarCuracion: boolean): void {
+    public static aplicarCuracion(
+        sala: IMyRoom,
+        jugador: Jugador,
+        cantidadBase: number,
+        causa: string,
+        forzarCuracion: boolean = false
+    ): void {
         if (!jugador || !jugador.estaVivo) return;
 
-        console.log("Aplicar curacion:", jugador?.personaje, cantidadBase, causa, forzarCuracion)
-
         let cantidadFinal = cantidadBase;
-        let pasiva: IPersonaje = sala.gestorPersonajes.obtener(jugador.personaje);
-
-        if (causa === "BOTIQUIN" && pasiva && pasiva.modificarCuraBotiquin) {
-            cantidadFinal += pasiva.modificarCuraBotiquin(sala, jugador);
+        if (causa === "BOTIQUIN") {
+            cantidadFinal += sala.motorEventos.sumar(jugador, "modificarCuraBotiquin", jugador);
         }
+        cantidadFinal += sala.motorEventos.sumar(jugador, "modificarCuracion", jugador);
 
-        if (pasiva && pasiva.modificarCuracion){
-            cantidadFinal += pasiva.modificarCuracion(sala, jugador)
-        }
-
-        let totalVivos = 0;
-        sala.state.jugadores.forEach((j: any) => {
-            if (j.estaVivo) totalVivos++;
-        });
+        const totalVivos = sala.getTotalJugadoresVivos();
 
         if (jugador.transformarCuraEnEscudo && !forzarCuracion) {
-            Utilidades.agregarEscudos(sala, jugador, cantidadFinal, Infinity, "CURACION");
-        } else if (totalVivos === 2 && !forzarCuracion) {
-            Utilidades.agregarEscudos(sala, jugador, cantidadFinal, 1, "CURACION");
-            sala.broadcast("notificacion_turno", `🛡️ ¡En duelo a muerte, la curación de ${jugador.personaje} se transforma en Escudo Temporal!`);
-        } else {
-            const vidasAntes: number = jugador.vidas
+            this.agregarEscudos(sala, jugador, cantidadFinal, Infinity, "CURACION");
+            return;
+        }
 
-            jugador.vidas += cantidadFinal;
-            let excedente = Math.max(0, jugador.vidas - jugador.vidasMaximas);
-            if (jugador.vidas > jugador.vidasMaximas) {
-                jugador.vidas = jugador.vidasMaximas;
-            }
+        if (totalVivos === 2 && !forzarCuracion) {
+            this.agregarEscudos(sala, jugador, cantidadFinal, 1, "CURACION");
+            sala.agregarRegistro(
+                `🛡️ ¡En duelo a muerte, la curación de ${this.obtenerNombreVisual(jugador)} se transforma en Escudo Temporal!`
+            );
+            return;
+        }
 
-            if (jugador.boolean.get("botiquinExcedenteAEscudo")){
-                this.agregarEscudos(sala, jugador, excedente, 1, "PASIVA");
-            }
+        const vidasAntes = jugador.vidas;
+        jugador.vidas += cantidadFinal;
+        const excedente = Math.max(0, jugador.vidas - jugador.vidasMaximas);
 
-            if (pasiva && pasiva.onRecibirCuracion) {
-                pasiva.onRecibirCuracion(sala, jugador);
-            }
+        if (jugador.vidas > jugador.vidasMaximas) {
+            jugador.vidas = jugador.vidasMaximas;
+        }
 
-            const vidasCuradas: number = jugador.vidas - vidasAntes
-            if (vidasCuradas > 0){
-                this.agregarEstadistica(jugador, vidasCuradas, "💚curacion")
-            }
-            sala.broadcast("animacionJugador", {personaje: jugador.personaje, animacion: "recibirCuracion"});
+        if (jugador.boolean.get("botiquinExcedenteAEscudo") && excedente > 0) {
+            this.agregarEscudos(sala, jugador, excedente, 1, "PASIVA");
+        }
+
+        sala.motorEventos.disparar(jugador, "onRecibirCuracion", jugador);
+
+        const vidasCuradas = jugador.vidas - vidasAntes;
+        if (vidasCuradas > 0) {
+            this.agregarEstadistica(jugador, vidasCuradas, "💚curacion");
+        }
+
+        const idJugador = this.obtenerSessionIdDeJugador(sala, jugador);
+        if (idJugador) {
+            sala.animacionJugador(idJugador, "recibirCuracion");
         }
     }
 
-    // ==============================================================
-    // NUEVO SISTEMA DE EQUIPAMIENTO CENTRALIZADO
-    // ==============================================================
+    // =========================================================================
+    // 3. EQUIPAMIENTO Y MEJORAS
+    // =========================================================================
 
-    /**
-     * Equipa una carta en el mapa. Si ya había una en ese hueco, la descarta.
-     * Huecos comunes: "arma", "mustang", "mira", "barril", "prision", "dinamita", "papa", "calabaza", "plantorcha", "humoseta".
-     */
     public static equiparCarta(sala: IMyRoom, jugador: Jugador, carta: Carta, hueco: string): void {
-        console.log("Equipar carta:", jugador?.personaje, carta?.nombre, hueco)
+        carta.idDuenoDelPerro = "";
 
-        carta.idDuenoDelPerro = ""
         if (jugador.equipamiento.has(hueco)) {
-            let cartaVieja = jugador.equipamiento.get(hueco);
-            sala.agregarAlDescarte(cartaVieja, jugador, null);
+            const cartaVieja = jugador.equipamiento.get(hueco);
+            if (cartaVieja) {
+                sala.agregarAlDescarte(cartaVieja);
+            }
         }
         jugador.equipamiento.set(hueco, carta);
 
-        let pasiva = sala.obtenerIPersonaje(jugador.personaje);
-        if (pasiva && pasiva.onEquiparCarta) {
-            pasiva.onEquiparCarta(sala, jugador, carta, hueco);
-        }
-
-        sala.obtenerGestorCartas().ejecutar(jugador, "onEquiparCarta", sala, jugador, hueco)
+        sala.motorEventos.disparar(jugador, "onEquiparCarta", jugador, carta, hueco);
     }
 
-    /**
-     * Devuelve las stats del arma calculadas dinámicamente desde el efecto de la carta.
-     * Si no hay arma, devuelve las stats por defecto (Colt .45)
-     */
-    public static getDatosArma(jugador: Jugador) {
-        let arma = jugador.equipamiento.get("arma");
-        if (!arma) return { nombre: "Colt .45", alcance: 1, danoExtra: 0, alcanceMinimo: 0 };
-        
-        // Formato esperado en el efecto de armas: "equipar_arma_alcance_danoExtra_alcanceMinimo"
-        // Ej: "equipar_arma_3_0_0" o "equipar_arma_999_0_2"
-        let partes = arma.efecto.split("_");
-        return {
-            nombre: arma.nombre,
-            alcance: parseInt(partes[2]) || 1,
-            danoExtra: parseInt(partes[3]) || 0,
-            alcanceMinimo: parseInt(partes[4]) || 0
-        };
+    public static quitarEquipamiento(jugador: Jugador, hueco: string): Carta | null {
+        if (!jugador || !jugador.equipamiento || !jugador.equipamiento.has(hueco)) return null;
+        const cartaRemovida = jugador.equipamiento.get(hueco) ?? null;
+        jugador.equipamiento.delete(hueco);
+        return cartaRemovida;
     }
 
-    /**
-     * Descarta un equipamiento aleatorio. 100% dinámico y escalable.
-     */
-    public static descartarEquipamientoAleatorio(sala: any, jugador: Jugador, client: any): Carta | null {
+    public static descartarEquipamientoAleatorio(sala: IMyRoom, jugador: Jugador): Carta | null {
         if (jugador.equipamiento.size === 0) return null;
 
-        let claves = Array.from(jugador.equipamiento.keys());
-        let claveElegida = claves[Math.floor(Math.random() * claves.length)];
-        
-        let cartaPerdida = jugador.equipamiento.get(claveElegida);
-        jugador.equipamiento.delete(claveElegida);
+        const claves = Array.from(jugador.equipamiento.keys());
+        const claveElegida = claves[Math.floor(Math.random() * claves.length)];
+        const cartaPerdida = this.quitarEquipamiento(jugador, claveElegida);
 
         if (cartaPerdida) {
-            sala.agregarAlDescarte(cartaPerdida, jugador, client);
+            sala.agregarAlDescarte(cartaPerdida);
             return cartaPerdida;
         }
-        return null; 
+        return null;
     }
 
-    /**
-     * Limpia la mesa entera del jugador (Por muerte o por Petaseta).
-     */
-    public static destruirTodosLosEquipamientos(sala: any, jugador: Jugador): void {
-        jugador.equipamiento.forEach((carta: Carta, clave: string) => {
-            sala.agregarAlDescarte(carta, jugador, null);
+    public static destruirTodosLosEquipamientos(sala: IMyRoom, jugador: Jugador): void {
+        jugador.equipamiento.forEach((carta: Carta) => {
+            sala.agregarAlDescarte(carta);
         });
         jugador.equipamiento.clear();
     }
 
-    public static descartarCartaAleatoriaDeLaMano(jugador: any): any | null {
-        if (!jugador || !jugador.mano || jugador.mano.length === 0) return null;
-        let indiceAleatorio = Math.floor(Math.random() * jugador.mano.length);
-        return jugador.mano.splice(indiceAleatorio, 1)[0];
-    }
+    public static mejorarEquipamientoAleatorio(sala: IMyRoom, jugador: Jugador): string {
+        const opciones: ReglaMejoraEquipamiento[] = [];
 
-    // ==============================================================
-    // FUNCIONES DE MEJORA PARA ROBIN (Y FUTURAS CARTAS)
-    // ==============================================================
-
-    public static mejorarEquipamientoAleatorio(sala: any, jugador: Jugador): string {
-        let opcionesDeMejora: string[] = [];
-
-        let mustang = jugador.equipamiento.get("mustang");
-        if (mustang && mustang.nombre === "Caballo") opcionesDeMejora.push("mustang");
-
-        let mira = jugador.equipamiento.get("mira");
-        if (mira && mira.nombre === "Monoaldea") opcionesDeMejora.push("mira");
-
-        let barril = jugador.equipamiento.get("barril");
-        if (barril && barril.nombre === "Barril") opcionesDeMejora.push("barril");
-
-        let dinamita = jugador.equipamiento.get("dinamita");
-        if (dinamita && dinamita.nombre === "Dinamita") opcionesDeMejora.push("dinamita");
-
-        let girasol = jugador.equipamiento.get("girasol");
-        if (girasol && girasol.nombre === "Girasol") opcionesDeMejora.push("girasol");
-
-        let espiritu = jugador.equipamiento.get("espiritu");
-        if (espiritu && espiritu.nombre === "Espiritu alegre") opcionesDeMejora.push("espirituAlegre");
-        if (espiritu && espiritu.nombre === "Espiritu enojado") opcionesDeMejora.push("espirituEnojado");
-
-        let espantacocoroch = jugador.equipamiento.get("espantacocoroch");
-        if (espantacocoroch && espantacocoroch.nombre === "Espantacocoroch") opcionesDeMejora.push("espantacocoroch");
-
-        let datosArmaActual = this.getDatosArma(jugador);
-        let siguienteArma = this.obtenerSiguienteArma(datosArmaActual.nombre);
-        if (siguienteArma) {
-            // es un arma basica de alcance
-            opcionesDeMejora.push("arma");
-        } else {
-            // es un arma especial
-            if (datosArmaActual.nombre == "Pistola de Tracer"){
-                opcionesDeMejora.push("tracer")
-            } else if (datosArmaActual.nombre == "Escopetas de Reaper"){
-                opcionesDeMejora.push("reaper")
-            } else if (datosArmaActual.nombre == "Tirachinas"){
-                opcionesDeMejora.push("tirachinas")
-            } else if (datosArmaActual.nombre == "Espada galactica"){
-                opcionesDeMejora.push("espadaGalactica")
-            }
-        }
-
-        if (opcionesDeMejora.length === 0) return "";
-
-        let eleccion = opcionesDeMejora[Math.floor(Math.random() * opcionesDeMejora.length)];
-        
-        return this.mejorarEquipamientoEspecifico(sala, jugador, eleccion, siguienteArma);
-    }
-
-    public static mejorarEquipamientoEspecifico(sala: any, jugador: Jugador, hueco: string, datosNuevaArma: any = null): string {
-        let textoMejora = "";
-
-        if (hueco === "mustang") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearCaballoPro();
-            this.equiparCarta(sala, jugador, cartaMejorada, "mustang");
-            textoMejora = "su Caballo";
-        } 
-        else if (hueco === "mira") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearMonoaldeaPro();
-            this.equiparCarta(sala, jugador, cartaMejorada, "mira");
-            textoMejora = "su Monoaldea";
-        } 
-        else if (hueco === "barril") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearBarrilPro();
-            this.equiparCarta(sala, jugador, cartaMejorada, "barril");
-            textoMejora = "su Barril";
-        } 
-        else if (hueco === "dinamita") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearDinamitaPro();
-            cartaMejorada.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaMejorada, "dinamita");
-            textoMejora = "su Dinamita";
-        }
-        else if (hueco === "arma" && datosNuevaArma) {
-            let cartaArmaNueva = CatalogoCartasEspeciales.crearArma(datosNuevaArma.nombre, datosNuevaArma.alcance);
-            this.equiparCarta(sala, jugador, cartaArmaNueva, "arma");
-            textoMejora = `su arma a ${datosNuevaArma.nombre}`;
-        }
-        else if (hueco === "tracer"){
-            let cartaNueva: Carta = CatalogoCartasEspeciales.crearPistolaDeTracerPro()
-            cartaNueva.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaNueva, "arma")
-            textoMejora = `su arma a ${cartaNueva.nombre}`
-        }
-        else if (hueco === "reaper"){
-            let cartaNueva: Carta = CatalogoCartasEspeciales.crearEscopetasReaperPro()
-            cartaNueva.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaNueva, "arma")
-            textoMejora = `su arma a ${cartaNueva.nombre}`
-        } else if (hueco === "tirachinas"){
-            let cartaNueva: Carta = CatalogoCartasEspeciales.crearTirachinasMaestro()
-            cartaNueva.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaNueva, "arma")
-            textoMejora = `su arma a ${cartaNueva.nombre}`
-        } else if (hueco === "espirituAlegre") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearEspirituAlegrePro();
-            cartaMejorada.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaMejorada, "espiritu");
-            textoMejora = "su Espiritu alegre";
-        } else if (hueco === "espirituEnojado") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearEspirituEnojadoPro();
-            cartaMejorada.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaMejorada, "espiritu");
-            textoMejora = "su Espiritu enojado";
-        } else if (hueco === "espadaGalactica"){
-            let cartaNueva: Carta = CatalogoCartasEspeciales.crearEspadaGalacticaPro()
-            cartaNueva.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaNueva, "arma")
-            textoMejora = `su arma a ${cartaNueva.nombre}`
-        } else if (hueco === "espantacocoroch") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearEspantacocorochPro()
-            cartaMejorada.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaMejorada, "espantacocoroch");
-            textoMejora = "su Espantacocoroch";
-        } else if (hueco === "girasol") {
-            let cartaMejorada = CatalogoCartasEspeciales.crearBirasol()
-            cartaMejorada.esConjurada = true
-            this.equiparCarta(sala, jugador, cartaMejorada, "girasol");
-            textoMejora = "su Girasol";
-        }
-
-        return textoMejora;
-    }
-
-    private static obtenerSiguienteArma(armaActual: string): any {
-        const secuencia = [
-            { nombre: "Colt .45", alcance: 1 },
-            { nombre: "Pistola de Shion", alcance: 2 },
-            { nombre: "Revolver de Casiddy", alcance: 3 },
-            { nombre: "Rifle de Ashe", alcance: 4 },
-            { nombre: "Francotirador", alcance: 5 }
-        ];
-
-        let index = secuencia.findIndex(a => a.nombre === armaActual);
-        if (index !== -1 && index < secuencia.length - 1) {
-            return secuencia[index + 1];
-        }
-        return null; 
-    }
-
-    /**
-     * Desequipa una carta del mapa, la elimina del equipamiento y la devuelve.
-     * Ideal para Pánico, Cocoroch o cuando un equipamiento se consume (Dinamita/Prisión).
-     */
-    public static quitarEquipamiento(jugador: Jugador, hueco: string): Carta | null {
-        if (!jugador || !jugador.equipamiento) return null;
-
-        if (jugador.equipamiento.has(hueco)) {
-            let cartaRemovida = jugador.equipamiento.get(hueco);
-            jugador.equipamiento.delete(hueco);
-            return cartaRemovida;
-        }
-
-        return null;
-    }
-
-    /**
-     * Busca en la sala a un jugador específico y devuelve su Session ID (Client ID).
-     * Devuelve un string vacío "" si no lo encuentra.
-     */
-    public static obtenerSessionIdDeJugador(sala: IMyRoom, jugadorBuscado: Jugador): string {
-        if (!sala || !jugadorBuscado) return "";
-        
-        let idEncontrado = "";
-        
-        sala.getJugadores().forEach((j: any, sessionId: string) => {
-            if (j === jugadorBuscado) {
-                idEncontrado = sessionId;
-            }
+        // 1. Mejoras definidas en tabla para equipamientos activos
+        jugador.equipamiento.forEach((carta: Carta) => {
+            const regla = TABLA_MEJORAS[carta.nombre];
+            if (regla) opciones.push(regla);
         });
-        
-        return idEncontrado;
-    }
 
-    /**
-     * Busca en la sala a un jugador usando su Session ID (Client ID) y devuelve el objeto Jugador.
-     * Devuelve null si no lo encuentra (por ejemplo, si se desconectó).
-     */
-    public static obtenerJugadorPorSessionId(sala: IMyRoom, sessionId: string): Jugador | null {
-        if (!sala || !sessionId) return null;
-        
-        // El MapSchema nos permite buscar directamente por la clave
-        let jugador = sala.getJugadores().get(sessionId);
-        
-        return jugador || null;
-    }
-
-    /**
-     * Mueve físicamente a un jugador en la mesa intercambiando su silla con el rival vivo más cercano en esa dirección.
-     * No afecta el orden de los turnos. Devuelve el jugador desplazado o null si falló.
-     */
-    public static moverPosicionFisica(sala: IMyRoom, jugador: Jugador, direccion: "antihorario" | "horario"): Jugador | null {
-        // esto lo hago porque visualmente es al reves, si decis antihorario, visualmente será antihorario pero en codigo será horario
-        if (direccion == "antihorario"){
-            direccion = "horario"
-        } else {
-            direccion = "antihorario"
+        // 2. Evolución de armas básicas (Colt .45 -> Shion -> Casiddy -> Ashe -> Francotirador)
+        const armaActual = sala.sistemaCombate.getDatosArma(jugador);
+        const idxArma = SECUENCIA_ARMAS_BASICAS.findIndex((a) => a.nombre === armaActual.nombre);
+        if (idxArma !== -1 && idxArma < SECUENCIA_ARMAS_BASICAS.length - 1) {
+            const siguiente = SECUENCIA_ARMAS_BASICAS[idxArma + 1];
+            opciones.push({
+                hueco: "arma",
+                texto: `su arma a ${siguiente.nombre}`,
+                crear: () => CatalogoCartasEspeciales.crearArma(siguiente.nombre, siguiente.alcance)
+            });
         }
 
-        let state = (sala as any).state;
-        let idOrigen = this.obtenerSessionIdDeJugador(sala, jugador);
-        if (!idOrigen) return null;
+        if (opciones.length === 0) return "";
 
-        let arraySillas = state.ordenSillasFisicas;
-        let idxOrigen = arraySillas.indexOf(idOrigen);
-        if (idxOrigen === -1) return null;
-
-        let n = arraySillas.length;
-        // Derecha suma (+1), Izquierda resta (-1)
-        let paso = (direccion === "antihorario") ? 1 : -1; 
-        
-        let idxDestino = -1;
-        let jugadorDestino: Jugador | null = null;
-
-        // Buscamos la siguiente silla que tenga a alguien VIVO
-        for (let i = 1; i < n; i++) {
-            // El (+ n) % n asegura que si estamos en el índice 0 y restamos 1, demos la vuelta al final de la mesa
-            let idxTest = (idxOrigen + (paso * i) + n) % n; 
-            let idTest = arraySillas[idxTest];
-            let jugTest = state.jugadores.get(idTest);
-            
-            if (jugTest && jugTest.estaVivo) {
-                idxDestino = idxTest;
-                jugadorDestino = jugTest;
-                break;
-            }
-        }
-
-        if (idxDestino !== -1 && jugadorDestino) {
-            // ¡Intercambiamos los IDs en el array visual/físico!
-            let temp = arraySillas[idxOrigen];
-            arraySillas[idxOrigen] = arraySillas[idxDestino];
-            arraySillas[idxDestino] = temp;
-
-            //sala.agregarRegistro(`🪑 ¡${jugador.personaje} se movió a la ${direccion} e intercambió asiento con ${jugadorDestino.personaje}!`);
-            
-            return jugadorDestino;
-        }
-
-        return null; // Nadie vivo para intercambiar
+        const elegida = opciones[Math.floor(Math.random() * opciones.length)];
+        const cartaMejorada = elegida.crear();
+        cartaMejorada.esConjurada = true;
+        this.equiparCarta(sala, jugador, cartaMejorada, elegida.hueco);
+        return elegida.texto;
     }
 
-    /**
-     * Intercambia la posición física (silla) de dos jugadores en la mesa.
-     */
-    public static intercambiarPosicionesFisicas(sala: IMyRoom, jugador1: Jugador, jugador2: Jugador): boolean {
-        let state = (sala as any).state;
-        let id1 = this.obtenerSessionIdDeJugador(sala, jugador1);
-        let id2 = this.obtenerSessionIdDeJugador(sala, jugador2);
+    // =========================================================================
+    // 4. MANO, CARTAS Y CLONADO
+    // =========================================================================
 
-        if (!id1 || !id2) return false;
-
-        let arraySillas = state.ordenSillasFisicas;
-        let idx1 = arraySillas.indexOf(id1);
-        let idx2 = arraySillas.indexOf(id2);
-
-        if (idx1 !== -1 && idx2 !== -1) {
-            // Intercambiamos los IDs en el array visual/físico
-            let temp = arraySillas[idx1];
-            arraySillas[idx1] = arraySillas[idx2];
-            arraySillas[idx2] = temp;
-            return true;
-        }
-
-        return false;
+    public static descartarCartaAleatoriaDeLaMano(jugador: Jugador): Carta | null {
+        if (!jugador || !jugador.mano || jugador.mano.length === 0) return null;
+        const indiceAleatorio = Math.floor(Math.random() * jugador.mano.length);
+        return jugador.mano.splice(indiceAleatorio, 1)[0] ?? null;
     }
 
-    /**
-     * Crea una copia exacta de una carta, generándole un ID único para evitar problemas de renderizado o base de datos.
-     */
-    public static clonarCarta(cartaOriginal: Carta, prefijoId: string = "clon"): Carta {
-        if (!cartaOriginal) return null;
+    public static eliminarCartaDeLaMano(jugador: Jugador, carta: Carta): boolean {
+        const idx = jugador.mano.findIndex((c: Carta) => c === carta || c.id === carta.id);
+        if (idx === -1) return false;
+        jugador.mano.splice(idx, 1);
+        return true;
+    }
 
-        let clon = new Carta();
-        
-        // Generamos un ID único absoluto
+    public static buscarCartaPorNombre(jugador: Jugador, nombreCarta: string): Carta | null {
+        if (!jugador || !jugador.mano) return null;
+        return jugador.mano.find((c: Carta) => c.nombre === nombreCarta) ?? null;
+    }
+
+    public static contarCartasPorNombre(jugador: Jugador, nombreCarta: string): number {
+        if (!jugador || !jugador.mano) return 0;
+        return jugador.mano.filter((c: Carta) => c.nombre === nombreCarta).length;
+    }
+
+    public static clonarCarta(
+        cartaOriginal: Carta,
+        prefijoId: string = "clon",
+        forzarConjurada: boolean = true
+    ): Carta {
+        const clon = new Carta();
         clon.id = `${prefijoId}_${cartaOriginal.id}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        
-        // Copiamos todas las propiedades actuales del Schema
         clon.nombre = cartaOriginal.nombre;
         clon.descripcion = cartaOriginal.descripcion;
-        clon.descripcionEnCatalan = cartaOriginal.descripcionEnCatalan;
         clon.tipoDeUso = cartaOriginal.tipoDeUso;
         clon.efecto = cartaOriginal.efecto;
-        clon.esConjurada = true; 
+        clon.esConjurada = forzarConjurada ? true : cartaOriginal.esConjurada;
         clon.tipoEmbrujo = cartaOriginal.tipoEmbrujo;
-        clon.prioridadBang = cartaOriginal.prioridadBang;
         clon.idDuenoDelPerro = cartaOriginal.idDuenoDelPerro;
         clon.idGranDesaparicion = cartaOriginal.idGranDesaparicion;
         clon.esPlanta = cartaOriginal.esPlanta;
 
         if (cartaOriginal.number) {
-            cartaOriginal.number.forEach((valor, clave) => {
+            cartaOriginal.number.forEach((valor: number, clave: string) => {
                 clon.number.set(clave, valor);
             });
         }
 
         if (cartaOriginal.string) {
-            cartaOriginal.string.forEach((valor, clave) => {
+            cartaOriginal.string.forEach((valor: string, clave: string) => {
                 clon.string.set(clave, valor);
             });
         }
@@ -629,146 +338,129 @@ export class Utilidades {
         return clon;
     }
 
-    /**
-     * Elimina todos los efectos de un jugador.
-     */
-    public static eliminarTodosLosEfectos(sala: IMyRoom, jugador: Jugador){
-        jugador.efecto.clear();
-    }
+    // =========================================================================
+    // 5. POSICIONES EN MESA E INVOCACIÓN DE NPCS
+    // =========================================================================
 
-    /**
-     * Busca y devuelve la primera carta en la mano del jugador que coincida con el nombre.
-     * Si no la encuentra, devuelve null.
-     */
-    public static buscarCartaPorNombre(jugador: Jugador, nombreCarta: string): Carta | null {
-        if (!jugador || !jugador.mano) return null;
+    public static moverPosicionFisica(
+        sala: IMyRoom,
+        jugador: Jugador,
+        direccion: "antihorario" | "horario"
+    ): Jugador | null {
+        const direccionInterna = direccion === "antihorario" ? "horario" : "antihorario";
+        const idOrigen = this.obtenerSessionIdDeJugador(sala, jugador);
+        if (!idOrigen) return null;
 
-        let cartaEncontrada = jugador.mano.find((c: Carta) => c.nombre === nombreCarta);
-        
-        return cartaEncontrada ? cartaEncontrada : null;
-    }
+        const arraySillas = sala.state.ordenSillasFisicas;
+        const idxOrigen = arraySillas.indexOf(idOrigen);
+        if (idxOrigen === -1) return null;
 
-    /**
-     * Cuenta y devuelve cuántas cartas con ese nombre tiene el jugador en la mano.
-     */
-    public static contarCartasPorNombre(jugador: Jugador, nombreCarta: string): number {
-        if (!jugador || !jugador.mano) return 0;
+        const n = arraySillas.length;
+        const paso = direccionInterna === "antihorario" ? 1 : -1;
 
-        let cartasEncontradas = jugador.mano.filter((c: Carta) => c.nombre === nombreCarta);
-        
-        return cartasEncontradas.length;
-    }
+        for (let i = 1; i < n; i++) {
+            const idxTest = (idxOrigen + paso * i + n) % n;
+            const idTest = arraySillas[idxTest];
+            const jugTest = sala.state.jugadores.get(idTest);
 
-    /**
-     * Convierte la primera letra del string a mayúscula y el resto a minúscula.
-     * Ejemplo: "bAnG!" -> "Bang!"
-     */
-    public static capitalizar(texto: string): string {
-        if (!texto) return ""; // Seguridad por si viene vacío o null
-        return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
-    }
-
-    /**
-     * Da soles a un jugador y por cada sol que tenga, da una planta
-     */
-    public static darSol(sala: IMyRoom, jugador: Jugador, soles: number): void {
-        if (jugador.number.has("soles")){
-            jugador.number.set("soles", jugador.number.get("soles") + soles)
-        } else {
-            jugador.number.set("soles", soles)
-        }
-
-        if (jugador.number.get("soles") < 0){
-            jugador.number.set("soles", 0)
-        }
-
-        while (jugador.number.get("soles") >= 1){
-            jugador.number.set("soles", jugador.number.get("soles") - 1)
-            let c: Carta = CatalogoCartasEspeciales.crearCartaPlantaAleatoria()
-            if (c){
-                c.esConjurada = true
-                jugador.mano.push(c)
-                sala.agregarRegistro(`🌻 ¡${jugador.personaje} obtuvo una planta porque obtuvo 1 sol!`)
+            if (jugTest && jugTest.estaVivo) {
+                const temp = arraySillas[idxOrigen];
+                arraySillas[idxOrigen] = arraySillas[idxTest];
+                arraySillas[idxTest] = temp;
+                return jugTest;
             }
         }
 
-        if (jugador.number.get("soles") < 0){
-            jugador.number.set("soles", 0)
-        }
-
-        sala.reproducirSfx("girasol")
+        return null;
     }
 
-    /**
-     * Agrega efecto a un jugador
-     * Retorna la cantidad del efecto luego de agregarse
-     */
-    public static agregarEfecto(jugador: Jugador, efecto: string, cantidad: number): number {
-        if (jugador.efecto.has(efecto)){
-            jugador.efecto.set(efecto, jugador.efecto.get(efecto) + cantidad)
-        } else {
-            jugador.efecto.set(efecto, cantidad)
-        }
+    public static intercambiarPosicionesFisicas(
+        sala: IMyRoom,
+        jugador1: Jugador,
+        jugador2: Jugador
+    ): boolean {
+        const id1 = this.obtenerSessionIdDeJugador(sala, jugador1);
+        const id2 = this.obtenerSessionIdDeJugador(sala, jugador2);
+        if (!id1 || !id2) return false;
 
-        return jugador.efecto.get(efecto)
+        const arraySillas = sala.state.ordenSillasFisicas;
+        const idx1 = arraySillas.indexOf(id1);
+        const idx2 = arraySillas.indexOf(id2);
+        if (idx1 === -1 || idx2 === -1) return false;
+
+        const temp = arraySillas[idx1];
+        arraySillas[idx1] = arraySillas[idx2];
+        arraySillas[idx2] = temp;
+        return true;
     }
 
-    /**
-     * Resta efecto a un jugador
-     * Retorna la cantidad del efecto luego de restarse
-     */
-    public static restarEfecto(jugador: Jugador, efecto: string, cantidad: number): number {
-        if (jugador.efecto.has(efecto)){
-            jugador.efecto.set(efecto, jugador.efecto.get(efecto) - cantidad)
-            if (jugador.efecto.get(efecto) <= 0){
-                jugador.efecto.delete(efecto)
-                return 0
-            }
+    public static obtenerJugadoresEnOrdenHorario(
+        sala: IMyRoom,
+        jugadorInicial: Jugador,
+        soloVivos: boolean
+    ): Jugador[] {
+        const listaOrdenada: Jugador[] = [];
+        const idInicial = this.obtenerSessionIdDeJugador(sala, jugadorInicial);
+        if (!idInicial) return listaOrdenada;
 
-            return jugador.efecto.get(efecto)
-        }
+        const sillasFisicas = Array.from(sala.state.ordenSillasFisicas);
+        const idxActual = sillasFisicas.indexOf(idInicial);
+        if (idxActual === -1) return listaOrdenada;
 
-        return 0
-    }
-
-    /**
-    * Elimina de la mano una carta específica del jugador.
-    */
-    public static eliminarCartaDeLaMano(jugador: Jugador, carta: Carta): void {
-        for (let i = 0; i < jugador.mano.length; i++) {
-            if (jugador.mano[i] === carta) {
-                jugador.mano.splice(i, 1);
-                return;
+        for (let i = 0; i < sillasFisicas.length; i++) {
+            const indiceHorario = (idxActual + i) % sillasFisicas.length;
+            const jugadorObjetivo = sala.state.jugadores.get(sillasFisicas[indiceHorario]);
+            if (jugadorObjetivo && (!soloVivos || jugadorObjetivo.estaVivo)) {
+                listaOrdenada.push(jugadorObjetivo);
             }
         }
+
+        return listaOrdenada;
     }
 
-    /**
-     * Crea e inserta un NPC,
-     * tanto en las sillas físicas como en el orden de turnos.
-     */
+    public static obtenerSiguienteVivoHorario(sala: IMyRoom, jugador: Jugador): Jugador | null {
+        const idOrigen = this.obtenerSessionIdDeJugador(sala, jugador);
+        if (!idOrigen) return null;
+
+        const arraySillas = sala.state.ordenSillasFisicas;
+        const idxOrigen = arraySillas.indexOf(idOrigen);
+        if (idxOrigen === -1) return null;
+
+        const n = arraySillas.length;
+        for (let i = 1; i < n; i++) {
+            const idxTest = (idxOrigen + i + n) % n;
+            const jugTest = sala.state.jugadores.get(arraySillas[idxTest]);
+            if (jugTest && jugTest.estaVivo) {
+                return jugTest;
+            }
+        }
+        return null;
+    }
+
     public static invocarNpcEnMesa(
-        sala: any, 
-        dueno: Jugador, // El que realiza la invocación físicamente
-        nombrePersonajeNpc: string, 
-        vidasNpc: number, 
+        sala: IMyRoom,
+        invocador: Jugador,
+        nombrePersonajeNpc: string,
+        vidasNpc: number,
         cartasIniciales: number = 0,
         posicionAparicion: "antihorario" | "horario",
         nombrePersonalizado: string = ""
     ): Jugador | null {
-        // 1. Identificamos al Invocador Físico (usado para ubicarlo en la mesa)
-        let idInvocador = this.obtenerSessionIdDeJugador(sala, dueno);
+        const idInvocador = this.obtenerSessionIdDeJugador(sala, invocador);
         if (!idInvocador) return null;
 
-        // 2. Identificamos al Dueño Raíz Supremo (el jugador real)
-        // Si el que invoca ya es un NPC, heredamos su dueño. Si no, el dueño es el propio invocador.
-        let idDuenoRaiz = (dueno.esNpc && dueno.idDueno !== "") ? dueno.idDueno : idInvocador;
+        const idDuenoRaiz =
+            invocador.esNpc && invocador.idDueno !== "" ? invocador.idDueno : idInvocador;
 
-        let idNpc = `npc_${nombrePersonajeNpc.toLowerCase()}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        let npc = new Jugador();
+        const idNpc = `npc_${nombrePersonajeNpc.toLowerCase()}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        const npc = new Jugador();
 
-        npc.nombre = (nombrePersonalizado != "") ? nombrePersonalizado : nombrePersonajeNpc
+        const datosClase = sala.gestorPersonajes.obtener(nombrePersonajeNpc);
+        const nombreVisual = datosClase?.nombreMostrar ?? nombrePersonajeNpc;
+
+        npc.nombre = nombrePersonalizado !== "" ? nombrePersonalizado : nombreVisual;
         npc.personaje = nombrePersonajeNpc;
+        npc.nombreMostrar = nombreVisual;
         npc.esNpc = true;
         npc.idDueno = idDuenoRaiz;
         npc.rol = "";
@@ -778,198 +470,127 @@ export class Utilidades {
         npc.yaEligioPersonaje = true;
         npc.beneficiarseDeSuMuerte = false;
 
-        let datosClase = sala.gestorPersonajes.obtener(nombrePersonajeNpc);
         if (datosClase) {
-            npc.habilidad = datosClase.habilidad || "";
-            npc.habilidadEnCatalan = datosClase.habilidadEnCatalan || "";
+            npc.habilidad = datosClase.habilidad;
             if (datosClase.sfxMuerte) npc.sfxMuerte = datosClase.sfxMuerte;
             if (datosClase.sfxDefault) npc.sfxDefault = datosClase.sfxDefault;
         }
 
-        // Calculamos el desfase respecto al INVOCADOR
-        let offset = (posicionAparicion === "horario") ? 1 : 0;
+        const offset = posicionAparicion === "horario" ? 1 : 0;
 
-        // 1. Insertar en ordenSillasFisicas apuntando al idInvocador
-        let sillasTemp = Array.from(sala.state.ordenSillasFisicas) as string[];
-        let idxFisico = sillasTemp.indexOf(idInvocador);
-        if (idxFisico !== -1) {
-            sillasTemp.splice(idxFisico + offset, 0, idNpc);
-        } else {
-            sillasTemp.push(idNpc);
-        }
+        // 1. Insertar en sillas físicas (sin usar splice directo en ArraySchema)
+        const sillasTemp = Array.from(sala.state.ordenSillasFisicas);
+        const idxFisico = sillasTemp.indexOf(idInvocador);
+        if (idxFisico !== -1) sillasTemp.splice(idxFisico + offset, 0, idNpc);
+        else sillasTemp.push(idNpc);
         sala.state.ordenSillasFisicas.clear();
-        sillasTemp.forEach(id => sala.state.ordenSillasFisicas.push(id));
+        sillasTemp.forEach((id) => sala.state.ordenSillasFisicas.push(id));
 
-        // 2. Insertar en el orden de turnos del servidor apuntando al idInvocador
-        let turnosTemp = Array.from(sala.state.ordenTurnos) as string[];
-        let idxTurno = turnosTemp.indexOf(idInvocador);
-
-        if (idxTurno !== -1) {
-            turnosTemp.splice(idxTurno + offset, 0, idNpc);
-        } else {
-            turnosTemp.push(idNpc);
-        }
-
+        // 2. Insertar en orden de turnos (sin usar splice directo en ArraySchema)
+        const turnosTemp = Array.from(sala.state.ordenTurnos);
+        const idxTurno = turnosTemp.indexOf(idInvocador);
+        if (idxTurno !== -1) turnosTemp.splice(idxTurno + offset, 0, idNpc);
+        else turnosTemp.push(idNpc);
         sala.state.ordenTurnos.clear();
-        turnosTemp.forEach(id => sala.state.ordenTurnos.push(id));
+        turnosTemp.forEach((id) => sala.state.ordenTurnos.push(id));
 
-        // 3. Agregar al MapSchema
+        // 3. Registrar en el mapa de jugadores
         sala.state.jugadores.set(idNpc, npc);
 
-        // 4. Repartir cartas iniciales si corresponde
+        // 4. Notificar al dueño raíz ANTES de onAsignar (ej. Sirius marca npcDeSirius para toda su cadena)
+        const duenoRaiz = sala.state.jugadores.get(idDuenoRaiz);
+        if (duenoRaiz) {
+            sala.motorEventos.disparar(duenoRaiz, "onInvocarNpc", duenoRaiz, npc);
+        }
+
+        // 5. Repartir cartas iniciales
         if (cartasIniciales > 0) {
             sala.repartirCartas(npc, cartasIniciales, "inicio_npc");
         }
 
-        if (dueno.boolean.get("npcSombra")){
-            npc.boolean.set("npcDeSirius", true)
-            npc.boolean.set("npcSombra", true)
+        // 6. Ejecutar onAsignar del NPC
+        if (datosClase?.onAsignar) {
+            datosClase.onAsignar(sala, npc, false);
         }
 
-        if (datosClase && datosClase.onAsignar) {
-            datosClase.onAsignar(sala, npc);
-        }
-
-        sala.agregarRegistro(`🤖 ¡${dueno.personaje} invocó a ${npc.personaje} en la mesa!`);
+        sala.agregarRegistro(
+            `🤖 ¡${this.obtenerNombreVisual(invocador)} invocó a ${this.obtenerNombreVisual(npc)} en la mesa!`
+        );
         return npc;
     }
 
-    /**
-     * Devuelve un array de jugadores ordenados físicamente en sentido horario.
-     * @param sala La referencia a la sala actual.
-     * @param jugadorInicial El jugador por el que empezará el array (índice 0).
-     * @param soloVivos Si es true, filtra automáticamente a los muertos.
-     */
-    public static obtenerJugadoresEnOrdenHorario(sala: any, jugadorInicial: any, soloVivos: boolean): Jugador[] {
-        let listaOrdenada: Jugador[] = [];
-        
-        // Usamos tu propio método para garantizar que sacamos el ID correcto
-        let idInicial = this.obtenerSessionIdDeJugador(sala, jugadorInicial);
-        if (!idInicial) return listaOrdenada;
+    // =========================================================================
+    // 6. EFECTOS, SOLES, ESTADÍSTICAS Y MISCELÁNEOS
+    // =========================================================================
 
-        let sillasFisicas = Array.from(sala.state.ordenSillasFisicas) as string[];
-        let idxActual = sillasFisicas.indexOf(idInicial);
+    public static agregarEfecto(jugador: Jugador, efecto: string, cantidad: number): number {
+        const actual = jugador.efecto.get(efecto) ?? 0;
+        const nuevo = actual + cantidad;
+        jugador.efecto.set(efecto, nuevo);
+        return nuevo;
+    }
 
-        if (idxActual !== -1) {
-            for (let i = 0; i < sillasFisicas.length; i++) {
-                // El módulo (%) nos permite dar la vuelta a la mesa sin salirnos del array
-                let indiceHorario = (idxActual + i) % sillasFisicas.length;
-                let idObjetivo = sillasFisicas[indiceHorario];
-                
-                let jugadorObjetivo = sala.state.jugadores.get(idObjetivo);
-                
-                if (jugadorObjetivo) {
-                    if (!soloVivos || jugadorObjetivo.estaVivo) {
-                        listaOrdenada.push(jugadorObjetivo);
-                    }
-                }
+    public static restarEfecto(jugador: Jugador, efecto: string, cantidad: number): number {
+        if (!jugador.efecto.has(efecto)) return 0;
+        const nuevo = (jugador.efecto.get(efecto) ?? 0) - cantidad;
+        if (nuevo <= 0) {
+            jugador.efecto.delete(efecto);
+            return 0;
+        }
+        jugador.efecto.set(efecto, nuevo);
+        return nuevo;
+    }
+
+    public static eliminarTodosLosEfectos(jugador: Jugador): void {
+        jugador.efecto.clear();
+    }
+
+    public static darSol(sala: IMyRoom, jugador: Jugador, soles: number): void {
+        const nuevoTotal = Math.max(0, (jugador.number.get("soles") ?? 0) + soles);
+        jugador.number.set("soles", nuevoTotal);
+
+        while ((jugador.number.get("soles") ?? 0) >= 1) {
+            jugador.number.set("soles", (jugador.number.get("soles") ?? 0) - 1);
+            const planta = CatalogoCartasEspeciales.crearCartaPlantaAleatoria();
+            if (planta) {
+                planta.esConjurada = true;
+                jugador.mano.push(planta);
+                sala.agregarRegistro(
+                    `🌻 ¡${this.obtenerNombreVisual(jugador)} obtuvo una planta porque obtuvo 1 sol!`
+                );
             }
         }
 
-        return listaOrdenada;
+        sala.reproducirSfx("girasol");
     }
 
-    /**
-     * Devuelve el primer jugador con efecto gravitacional salteandote a vos
-     * Devuelve el jugador con el efecto o el jugador objetivo original
-     */
-    public static priorizarJugadorConEfectoGravitacional(sala: IMyRoom, jugadorQueJuega: Jugador, jugadorObjetivoOriginal: Jugador): Jugador {
-        const listaJugadores: Jugador[] = this.obtenerJugadoresEnOrdenHorario(sala, jugadorQueJuega, true)
-        if (listaJugadores){
-            for (let i = 0; i < listaJugadores.length; i++){
-                const j: Jugador = listaJugadores[i]
-                if (j && j != jugadorQueJuega && j.efecto.has("gravitacional")){
-                    return j
-                }
-            }
-        }
-
-        return jugadorObjetivoOriginal
+    public static agregarEstadistica(
+        jugador: Jugador | null | undefined,
+        cantidad: number,
+        estadistica: TipoEstadistica
+    ): void {
+        if (!jugador) return;
+        const actual = jugador.estadistica.get(estadistica) ?? 0;
+        jugador.estadistica.set(estadistica, actual + cantidad);
     }
 
-    /**
-     * Agrega una cantidad a una estadistica de un jugador
-     */
-    public static agregarEstadistica(jugador: Jugador, cantidad: number, estadistica: "🔫daño" | "💚curacion" | "🛡️escudos" | "💔daño recibido" | "🃏jugadas"): void {
-        if (jugador){
-            if (jugador.estadistica.has(estadistica)){
-                jugador.estadistica.set(estadistica, jugador.estadistica.get(estadistica) + cantidad)
-            } else {
-                jugador.estadistica.set(estadistica, cantidad)
-            }
-        }
-    }
-
-    /**
-     * Baja la vida maxima de un jugador y retorna su vida maxima
-     */
     public static bajarVidaMaxima(jugador: Jugador, cantidad: number): number {
-        jugador.vidasMaximas -= cantidad
-        if (jugador.vidasMaximas < 1){
-            jugador.vidasMaximas = 1
+        jugador.vidasMaximas = Math.max(1, jugador.vidasMaximas - cantidad);
+        if (jugador.vidas > jugador.vidasMaximas) {
+            jugador.vidas = jugador.vidasMaximas;
         }
-
-        if (jugador.vidas > jugador.vidasMaximas){
-            jugador.vidas = jugador.vidasMaximas
-        }
-
-        return jugador.vidasMaximas
+        return jugador.vidasMaximas;
     }
 
-    /**
-     * Devuelve un boolean de si es inmune o no a sabotajes
-     */
-    public static esInmuneASabotaje(jugador: Jugador): boolean {
-        if (jugador.boolean.has("pocoPasiva")){
-            return jugador.boolean.get("pocoPasiva")
-        }
-
-        return false
-    }
-
-    /**
-     * Devuelve el siguiente jugador vivo en sentido horario, basándose estrictamente en el arreglo visual de sillas físicas.
-     * @param sala La referencia a la sala (Colyseus).
-     * @param jugador El jugador desde el que se empieza a contar.
-     * @returns El siguiente Jugador vivo, o null si falló.
-     */
-    public static obtenerSiguienteVivoHorario(sala: IMyRoom, jugador: Jugador): Jugador | null {
-        let state = (sala as any).state;
-        let idOrigen = this.obtenerSessionIdDeJugador(sala, jugador);
-        
-        if (!idOrigen) return null;
-
-        let arraySillas = state.ordenSillasFisicas;
-        let idxOrigen = arraySillas.indexOf(idOrigen);
-        
-        if (idxOrigen === -1) return null;
-
-        let n = arraySillas.length;
-        
-        // Sumar 1 avanza hacia adelante en el arreglo (que visualmente es horario según tu lógica)
-        let paso = 1; 
-
-        // Buscamos la siguiente silla que tenga a alguien VIVO
-        for (let i = 1; i < n; i++) {
-            // El módulo asegura que al llegar al final del array, demos la vuelta al índice 0
-            let idxTest = (idxOrigen + (paso * i) + n) % n; 
-            let idTest = arraySillas[idxTest];
-            let jugTest = state.jugadores.get(idTest);
-            
-            // Si el jugador existe y está vivo, devolvemos solo el jugador
-            if (jugTest && jugTest.estaVivo) {
-                return jugTest;
-            }
-        }
-
-        // Si da toda la vuelta y no encuentra a nadie (o es el único en la sala), devuelve null
-        return null;
-    }
-
-    static removerBotonActivo(jugador: Jugador, idBoton: string): void {
-        let indice = jugador.habilidadesActivas.findIndex((boton: any) => boton.id === idBoton);
+    public static removerBotonActivo(jugador: Jugador, idBoton: string): void {
+        const indice = jugador.habilidadesActivas.findIndex((b) => b.id === idBoton);
         if (indice !== -1) {
             jugador.habilidadesActivas.splice(indice, 1);
         }
+    }
+
+    public static capitalizar(texto: string): string {
+        if (!texto) return "";
+        return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
     }
 }

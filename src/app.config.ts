@@ -4,64 +4,72 @@ import {
     monitor,
     playground,
     createRouter,
-    createEndpoint,
+    createEndpoint
 } from "colyseus";
+import cors from "cors";
 
-// 1. ---> ACÁ IMPORTAMOS CORS <---
-import cors from "cors"; 
-
-/**
- * Import your Room files
- */
 import { MyRoom } from "./rooms/MyRoom.js";
+import { GestorPersonajes } from "./rooms/Personajes.js";
+import { CatalogoCartasEspeciales } from "./rooms/CatalogoCartasEspeciales.js";
+
+const gestorPersonajesWiki = new GestorPersonajes();
+
+function construirDatosWiki() {
+    const personajes = gestorPersonajesWiki.obtenerTodosParaRepartir().map((p) => ({
+        nombre: p.nombre,
+        nombreMostrar: p.nombreMostrar ?? p.nombre,
+        habilidad: p.habilidad,
+        sfxDefault: p.sfxDefault ?? "sfxMensaje",
+        spriteFueraDeJuego: p.spriteFueraDeJuego === true
+    }));
+
+    const npcs = gestorPersonajesWiki.obtenerTodosLosNpc().map((p) => ({
+        nombre: p.nombre,
+        nombreMostrar: p.nombreMostrar ?? p.nombre,
+        habilidad: p.habilidad,
+        sfxDefault: p.sfxDefault ?? "sfxMensaje",
+        spriteFueraDeJuego: p.spriteFueraDeJuego === true
+    }));
+
+    const cartas = CatalogoCartasEspeciales.obtenerTodasLasCartas().map((c) => ({
+        nombre: c.nombre,
+        descripcion: c.descripcion
+    }));
+
+    return { personajes, npcs, cartas };
+}
 
 const server = defineServer({
-    /**
-     * Define your room handlers:
-     */
     rooms: {
         my_room: defineRoom(MyRoom)
+        // A futuro, cuando agregues el modo de un jugador:
+        // aventura: defineRoom(AventuraRoom)
     },
 
-    /**
-     * Experimental: Define API routes. Built-in integration with the "playground" and SDK.
-     * * Usage from SDK: 
-     * client.http.get("/api/hello").then((response) => {})
-     * */
     routes: createRouter({
-        api_hello: createEndpoint("/api/hello", { method: "GET", }, async (ctx) => {
-            return { message: "Hello World" }
+        api_hello: createEndpoint("/api/hello", { method: "GET" }, async () => {
+            return { message: "Hello World" };
         })
     }),
 
-    /**
-     * Bind your custom express routes here:
-     * Read more: https://expressjs.com/en/starter/basic-routing.html
-     */
     express: (app) => {
-        // 2. ---> ACÁ LE DAMOS PERMISO A NETLIFY PARA PASAR <---
         app.use(cors());
 
-        app.get("/hi", (req, res) => {
+        app.get("/hi", (_req, res) => {
             res.send("It's time to kick ass and chew bubblegum!");
         });
 
-        /**
-         * Use @colyseus/monitor
-         * It is recommended to protect this route with a password
-         * Read more: https://docs.colyseus.io/tools/monitoring/#restrict-access-to-the-panel-using-a-password
-         */
+        // Endpoint REST de la Wiki: 1 sola petición HTTP sin abrir sala WebSocket
+        app.get("/api/wiki", (_req, res) => {
+            res.json(construirDatosWiki());
+        });
+
         app.use("/monitor", monitor());
 
-        /**
-         * Use @colyseus/playground
-         * (It is not recommended to expose this route in a production environment)
-         */
         if (process.env.NODE_ENV !== "production") {
             app.use("/", playground());
         }
     }
-
 });
 
 export default server;
