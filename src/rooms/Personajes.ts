@@ -3202,7 +3202,7 @@ export class Otis implements IPersonaje {
     sfxMuerte: [string, boolean] = ["sfxOtisMuerte", false];
 
     onAsignar(_sala: IMyRoom, jugador: Jugador): void {
-        jugador.boolean.set("otisBloqueo", false);
+        jugador.boolean.set("otisBloqueo", true);
     }
 
     onRemover(_sala: IMyRoom, jugador: Jugador): void {
