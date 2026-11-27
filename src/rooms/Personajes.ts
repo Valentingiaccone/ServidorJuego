@@ -3194,6 +3194,42 @@ export class BrockElCartero implements IPersonaje {
     }
 }
 
+export class Otis implements IPersonaje {
+    nombre = "Otis";
+    vidasBase = 4;
+    habilidad = "Silencio:\nAl golpear por primera vez a un jugador durante tu turno: le agrega 1 efecto bloqueado.";
+    sfxDefault = "sfxOtis";
+    sfxMuerte: [string, boolean] = ["sfxOtisMuerte", false];
+
+    onAsignar(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.set("otisBloqueo", false);
+    }
+
+    onRemover(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.delete("otisBloqueo");
+    }
+
+    onIniciarTurno(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.set("otisBloqueo", true);
+    }
+
+    onPasarTurno(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.set("otisBloqueo", false);
+    }
+
+    onGolpear(sala: IMyRoom, ctx: ContextoDano): void {
+        if (!ctx.atacante || ctx.atacante === ctx.victima || !ctx.victima.estaVivo) return;
+        if (!ctx.atacante.boolean.get("otisBloqueo")) return;
+
+        ctx.atacante.boolean.set("otisBloqueo", false);
+        Utilidades.agregarEfecto(ctx.victima, "bloqueado", 1);
+        sala.agregarRegistro(
+            `🔇 ¡${Utilidades.obtenerNombreVisual(ctx.atacante)} bloqueó las habilidades de ${Utilidades.obtenerNombreVisual(ctx.victima)}!`
+        );
+        sala.reproducirSfx("sfxOtisBloqueo");
+    }
+}
+
 // =============================================================================
 // NPCS INVOCABLES
 // =============================================================================
@@ -3302,7 +3338,7 @@ export class GestorPersonajes {
             new Phoenix(), new Clint(), new Kertley(), new Susato(), new Colt(),
             new Cosmo(), new Amber(), new FlorAmarilla(), new Volpina(), new Tracer(),
             new RoaringKnight(), new ShellyDeKiller(), new Sirius(), new MRasmodius(),
-            new Echo(), new Dynamike(), new BrockElCartero(),
+            new Echo(), new Dynamike(), new BrockElCartero(), new Otis(),
             // NPCs invocables
             new Lawrie(), new Bruce(), new Bubble_npc(), new Leon_oculto()
         ];

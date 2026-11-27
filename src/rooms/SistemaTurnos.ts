@@ -499,6 +499,7 @@ export class SistemaTurnos {
         Utilidades.restarEfecto(jugador, "tocxic", 1);
         Utilidades.restarEfecto(jugador, "gravitacional", 1);
         Utilidades.restarEfecto(jugador, "fuego", 1);
+        Utilidades.restarEfecto(jugador, "bloqueado", 1);
     }
 
     // =========================================================================

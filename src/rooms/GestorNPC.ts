@@ -157,7 +157,7 @@ export class GestorNPC {
         let frenoSeguridad = 50;
 
         while (frenoSeguridad > 0) {
-            if (!npc.estaVivo || sala.state.turnoActual !== idNpc || npc.mano.length === 0) {
+            if (!npc.estaVivo || sala.state.turnoActual !== idNpc || npc.mano.length === 0 || sala.juegoPausado()) {
                 break;
             }
 

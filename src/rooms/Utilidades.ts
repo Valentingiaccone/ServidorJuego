@@ -150,8 +150,10 @@ export class Utilidades {
 
     public static puedeRecibirCuracion(sala: IMyRoom, jugador: Jugador): boolean {
         if (!jugador || !jugador.estaVivo) return false;
-        if (jugador.transformarCuraEnEscudo) return true;
-        if (jugador.esNpc && !jugador.boolean.get("lawrieCura")) return false;
+        const bloqueado = this.estaBloqueado(jugador);
+
+        if (jugador.transformarCuraEnEscudo && !bloqueado) return true;
+        if (jugador.esNpc && !(jugador.boolean.get("lawrieCura") && !bloqueado)) return false;
         if (jugador.efecto.has("malestar")) return false;
 
         if (sala.getTotalJugadoresVivos() === 2) return true;
@@ -175,7 +177,7 @@ export class Utilidades {
 
         const totalVivos = sala.getTotalJugadoresVivos();
 
-        if (jugador.transformarCuraEnEscudo && !forzarCuracion) {
+        if (jugador.transformarCuraEnEscudo && !this.estaBloqueado(jugador) && !forzarCuracion) {
             this.agregarEscudos(sala, jugador, cantidadFinal, Infinity, "CURACION");
             return;
         }
@@ -608,5 +610,15 @@ export class Utilidades {
     public static capitalizar(texto: string): string {
         if (!texto) return "";
         return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
+    }
+
+    public static estaBloqueado(jugador: Jugador | null | undefined): boolean {
+        if (!jugador || !jugador.efecto) return false;
+        return (jugador.efecto.get("bloqueado") ?? 0) > 0;
+    }
+
+    public static puedeUsarCartaFallo(jugador: Jugador): boolean {
+        if (this.estaBloqueado(jugador)) return true;
+        return jugador.puedeUsarFallo && !jugador.boolean.get("frankFallo");
     }
 }

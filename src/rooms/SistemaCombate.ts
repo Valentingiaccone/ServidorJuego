@@ -232,7 +232,7 @@ export class SistemaCombate {
 
             ctx.cantidad += this.sala.motorEventos.sumar(ctx.atacante, "modificarDanoAtacante", ctx);
 
-            if (ctx.atacante.boolean.get("leon_oculto")) {
+            if (ctx.atacante.boolean.get("leon_oculto") && !Utilidades.estaBloqueado(ctx.atacante)) {
                 ctx.cantidad = 0;
             }
         }
@@ -337,8 +337,7 @@ export class SistemaCombate {
                             this.sala.sistemaCartas.puedeEsquivarBang(c)
                         );
                         const puedeEsquivar =
-                            victima.puedeUsarFallo &&
-                            !victima.boolean.get("frankFallo") &&
+                            Utilidades.puedeUsarCartaFallo(victima) &&
                             cartasEsquive.length >= fallosRequeridos;
 
                         const maxUsosBarril = this.calcularMaxUsosBarril(victima);
@@ -403,7 +402,7 @@ export class SistemaCombate {
         if (barril) {
             maxUsos += barril.nombre === "Barril Pro" ? 2 : 1;
         }
-        if (victima.tieneBarrilPasiva) {
+        if (victima.tieneBarrilPasiva && !Utilidades.estaBloqueado(victima)) {
             maxUsos += 1;
         }
         return maxUsos;

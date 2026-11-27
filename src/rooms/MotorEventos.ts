@@ -1,9 +1,13 @@
 import type { IMyRoom } from "./IMyRoom.js";
 import type { Carta, Jugador } from "./schema/MyRoomState.js";
 import type { IPersonaje } from "./Personajes.js";
+import { Utilidades } from "./Utilidades.js";
 
 export class MotorEventos {
+
     constructor(private sala: IMyRoom) {}
+
+    private static readonly HOOKS_CICLO_VIDA = new Set<string>(["onAsignar", "onRemover"]);
 
     public obtenerPersonajesActivos(jugador: Jugador): IPersonaje[] {
         if (!jugador) return [];
@@ -97,15 +101,16 @@ export class MotorEventos {
 
     public dispararPersonaje(jugador: Jugador, metodo: string, ...args: unknown[]): void {
         if (!jugador) return;
+        if (!MotorEventos.HOOKS_CICLO_VIDA.has(metodo) && Utilidades.estaBloqueado(jugador)) {
+            return;
+        }
 
-        // 1. Ejecutamos primero el personaje base (permite que Echo cambie su delegación en onIniciarTurno)
         const base = this.sala.gestorPersonajes.obtener(jugador.personaje);
         const fnBase = (base as unknown as Record<string, unknown>)?.[metodo];
         if (typeof fnBase === "function") {
             (fnBase as (...a: unknown[]) => unknown).apply(base, [this.sala, ...args]);
         }
 
-        // 2. Recolectamos y ejecutamos los delegados vigentes DESPUÉS del personaje base
         for (const delegado of this.obtenerSoloDelegados(jugador)) {
             const fn = (delegado as unknown as Record<string, unknown>)[metodo];
             if (typeof fn === "function") {
@@ -113,12 +118,11 @@ export class MotorEventos {
             }
         }
 
-        // 3. Aplicamos reglas visuales finales (Maya/Volpina mantienen su sprite, Echo restaura el imitado si quedó "")
         this.protegerSpritePropio(jugador);
     }
 
     public sumarPersonaje(jugador: Jugador, metodo: string, ...args: unknown[]): number {
-        if (!jugador) return 0;
+        if (!jugador || Utilidades.estaBloqueado(jugador)) return 0;
         let total = 0;
 
         for (const p of this.obtenerPersonajesActivos(jugador)) {
@@ -132,7 +136,7 @@ export class MotorEventos {
     }
 
     public algunPersonaje(jugador: Jugador, metodo: string, ...args: unknown[]): boolean {
-        if (!jugador) return false;
+        if (!jugador || Utilidades.estaBloqueado(jugador)) return false;
 
         for (const p of this.obtenerPersonajesActivos(jugador)) {
             const fn = (p as unknown as Record<string, unknown>)[metodo];

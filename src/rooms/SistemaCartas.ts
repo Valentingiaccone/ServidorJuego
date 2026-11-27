@@ -1086,8 +1086,7 @@ export class SistemaCartas {
                                 idAccion: "patada_fallo",
                                 texto: "Esquivar (Usa ¡Fallo!)",
                                 habilitado:
-                                    victima.puedeUsarFallo &&
-                                    !victima.boolean.get("frankFallo") &&
+                                    Utilidades.puedeUsarCartaFallo(victima) &&
                                     victima.mano.some((c: Carta) => this.puedeEsquivarBang(c)),
                                 color: "verde"
                             },
@@ -1157,8 +1156,7 @@ export class SistemaCartas {
                                 idAccion: "maceta_fallo",
                                 texto: "Esquivar (Usa ¡Fallo!)",
                                 habilitado:
-                                    victima.puedeUsarFallo &&
-                                    !victima.boolean.get("frankFallo") &&
+                                    Utilidades.puedeUsarCartaFallo(victima) &&
                                     victima.mano.some((c: Carta) => this.puedeEsquivarBang(c)),
                                 color: "verde"
                             },
@@ -2091,7 +2089,7 @@ export class SistemaCartas {
             reglaObjetivo: REGLA_NINGUNO,
             onDescartarPropia: (sala, jugador, carta) => {
                 const nombre = Utilidades.obtenerNombreVisual(jugador);
-                if (jugador.boolean.get("esZombistein")) {
+                if (jugador.boolean.get("esZombistein") && !Utilidades.estaBloqueado(jugador)) {
                     sala.agregarRegistro(`🧟 ¡${nombre} descartó ${carta.nombre} y como es Zombistein, se cura 1!`);
                     if (Utilidades.puedeRecibirCuracion(sala, jugador)) {
                         Utilidades.aplicarCuracion(sala, jugador, 1, "carta", false);

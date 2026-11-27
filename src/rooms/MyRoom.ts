@@ -204,15 +204,20 @@ export class MyRoom extends Room implements IMyRoom {
                 return;
             }
             const jugador = this.state.jugadores.get(client.sessionId);
-            if (jugador && jugador.estaVivo) {
-                this.motorEventos.dispararPersonaje(
-                    jugador,
-                    "ejecutarHabilidadActiva",
-                    jugador,
-                    client,
-                    idHabilidad
-                );
+            if (!jugador || !jugador.estaVivo) return;
+
+            if (Utilidades.estaBloqueado(jugador)) {
+                client.send("alerta_personal", "Tus habilidades están bloqueadas.");
+                return;
             }
+
+            this.motorEventos.dispararPersonaje(
+                jugador,
+                "ejecutarHabilidadActiva",
+                jugador,
+                client,
+                idHabilidad
+            );
         });
 
         this.onMessage("pin", (client, pin: string) => {
@@ -437,7 +442,13 @@ export class MyRoom extends Room implements IMyRoom {
     }
 
     public procesarDescartarCarta(client: ClienteJuego, idCarta: string): void {
-        if (this.state.estadoJuego !== "Jugando" || this.state.turnoActual !== client.sessionId) return;
+        if (
+            this.state.estadoJuego !== "Jugando" ||
+            this.state.turnoActual !== client.sessionId ||
+            this.juegoPausado()
+        ) {
+            return;
+        }
         const jugador = this.state.jugadores.get(client.sessionId);
         if (!jugador) return;
 
@@ -474,8 +485,7 @@ export class MyRoom extends Room implements IMyRoom {
         const cantidadFinal = cantidadBase + modificacion;
         if (cantidadFinal <= 0) return;
 
-        // Mecánica de Susato al iniciar turno: elige entre (cantidad + 3) cartas
-        if (jugador.boolean.get("susato") && causa === "turno") {
+        if (jugador.boolean.get("susato") && !Utilidades.estaBloqueado(jugador) && causa === "turno") {
             const extraidas: Carta[] = [];
             for (let i = 0; i < cantidadFinal + 3; i++) {
                 const c = this.robarUnaDelMazo();
@@ -607,7 +617,9 @@ export class MyRoom extends Room implements IMyRoom {
         // 1. Intento automático de supervivencia con Botiquín / Huevo sano
         const totalVivosAntes = this.getTotalJugadoresVivos();
         while (victima.vidas <= 0 && totalVivosAntes !== 2 && !victima.estaDesconectado) {
-            if (victima.transformarCuraEnEscudo || victima.efecto.has("malestar")) break;
+            if ((victima.transformarCuraEnEscudo && !Utilidades.estaBloqueado(victima)) || victima.efecto.has("malestar")) {
+                break;
+            }
 
             const idx = victima.mano.findIndex((c: Carta) => this.sistemaCartas.salvaDeMuerte(c));
             if (idx === -1) break;
