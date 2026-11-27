@@ -3137,7 +3137,7 @@ export class Dynamike implements IPersonaje {
 
 export class BrockElCartero implements IPersonaje {
     nombre = "Brock el cartero";
-    habilidad = "Brock el cartero soy:\nBoton 1 o Boton 2 (1 uso compartido por turno):\nBoton 1: conjura un Correo explosivo (trampa de 1 de daño si la aceptan).\nBoton 2: conjura un Correo para enviarle una carta real de tu mano a otro jugador.\nSi rechazan el correo, nadie se entera de que habia dentro.";
+    habilidad = "Brock el cartero soy:\nBoton 1 o Boton 2 (1 uso compartido por turno):\nBoton 1: conjura un CorreoExplosivo.\nBoton 2: conjura un Correo.\nSi rechazan el correo, nadie se entera de que habia dentro.";
     vidasBase = 4;
     sfxDefault = "sfxBrock";
     sfxMuerte: [string, boolean] = ["sfxBrockMuerte", false];
