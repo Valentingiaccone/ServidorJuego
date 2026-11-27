@@ -5,18 +5,13 @@ import type { IPersonaje } from "./Personajes.js";
 export class MotorEventos {
     constructor(private sala: IMyRoom) {}
 
-    /**
-     * Devuelve todas las clases IPersonaje activas para un jugador,
-     * resolviendo personajes delegados (Maya -> muertos, Volpina -> imitado)
-     * con protección contra bucles infinitos.
-     */
     public obtenerPersonajesActivos(jugador: Jugador): IPersonaje[] {
         if (!jugador) return [];
 
         const resultado: IPersonaje[] = [];
         const visitados = new Set<string>();
 
-        const recolectar = (nombrePersonaje: string) => {
+        const recolectar = (nombrePersonaje: string): void => {
             if (!nombrePersonaje || visitados.has(nombrePersonaje)) return;
             visitados.add(nombrePersonaje);
 
@@ -26,8 +21,7 @@ export class MotorEventos {
             resultado.push(clase);
 
             if (clase.obtenerPersonajesDelegados && jugador.estaVivo) {
-                const delegados = clase.obtenerPersonajesDelegados(this.sala, jugador);
-                for (const nombreDelegado of delegados) {
+                for (const nombreDelegado of clase.obtenerPersonajesDelegados(this.sala, jugador)) {
                     recolectar(nombreDelegado);
                 }
             }
@@ -37,10 +31,37 @@ export class MotorEventos {
         return resultado;
     }
 
-    /**
-     * Si el personaje base tiene `mantenerSpritePropio` (Maya, Volpina),
-     * impide que un hook delegado le pise su sprite visual.
-     */
+    private obtenerSoloDelegados(jugador: Jugador): IPersonaje[] {
+        if (!jugador) return [];
+        const base = this.sala.gestorPersonajes.obtener(jugador.personaje);
+        if (!base || !base.obtenerPersonajesDelegados || !jugador.estaVivo) return [];
+
+        const resultado: IPersonaje[] = [];
+        const visitados = new Set<string>([jugador.personaje]);
+
+        const recolectar = (nombrePersonaje: string): void => {
+            if (!nombrePersonaje || visitados.has(nombrePersonaje)) return;
+            visitados.add(nombrePersonaje);
+
+            const clase = this.sala.gestorPersonajes.obtener(nombrePersonaje);
+            if (!clase) return;
+
+            resultado.push(clase);
+
+            if (clase.obtenerPersonajesDelegados && jugador.estaVivo) {
+                for (const nombreDelegado of clase.obtenerPersonajesDelegados(this.sala, jugador)) {
+                    recolectar(nombreDelegado);
+                }
+            }
+        };
+
+        for (const nombreDelegado of base.obtenerPersonajesDelegados(this.sala, jugador)) {
+            recolectar(nombreDelegado);
+        }
+
+        return resultado;
+    }
+
     private protegerSpritePropio(jugador: Jugador): void {
         if (!jugador) return;
         const base = this.sala.gestorPersonajes.obtener(jugador.personaje);
@@ -48,11 +69,9 @@ export class MotorEventos {
             jugador.spriteAvatarOpcional = "";
             jugador.boolean.set("spriteFueraDeJuego", false);
         }
+        base?.onPostHookVisual?.(jugador);
     }
 
-    /**
-     * Recolecta una instantánea segura de todas las cartas activas del jugador (mano + equipamiento).
-     */
     private obtenerCartasActivas(jugador: Jugador): Array<{ carta: Carta; zona: "mano" | "equipamiento" }> {
         if (!jugador) return [];
         const resultado: Array<{ carta: Carta; zona: "mano" | "equipamiento" }> = [];
@@ -65,51 +84,64 @@ export class MotorEventos {
         return resultado;
     }
 
+    private cartaActivaEnZona(nombreCarta: string, zona: "mano" | "equipamiento"): boolean {
+        const def = this.sala.sistemaCartas.obtener(nombreCarta);
+        if (!def) return false;
+        const zonaPermitida = def.zonaPasiva ?? (def.huecoEquipamiento ? "equipamiento" : "mano");
+        return zonaPermitida === "ambas" || zonaPermitida === zona;
+    }
+
     // =========================================================================
     // DESPACHO SOBRE PERSONAJES DEL JUGADOR
     // =========================================================================
 
-    public dispararPersonaje(jugador: Jugador, metodo: string, ...args: any[]): void {
+    public dispararPersonaje(jugador: Jugador, metodo: string, ...args: unknown[]): void {
         if (!jugador) return;
-        const personajes = this.obtenerPersonajesActivos(jugador);
 
-        for (const p of personajes) {
-            const fn = (p as any)[metodo];
+        // 1. Ejecutamos primero el personaje base (permite que Echo cambie su delegación en onIniciarTurno)
+        const base = this.sala.gestorPersonajes.obtener(jugador.personaje);
+        const fnBase = (base as unknown as Record<string, unknown>)?.[metodo];
+        if (typeof fnBase === "function") {
+            (fnBase as (...a: unknown[]) => unknown).apply(base, [this.sala, ...args]);
+        }
+
+        // 2. Recolectamos y ejecutamos los delegados vigentes DESPUÉS del personaje base
+        for (const delegado of this.obtenerSoloDelegados(jugador)) {
+            const fn = (delegado as unknown as Record<string, unknown>)[metodo];
             if (typeof fn === "function") {
-                fn.apply(p, [this.sala, ...args]);
+                (fn as (...a: unknown[]) => unknown).apply(delegado, [this.sala, ...args]);
             }
         }
 
+        // 3. Aplicamos reglas visuales finales (Maya/Volpina mantienen su sprite, Echo restaura el imitado si quedó "")
         this.protegerSpritePropio(jugador);
     }
 
-    public sumarPersonaje(jugador: Jugador, metodo: string, ...args: any[]): number {
+    public sumarPersonaje(jugador: Jugador, metodo: string, ...args: unknown[]): number {
         if (!jugador) return 0;
         let total = 0;
-        const personajes = this.obtenerPersonajesActivos(jugador);
 
-        for (const p of personajes) {
-            const fn = (p as any)[metodo];
+        for (const p of this.obtenerPersonajesActivos(jugador)) {
+            const fn = (p as unknown as Record<string, unknown>)[metodo];
             if (typeof fn === "function") {
-                const res = fn.apply(p, [this.sala, ...args]);
+                const res = (fn as (...a: unknown[]) => unknown).apply(p, [this.sala, ...args]);
                 if (typeof res === "number") total += res;
             }
         }
-
         return total;
     }
 
-    public algunPersonaje(jugador: Jugador, metodo: string, ...args: any[]): boolean {
+    public algunPersonaje(jugador: Jugador, metodo: string, ...args: unknown[]): boolean {
         if (!jugador) return false;
-        const personajes = this.obtenerPersonajesActivos(jugador);
 
-        for (const p of personajes) {
-            const fn = (p as any)[metodo];
+        for (const p of this.obtenerPersonajesActivos(jugador)) {
+            const fn = (p as unknown as Record<string, unknown>)[metodo];
             if (typeof fn === "function") {
-                if (fn.apply(p, [this.sala, ...args]) === true) return true;
+                if ((fn as (...a: unknown[]) => unknown).apply(p, [this.sala, ...args]) === true) {
+                    return true;
+                }
             }
         }
-
         return false;
     }
 
@@ -160,39 +192,27 @@ export class MotorEventos {
     }
 
     // =========================================================================
-    // DESPACHO UNIFICADO (PERSONAJES + CARTAS A LA VEZ)
+    // DESPACHO UNIFICADO Y GLOBAL
     // =========================================================================
 
-    public disparar(jugador: Jugador, metodo: string, ...args: any[]): void {
+    public disparar(jugador: Jugador, metodo: string, ...args: unknown[]): void {
         this.dispararPersonaje(jugador, metodo, ...args);
         this.dispararCartas(jugador, metodo, ...args);
     }
 
-    public sumar(jugador: Jugador, metodo: string, ...args: any[]): number {
+    public sumar(jugador: Jugador, metodo: string, ...args: unknown[]): number {
         return this.sumarPersonaje(jugador, metodo, ...args) + this.sumarCartas(jugador, metodo, ...args);
     }
 
-    public alguno(jugador: Jugador, metodo: string, ...args: any[]): boolean {
+    public alguno(jugador: Jugador, metodo: string, ...args: unknown[]): boolean {
         return this.algunPersonaje(jugador, metodo, ...args) || this.algunaCarta(jugador, metodo, ...args);
     }
 
-    /**
-     * Dispara un evento global sobre TODOS los jugadores vivos de la mesa.
-     * Pasa automáticamente cada jugador vivo `j` como primer argumento después de `sala`.
-     */
-    public dispararGlobal(metodo: string, ...args: any[]): void {
+    public dispararGlobal(metodo: string, ...args: unknown[]): void {
         const jugadores = Array.from(this.sala.state.jugadores.values());
-
         for (const j of jugadores) {
             if (!j || !j.estaVivo) continue;
             this.disparar(j, metodo, j, ...args);
         }
-    }
-
-    private cartaActivaEnZona(nombreCarta: string, zona: "mano" | "equipamiento"): boolean {
-        const def = this.sala.sistemaCartas.obtener(nombreCarta);
-        if (!def) return false;
-        const zonaPermitida = def.zonaPasiva ?? (def.huecoEquipamiento ? "equipamiento" : "mano");
-        return zonaPermitida === "ambas" || zonaPermitida === zona;
     }
 }

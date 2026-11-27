@@ -23,6 +23,8 @@ export interface IDefinicionCarta {
     salvaDeMuerte?: boolean;
     zonaPasiva?: "mano" | "equipamiento" | "ambas";
 
+    cartaParaAnimacion?: (ctx: ContextoJugada) => Carta | null;
+
     validarJugada?(ctx: ContextoJugada): string | null;
     onJugar?(ctx: ContextoJugada): void;
     onEsquivar?(sala: IMyRoom, victima: Jugador, carta: Carta): void;
@@ -173,7 +175,11 @@ export class SistemaCartas {
         // 3. Consumo automático de la carta (evita olvidar splice y evita bugs de índices)
         if (!def.consumoDiferido) {
             Utilidades.eliminarCartaDeLaMano(jugador, carta);
-            this.sala.ejecutarAnimacionCarta(client.sessionId, carta);
+
+            const cartaAnim = def.cartaParaAnimacion ? def.cartaParaAnimacion(ctx) : carta;
+            if (cartaAnim) {
+                this.sala.ejecutarAnimacionCarta(client.sessionId, cartaAnim);
+            }
 
             if (def.huecoEquipamiento && !def.equipamientoEnObjetivo && !def.manejaEquipamientoManual) {
                 Utilidades.equiparCarta(this.sala, jugador, carta, def.huecoEquipamiento);
@@ -626,6 +632,34 @@ export class SistemaCartas {
         });
         this.registrar(crearDefEspirituEnojado("Espiritu enojado", 2));
         this.registrar(crearDefEspirituEnojado("Espiritu enojado Pro", 4));
+        const onMiniDinamita = (ctx: ContextoJugada) => {
+            ctx.sala.agregarRegistro(`🧨 ¡${Utilidades.obtenerNombreVisual(ctx.jugador)} encendió una ${ctx.carta.nombre}!`);
+            ctx.sala.reproducirSfx("dinamita");
+        };
+        this.registrar({ nombre: "Mini dinamita", reglaObjetivo: REGLA_NINGUNO, huecoEquipamiento: "miniDinamita", onJugar: onMiniDinamita });
+        this.registrar({ nombre: "Mini dinamita Pro", reglaObjetivo: REGLA_NINGUNO, huecoEquipamiento: "miniDinamita", onJugar: onMiniDinamita });
+
+        this.registrar({
+            nombre: "Papapum primitiva",
+            reglaObjetivo: REGLA_NINGUNO,
+            huecoEquipamiento: "papa",
+            onJugar: (ctx) => {
+                if (!ctx.carta.number.has("probabilidadPapa")) {
+                    ctx.carta.number.set("probabilidadPapa", 1);
+                }
+                ctx.sala.agregarRegistro(`🥔 ¡${Utilidades.obtenerNombreVisual(ctx.jugador)} activó una Papapum primitiva!`);
+                ctx.sala.reproducirSfx("sfxPapapumColocandose");
+            },
+            onGolpear: (sala, ctx, miCarta) => {
+                if (!ctx.atacante || (ctx.causa !== "BANG" && ctx.causa !== "Orbita BANG!")) return;
+                if (ctx.atacante.equipamiento.get("papa") !== miCarta) return;
+
+                const papa = Utilidades.quitarEquipamiento(ctx.atacante, "papa");
+                if (papa) {
+                    Utilidades.equiparCarta(sala, ctx.victima, papa, "papa");
+                }
+            }
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -1816,6 +1850,120 @@ export class SistemaCartas {
                     `🃏 ${Utilidades.obtenerNombreVisual(ctx.jugador)} usó Cofre legendario y conjuró una carta aleatoria del juego.`
                 );
                 ctx.sala.reproducirSfx("sfxCofreSupermagico");
+            }
+        });
+
+        this.registrar({
+            nombre: "Correo explosivo",
+            reglaObjetivo: REGLA_GLOBAL,
+            cartaParaAnimacion: () => {
+                const disfraz = CatalogoCartasEspeciales.crearCorreo();
+                disfraz.esConjurada = true;
+                return disfraz;
+            },
+            onJugar: (ctx) => {
+                if (!ctx.objetivo || !ctx.idObjetivo) return;
+                const victima = ctx.objetivo;
+                const nombreRemitente = Utilidades.obtenerNombreVisual(ctx.jugador);
+                const nombreVictima = Utilidades.obtenerNombreVisual(victima);
+
+                ctx.sala.agregarRegistro(`✉️ ${nombreRemitente} le envió un correo a ${nombreVictima}.`);
+
+                ctx.sala.sistemaInteracciones.encolarInteraccion(
+                    {
+                        idJugadorObjetivo: ctx.idObjetivo,
+                        titulo: `¡${nombreRemitente} te envió un paquete por correo!\n¿Lo aceptás?`,
+                        temaVisual: "correo",
+                        flecha: "correo",
+                        construirOpciones: () => [
+                            { idAccion: "correo_rechazar", texto: "No aceptar carta", habilitado: true, color: "rojo" },
+                            { idAccion: "correo_aceptar", texto: "Aceptar carta", habilitado: true, color: "verde" }
+                        ],
+                        onResponder: (idAccion) => {
+                            if (idAccion === "correo_aceptar") {
+                                ctx.sala.reproducirSfx("explosion");
+                                ctx.sala.agregarRegistro(
+                                    `💥 ¡BOOM! El paquete de ${nombreRemitente} era un Correo explosivo. ${nombreVictima} recibe 1 de daño.`
+                                );
+                                ctx.sala.sistemaCombate.procesarDano(victima, ctx.jugador, 1, "CORREO_EXPLOSIVO", {
+                                    cartaOrigen: ctx.carta
+                                });
+                            } else {
+                                ctx.sala.agregarRegistro(`✉️ ${nombreVictima} rechazó el correo de ${nombreRemitente}.`);
+                            }
+                        }
+                    },
+                    true,
+                    true
+                );
+            }
+        });
+
+        this.registrar({
+            nombre: "Correo",
+            reglaObjetivo: { ...REGLA_GLOBAL, esBeneficiosa: true },
+            consumoDiferido: true,
+            validarJugada: (ctx) => {
+                const otras = ctx.jugador.mano.filter((c: Carta) => c.id !== ctx.carta.id);
+                return otras.length > 0 ? null : "Necesitás al menos otra carta en tu mano para enviar por correo.";
+            },
+            onJugar: (ctx) => {
+                if (!ctx.objetivo || !ctx.idObjetivo) return;
+                const victima = ctx.objetivo;
+                const idVictima = ctx.idObjetivo;
+                const nombreRemitente = Utilidades.obtenerNombreVisual(ctx.jugador);
+                const nombreVictima = Utilidades.obtenerNombreVisual(victima);
+
+                const opciones: OpcionCartaConfig[] = ctx.jugador.mano
+                    .filter((c: Carta) => c.id !== ctx.carta.id)
+                    .map((c: Carta) => ({ idRespuesta: c.id, carta: c }));
+
+                ctx.sala.sistemaInteracciones.abrirSeleccionCartas({
+                    idJugadorObjetivo: ctx.idJugador,
+                    titulo: `Elegí qué carta enviarle por correo a ${nombreVictima}:`,
+                    temaVisual: "correo",
+                    tipoAccion: "correo_elegir",
+                    esCancelable: true,
+                    esPublica: false,
+                    opciones,
+                    onSeleccionar: (idCartaAEnviar) => {
+                        if (!victima.estaVivo) return;
+                        const cartaAEnviar = ctx.jugador.mano.find((c: Carta) => c.id === idCartaAEnviar);
+                        if (!cartaAEnviar) return;
+
+                        // Consumimos la carta "Correo" ahora que confirmó el envío
+                        this.consumirCartaDiferida(ctx.idJugador, ctx.jugador, ctx.carta);
+                        ctx.sala.agregarRegistro(`✉️ ${nombreRemitente} le envió un correo a ${nombreVictima}.`);
+
+                        // Mismo panel visual y mismas opciones que Correo explosivo
+                        ctx.sala.sistemaInteracciones.encolarInteraccion(
+                            {
+                                idJugadorObjetivo: idVictima,
+                                titulo: `¡${nombreRemitente} te envió un paquete por correo!\n¿Lo aceptás?`,
+                                temaVisual: "correo",
+                                flecha: "correo",
+                                construirOpciones: () => [
+                                    { idAccion: "correo_rechazar", texto: "No aceptar carta", habilitado: true, color: "rojo" },
+                                    { idAccion: "correo_aceptar", texto: "Aceptar carta", habilitado: true, color: "verde" }
+                                ],
+                                onResponder: (idAccion) => {
+                                    if (idAccion === "correo_aceptar") {
+                                        if (Utilidades.eliminarCartaDeLaMano(ctx.jugador, cartaAEnviar)) {
+                                            victima.mano.push(cartaAEnviar);
+                                            ctx.sala.agregarRegistro(
+                                                `✉️ ${nombreVictima} aceptó el correo de ${nombreRemitente} y recibió: ${cartaAEnviar.nombre}.`
+                                            );
+                                        }
+                                    } else {
+                                        ctx.sala.agregarRegistro(`✉️ ${nombreVictima} rechazó el correo de ${nombreRemitente}.`);
+                                    }
+                                }
+                            },
+                            true,
+                            false
+                        );
+                    }
+                });
             }
         });
     }

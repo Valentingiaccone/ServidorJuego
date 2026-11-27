@@ -231,7 +231,7 @@ export class CatalogoCartasEspeciales {
         return crearCartaBase(
             "dinamita",
             "Dinamita",
-            "Tenes 2/16 de que explote y perder 3 vidas, si no pasa al siguiente.",
+            "Tenes 2/16 de que explote y perder 3 vidas, si no pasa al siguiente libre.",
             "equipamiento",
             "equiparDinamita"
         );
@@ -241,7 +241,7 @@ export class CatalogoCartasEspeciales {
         return crearCartaBase(
             "dinamita_pro",
             "Dinamita Pro",
-            "Tenes 3/16 de que explote y perder 5 vidas, si no pasa al siguiente.",
+            "Tenes 3/16 de que explote y perder 5 vidas, si no pasa al siguiente libre.",
             "equipamiento",
             "equiparDinamita"
         );
@@ -1042,6 +1042,64 @@ export class CatalogoCartasEspeciales {
         return opciones[Math.floor(Math.random() * opciones.length)]();
     }
 
+    public static crearMiniDinamita(): Carta {
+        return crearCartaBase(
+            "mini_dinamita",
+            "Mini dinamita",
+            "Tenes 3/16 de que explote y perder 1 vida, si no pasa al siguiente libre.",
+            "equipamiento",
+            "equiparMiniDinamita",
+            true
+        );
+    }
+
+    public static crearMiniDinamitaPro(): Carta {
+        return crearCartaBase(
+            "mini_dinamita_pro",
+            "Mini dinamita Pro",
+            "Tenes 4/16 de que explote y perder 2 vidas, si no pasa al siguiente libre.",
+            "equipamiento",
+            "equiparMiniDinamita",
+            true
+        );
+    }
+
+    public static crearPapapumPrimitiva(): Carta {
+        const clon = crearCartaBase(
+            "papapum_primitiva",
+            "Papapum primitiva",
+            "Pasá la papapum primitiva golpeando con BANG!. Daño 3. Si no explota, su probabilidad aumenta en 3.",
+            "equipamiento",
+            "equiparPapapum",
+            true
+        );
+        clon.esPlanta = true;
+        clon.number.set("probabilidadPapa", 1);
+        return clon;
+    }
+
+    public static crearCorreo(): Carta {
+        return crearCartaBase(
+            "correo",
+            "Correo",
+            "Elegí un jugador y luego una carta de tu mano para enviársela por correo.",
+            "objetivo",
+            "correo",
+            true
+        );
+    }
+
+    public static crearCorreoExplosivo(): Carta {
+        return crearCartaBase(
+            "correo_explosivo",
+            "Correo explosivo",
+            "Envía un paquete trampa. Si el jugador lo acepta, explota y recibe 1 de daño.",
+            "objetivo",
+            "correoExplosivo",
+            true
+        );
+    }
+
     // =========================================================================
     // 8. POOL DE EXTENSIONES Y WIKI
     // =========================================================================
@@ -1089,6 +1147,11 @@ export class CatalogoCartasEspeciales {
 
     public static obtenerTodasLasCartas(): Carta[] {
         return [
+            this.crearMiniDinamita(),
+            this.crearMiniDinamitaPro(),
+            this.crearPapapumPrimitiva(),
+            this.crearCorreo(),
+            this.crearCorreoExplosivo(),
             this.crearCofreLegendario(),
             this.crearAlmaBalatro(),
             this.crearCanio(),

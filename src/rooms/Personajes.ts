@@ -57,6 +57,8 @@ export interface IPersonaje {
     modificarRuletaLocal?(sala: IMyRoom, ctx: IContextoRuleta): void;
     modificarRuletaGlobal?(sala: IMyRoom, miJugador: Jugador, ctx: IContextoRuleta): void;
     esInmuneA?(sala: IMyRoom, jugador: Jugador, tipo: TipoInmunidad): boolean;
+
+    onPostHookVisual?(jugador: Jugador): void
 }
 
 interface SnapshotTracer {
@@ -252,7 +254,7 @@ export class Chester implements IPersonaje {
     sfxDefault = "sfxChester";
 
     modificarRuletaLocal(_sala: IMyRoom, ctx: IContextoRuleta): void {
-        if (ctx.motivo === "Dinamita" || ctx.motivo === "Papa") {
+        if (ctx.motivo === "Dinamita" || ctx.motivo === "MiniDinamita" || ctx.motivo === "Papa") {
             ctx.bonusSuerte += 1;
         } else {
             ctx.bonusSuerte += 5;
@@ -3046,6 +3048,152 @@ export class MRasmodius implements IPersonaje {
     }
 }
 
+export class Echo implements IPersonaje {
+    nombre = "Echo";
+    habilidad = "Duplicación:\nAl inicio del turno: se transforma en un personaje aleatorio del juego.";
+    vidasBase = 4;
+    sfxDefault = "sfxEcho";
+    sfxMuerte: [string, boolean] = ["sfxEchoMuerte", false];
+
+    obtenerPersonajesDelegados(_sala: IMyRoom, jugador: Jugador): string[] {
+        const imitado = jugador.string.get("echoPersonaje");
+        return imitado ? [imitado] : [];
+    }
+
+    onAsignar(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.set("esEcho", true);
+    }
+
+    onRemover(sala: IMyRoom, jugador: Jugador): void {
+        const anterior = jugador.string.get("echoPersonaje");
+        if (anterior) {
+            sala.obtenerIPersonaje(anterior)?.onRemover?.(sala, jugador);
+            jugador.string.delete("echoPersonaje");
+        }
+        jugador.boolean.delete("esEcho");
+        jugador.spriteAvatarOpcional = "";
+    }
+
+    onIniciarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador.estaVivo) return;
+
+        const anterior = jugador.string.get("echoPersonaje");
+        if (anterior) {
+            sala.obtenerIPersonaje(anterior)?.onRemover?.(sala, jugador);
+        }
+
+        const todos = sala.gestorPersonajes.obtenerTodosParaRepartir().filter((p) => p.nombre !== "Echo");
+        if (todos.length === 0) return;
+
+        const sinRepetir = todos.filter((p) => p.nombre !== anterior);
+        const pool = sinRepetir.length > 0 ? sinRepetir : todos;
+        const elegido = pool[Math.floor(Math.random() * pool.length)];
+
+        jugador.string.set("echoPersonaje", elegido.nombre);
+        jugador.spriteAvatarOpcional = elegido.nombre;
+
+        elegido.onAsignar?.(sala, jugador, true);
+
+        sala.agregarRegistro(
+            `🌀 ¡${Utilidades.obtenerNombreVisual(jugador)} se transformó en ${elegido.nombreMostrar ?? elegido.nombre}!`
+        );
+        sala.reproducirSfx("sfxEchoTransformacion");
+    }
+
+    onPostHookVisual(jugador: Jugador): void {
+        const imitado = jugador.string.get("echoPersonaje");
+        if (imitado && jugador.spriteAvatarOpcional === "") {
+            jugador.spriteAvatarOpcional = imitado;
+        }
+    }
+}
+
+export class Dynamike implements IPersonaje {
+    nombre = "Dynamike";
+    habilidad = "Demolición:\nAl golpear con BANG! normal: le coloca una Mini dinamita a la víctima (3/16 de explotar con 1 de daño, si no pasa al siguiente libre).\nTiene +1 de suerte contra Dinamitas y Mini dinamitas.";
+    vidasBase = 4;
+    sfxDefault = "sfxDynamike";
+    sfxMuerte: [string, boolean] = ["sfxDynamikeMuerte", false];
+
+    onGolpear(sala: IMyRoom, ctx: ContextoDano): void {
+        if (!ctx.atacante || ctx.atacante === ctx.victima || !ctx.victima.estaVivo) return;
+        if (ctx.cartaOrigen?.nombre !== "BANG!") return;
+
+        const mini = CatalogoCartasEspeciales.crearMiniDinamita();
+        mini.esConjurada = true;
+        Utilidades.equiparCarta(sala, ctx.victima, mini, "miniDinamita");
+        sala.agregarRegistro(
+            `🧨 ¡${Utilidades.obtenerNombreVisual(ctx.atacante)} le colocó una Mini dinamita a ${Utilidades.obtenerNombreVisual(ctx.victima)}!`
+        );
+        sala.reproducirSfx("dinamita");
+    }
+
+    modificarRuletaLocal(_sala: IMyRoom, ctx: IContextoRuleta): void {
+        if (ctx.motivo === "Dinamita" || ctx.motivo === "MiniDinamita") {
+            ctx.bonusSuerte += 1;
+        }
+    }
+}
+
+export class BrockElCartero implements IPersonaje {
+    nombre = "Brock el cartero";
+    habilidad = "Brock el cartero soy:\nBoton 1 o Boton 2 (1 uso compartido por turno):\nBoton 1: conjura un Correo explosivo (trampa de 1 de daño si la aceptan).\nBoton 2: conjura un Correo para enviarle una carta real de tu mano a otro jugador.\nSi rechazan el correo, nadie se entera de que habia dentro.";
+    vidasBase = 4;
+    sfxDefault = "sfxBrock";
+    sfxMuerte: [string, boolean] = ["sfxBrockMuerte", false];
+
+    onAsignar(_sala: IMyRoom, jugador: Jugador): void {
+        const btnA = new HabilidadActiva();
+        btnA.id = "brock_explosivo";
+        btnA.textoBoton = "Correo explosivo";
+        btnA.tooltip = "Conjura un paquete explosivo trampa.";
+        btnA.spriteBoton = "botonBrockExplosivo";
+        jugador.habilidadesActivas.push(btnA);
+
+        const btnB = new HabilidadActiva();
+        btnB.id = "brock_correo";
+        btnB.textoBoton = "Correo";
+        btnB.tooltip = "Conjura un Correo para enviar una carta de tu mano.";
+        btnB.spriteBoton = "botonBrockCorreo";
+        jugador.habilidadesActivas.push(btnB);
+
+        jugador.boolean.set("brockUsado", false);
+    }
+
+    onRemover(_sala: IMyRoom, jugador: Jugador): void {
+        Utilidades.removerBotonActivo(jugador, "brock_explosivo");
+        Utilidades.removerBotonActivo(jugador, "brock_correo");
+        jugador.boolean.delete("brockUsado");
+    }
+
+    onIniciarTurno(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.set("brockUsado", false);
+    }
+
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: ClienteJuego, idHabilidad: string): void {
+        if (!jugador.estaVivo) return;
+        if (idHabilidad !== "brock_explosivo" && idHabilidad !== "brock_correo") return;
+
+        if (jugador.boolean.get("brockUsado")) {
+            client.send("alerta_personal", "Ya usaste tu habilidad de cartero en este turno.");
+            return;
+        }
+
+        const carta =
+            idHabilidad === "brock_explosivo"
+                ? CatalogoCartasEspeciales.crearCorreoExplosivo()
+                : CatalogoCartasEspeciales.crearCorreo();
+
+        carta.esConjurada = true;
+        jugador.mano.push(carta);
+        jugador.boolean.set("brockUsado", true);
+
+        // Registro y SFX neutros para no delatar si conjuró trampa o correo real
+        sala.agregarRegistro(`✉️ ${Utilidades.obtenerNombreVisual(jugador)} preparó un paquete.`);
+        sala.reproducirSfx("sfxBrockPaquete");
+    }
+}
+
 // =============================================================================
 // NPCS INVOCABLES
 // =============================================================================
@@ -3154,6 +3302,7 @@ export class GestorPersonajes {
             new Phoenix(), new Clint(), new Kertley(), new Susato(), new Colt(),
             new Cosmo(), new Amber(), new FlorAmarilla(), new Volpina(), new Tracer(),
             new RoaringKnight(), new ShellyDeKiller(), new Sirius(), new MRasmodius(),
+            new Echo(), new Dynamike(), new BrockElCartero(),
             // NPCs invocables
             new Lawrie(), new Bruce(), new Bubble_npc(), new Leon_oculto()
         ];

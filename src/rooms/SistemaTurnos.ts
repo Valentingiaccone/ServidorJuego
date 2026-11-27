@@ -1,15 +1,11 @@
 import type { ClienteJuego, IMyRoom } from "./IMyRoom.js";
-import type { Carta, Jugador } from "./schema/MyRoomState.js";
+import type { Jugador } from "./schema/MyRoomState.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { GestorNPC } from "./GestorNPC.js";
 import { Utilidades } from "./Utilidades.js";
 
 interface FaseInicioTurno {
     nombre: string;
-    /**
-     * Devuelve `true` si pausó el flujo (por ejemplo, abrió una ruleta) y llamará a `continuar()` al terminar.
-     * Devuelve `false` si no aplicaba y el pipeline debe pasar de inmediato a la siguiente fase.
-     */
     ejecutar: (idJugador: string, jugador: Jugador, continuar: () => void) => boolean;
 }
 
@@ -19,6 +15,7 @@ export class SistemaTurnos {
     constructor(private sala: IMyRoom) {
         this.fasesInicioTurno = [
             { nombre: "Embrujo", ejecutar: (id, j, next) => this.faseEmbrujo(id, j, next) },
+            { nombre: "MiniDinamita", ejecutar: (id, j, next) => this.faseMiniDinamita(id, j, next) },
             { nombre: "Dinamita", ejecutar: (id, j, next) => this.faseDinamita(id, j, next) },
             { nombre: "Papapum", ejecutar: (id, j, next) => this.fasePapapum(id, j, next) },
             { nombre: "Crisalida", ejecutar: (id, j, next) => this.faseCrisalida(id, j, next) },
@@ -43,7 +40,6 @@ export class SistemaTurnos {
         const jugadorActual = this.sala.state.jugadores.get(client.sessionId);
         if (!jugadorActual) return;
 
-        // Turno de fantasma: limpia mano y avanza
         if (!jugadorActual.estaVivo) {
             jugadorActual.mano.clear();
             jugadorActual.yaJugoFantasma = false;
@@ -95,7 +91,6 @@ export class SistemaTurnos {
                     this.procesarConteoKazuma(jugadorSiguiente);
                     break;
                 }
-
                 if (jugadorSiguiente.estaVivo) {
                     this.expirarEscudos(jugadorSiguiente);
                 }
@@ -143,6 +138,38 @@ export class SistemaTurnos {
         return { id: "", jugador: null };
     }
 
+    /**
+     * Busca al siguiente jugador vivo en orden de turnos que NO tenga ya un equipamiento en `hueco`.
+     * Si todos los demás vivos ya tienen uno, da la vuelta y vuelve al jugador actual (que acaba de liberarse).
+     */
+    public obtenerSiguienteJugadorVivoSinEquipamiento(
+        idActual: string,
+        hueco: string
+    ): { id: string; jugador: Jugador | null } {
+        const idsJugadores =
+            this.sala.state.ordenTurnos.length > 0
+                ? Array.from(this.sala.state.ordenTurnos)
+                : Array.from(this.sala.state.jugadores.keys());
+
+        if (idsJugadores.length === 0) return { id: "", jugador: null };
+
+        const indiceActual = idsJugadores.indexOf(idActual);
+        let siguienteIndice = (indiceActual + 1) % idsJugadores.length;
+        let vueltas = 0;
+
+        while (vueltas < idsJugadores.length) {
+            const siguienteId = idsJugadores[siguienteIndice];
+            const jugadorSiguiente = this.sala.state.jugadores.get(siguienteId);
+            if (jugadorSiguiente && jugadorSiguiente.estaVivo && !jugadorSiguiente.equipamiento.has(hueco)) {
+                return { id: siguienteId, jugador: jugadorSiguiente };
+            }
+            siguienteIndice = (siguienteIndice + 1) % idsJugadores.length;
+            vueltas++;
+        }
+
+        return this.obtenerSiguienteJugadorVivo(idActual);
+    }
+
     // =========================================================================
     // 2. PIPELINE SECUENCIAL DE INICIO DE TURNO
     // =========================================================================
@@ -188,6 +215,54 @@ export class SistemaTurnos {
         return true;
     }
 
+    private faseMiniDinamita(idJugador: string, jugador: Jugador, continuar: () => void): boolean {
+        if (!jugador.estaVivo || !jugador.equipamiento.has("miniDinamita")) return false;
+
+        const cartaMini = jugador.equipamiento.get("miniDinamita")!;
+        const esPro = cartaMini.nombre === "Mini dinamita Pro";
+
+        this.sala.agregarRegistro(
+            `🧨 ¡La ${cartaMini.nombre} chisporrotea frente a ${Utilidades.obtenerNombreVisual(jugador)}! Debe desenfundar...`
+        );
+
+        this.sala.sistemaRuleta.solicitar({
+            idJugador,
+            motivo: "MiniDinamita",
+            probabilidadBase: esPro ? 12 : 13, // 4/16 Pro, 3/16 normal
+            spriteRojo: "ruletaExplosion",
+            textoExito: "¡A SALVO!",
+            textoFallo: "¡BOOM!",
+            onResultado: (exito: boolean) => {
+                const carta = Utilidades.quitarEquipamiento(jugador, "miniDinamita");
+
+                if (!exito) {
+                    this.sala.agregarRegistro(
+                        `💥 ¡BOOM! La ${cartaMini.nombre} explotó encima de ${jugador.nombre}.`
+                    );
+                    this.sala.reproducirSfx("explosion");
+                    const dano = esPro ? 2 : 1;
+                    this.sala.sistemaCombate.procesarDano(jugador, null, dano, "MINI_DINAMITA", {
+                        cartaOrigen: carta
+                    });
+                    if (carta) this.sala.agregarAlDescarte(carta);
+
+                    if (jugador.estaVivo) continuar();
+                    else this.avanzarAlSiguienteTurno(idJugador);
+                } else {
+                    const siguiente = this.obtenerSiguienteJugadorVivoSinEquipamiento(idJugador, "miniDinamita");
+                    if (siguiente.jugador && carta) {
+                        Utilidades.equiparCarta(this.sala, siguiente.jugador, carta, "miniDinamita");
+                        this.sala.agregarRegistro(
+                            `💨 ¡Uf! Salió Verde. La ${carta.nombre} pasa a ${Utilidades.obtenerNombreVisual(siguiente.jugador)}.`
+                        );
+                    }
+                    continuar();
+                }
+            }
+        });
+        return true;
+    }
+
     private faseDinamita(idJugador: string, jugador: Jugador, continuar: () => void): boolean {
         if (!jugador.estaVivo || !jugador.equipamiento.has("dinamita")) return false;
 
@@ -222,12 +297,12 @@ export class SistemaTurnos {
                     if (jugador.estaVivo) continuar();
                     else this.avanzarAlSiguienteTurno(idJugador);
                 } else {
-                    this.sala.agregarRegistro(
-                        `💨 ¡Uf! Salió Verde. La Dinamita pasa al siguiente jugador.`
-                    );
-                    const siguiente = this.obtenerSiguienteJugadorVivo(idJugador);
+                    const siguiente = this.obtenerSiguienteJugadorVivoSinEquipamiento(idJugador, "dinamita");
                     if (siguiente.jugador && carta) {
                         Utilidades.equiparCarta(this.sala, siguiente.jugador, carta, "dinamita");
+                        this.sala.agregarRegistro(
+                            `💨 ¡Uf! Salió Verde. La Dinamita pasa a ${Utilidades.obtenerNombreVisual(siguiente.jugador)}.`
+                        );
                     }
                     continuar();
                 }
@@ -240,10 +315,11 @@ export class SistemaTurnos {
         if (!jugador.estaVivo || !jugador.equipamiento.has("papa")) return false;
 
         const cartaPapa = jugador.equipamiento.get("papa")!;
+        const esPrimitiva = cartaPapa.nombre === "Papapum primitiva";
         const probActual = cartaPapa.number.get("probabilidadPapa") ?? 1;
 
         this.sala.agregarRegistro(
-            `🥔 ¡El Papapum quema en las manos de ${Utilidades.obtenerNombreVisual(jugador)}! Debe desenfundar...`
+            `🥔 ¡${cartaPapa.nombre} quema en las manos de ${Utilidades.obtenerNombreVisual(jugador)}! Debe desenfundar...`
         );
 
         this.sala.sistemaRuleta.solicitar({
@@ -256,7 +332,7 @@ export class SistemaTurnos {
             onResultado: (exito: boolean) => {
                 if (!exito) {
                     this.sala.agregarRegistro(
-                        `💥 ¡PAPA PAPA PAPAPUM, BOOOM! Salió Rojo. El Papapum explotó encima de ${jugador.nombre}.`
+                        `💥 ¡PAPA PAPA PAPAPUM, BOOOM! ${cartaPapa.nombre} explotó encima de ${jugador.nombre}.`
                     );
                     this.sala.reproducirSfx("explosion");
 
@@ -266,17 +342,19 @@ export class SistemaTurnos {
                         this.sala.agregarAlDescarte(removida);
                     }
 
-                    this.sala.sistemaCombate.procesarDano(jugador, null, 2, "PAPA", {
+                    const dano = esPrimitiva ? 3 : 2;
+                    this.sala.sistemaCombate.procesarDano(jugador, null, dano, "PAPA", {
                         cartaOrigen: removida
                     });
 
                     if (jugador.estaVivo) continuar();
                     else this.avanzarAlSiguienteTurno(idJugador);
                 } else {
-                    const nuevaProb = Math.min(15, probActual + 2);
+                    const incremento = esPrimitiva ? 3 : 2;
+                    const nuevaProb = Math.min(15, probActual + incremento);
                     cartaPapa.number.set("probabilidadPapa", nuevaProb);
                     this.sala.agregarRegistro(
-                        `💨 ¡Salió Verde! El Papapum no explotó, pero su probabilidad aumentó a ${nuevaProb}/16.`
+                        `💨 ¡Salió Verde! ${cartaPapa.nombre} no explotó, pero su probabilidad aumentó a ${nuevaProb}/16.`
                     );
                     continuar();
                 }
@@ -380,9 +458,7 @@ export class SistemaTurnos {
     // =========================================================================
 
     public iniciarTurnoEfectivo(jugador: Jugador): void {
-        // Despacha onIniciarTurno tanto a personajes (incl. delegados) como a TODAS las cartas (Yorick, Girasol, etc.)
         this.sala.motorEventos.disparar(jugador, "onIniciarTurno", jugador);
-
         this.sala.repartirCartas(jugador, 2, "turno");
 
         if (jugador.esNpc && jugador.estaVivo) {

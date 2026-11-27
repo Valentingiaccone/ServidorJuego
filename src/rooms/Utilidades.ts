@@ -83,7 +83,17 @@ const TABLA_MEJORAS: Record<string, ReglaMejoraEquipamiento> = {
         hueco: "arma",
         texto: "su arma a Espada galactica Pro",
         crear: () => CatalogoCartasEspeciales.crearEspadaGalacticaPro()
-    }
+    },
+    "Mini dinamita": {
+        hueco: "miniDinamita",
+        texto: "su Mini dinamita",
+        crear: () => CatalogoCartasEspeciales.crearMiniDinamitaPro()
+    },
+    "Papapum": {
+        hueco: "papa",
+        texto: "su Papapum a Papapum primitiva",
+        crear: () => CatalogoCartasEspeciales.crearPapapumPrimitiva()
+    },
 };
 
 export class Utilidades {
@@ -273,8 +283,14 @@ export class Utilidades {
         if (opciones.length === 0) return "";
 
         const elegida = opciones[Math.floor(Math.random() * opciones.length)];
+        const cartaVieja = jugador.equipamiento.get(elegida.hueco);
         const cartaMejorada = elegida.crear();
         cartaMejorada.esConjurada = true;
+
+        if (cartaVieja?.number.has("probabilidadPapa")) {
+            cartaMejorada.number.set("probabilidadPapa", cartaVieja.number.get("probabilidadPapa") ?? 1);
+        }
+
         this.equiparCarta(sala, jugador, cartaMejorada, elegida.hueco);
         return elegida.texto;
     }
