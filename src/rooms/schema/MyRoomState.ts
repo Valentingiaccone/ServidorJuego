@@ -7,6 +7,7 @@ export class OpcionCartaSeleccion extends Schema {
     @type("string") spriteReferencia: string = "";
     @type("boolean") esConjurada: boolean = false;
     @type("boolean") tienePerro: boolean = false;
+    @type("boolean") estaHackeada: boolean = false;
 }
 
 export class SeleccionCartasRequest extends Schema {
@@ -15,7 +16,7 @@ export class SeleccionCartasRequest extends Schema {
     @type("string") temaVisual: string = "normal";
     @type("string") tipoAccion: string = "";
     @type("boolean") esCancelable: boolean = false;
-    @type("boolean") esPublica: boolean = false; // true = todos ven las cartas (ej. Tiendas), false = solo el objetivo
+    @type("boolean") esPublica: boolean = false;
     @type([OpcionCartaSeleccion]) opciones = new ArraySchema<OpcionCartaSeleccion>();
 }
 
@@ -44,6 +45,7 @@ export class Carta extends Schema {
     @type("string") idDuenoDelPerro: string = "";
     @type("string") idGranDesaparicion: string = "";
     @type("boolean") esPlanta: boolean = false;
+    @type("boolean") estaHackeada: boolean = false;
     @type({ map: "number" }) number = new MapSchema<number>();
     @type({ map: "string" }) string = new MapSchema<string>();
 }
@@ -74,14 +76,12 @@ export class Jugador extends Schema {
     @type("number") vidasMaximas: number = 4;
     @type("boolean") yaDisparo: boolean = false;
 
-    // Identidad técnica vs. nombre visible en UI/registros (ej: personaje="Leon_oculto", nombreMostrar="Leon")
     @type("string") personaje: string = "";
     @type("string") nombreMostrar: string = "";
     @type("string") habilidad: string = "";
     @type("string") sfxDefault: string = "sfxMensaje";
     @type("string") spriteAvatarOpcional: string = "";
 
-    // Datos solo de servidor (no se sincronizan por red)
     sfxMuerte: [string, boolean, number?] = ["muerteAmongus", false];
     turnosEscudos: number[] = [];
 
@@ -126,7 +126,6 @@ export class MyRoomState extends Schema {
     @type("number") cantidadAlguaciles: number = 0;
     @type("number") cantidadForajidos: number = 0;
 
-    // Estado visual de la ruleta activa
     @type("string") jugadorDesenfundando: string = "";
     @type("string") motivoDesenfundar: string = "";
     @type("string") tituloRuleta: string = "";

@@ -29,10 +29,20 @@ const TABLA_MEJORAS: Record<string, ReglaMejoraEquipamiento> = {
         texto: "su Caballo",
         crear: () => CatalogoCartasEspeciales.crearCaballoPro()
     },
+    "Caballo maldito": {
+        hueco: "mustang",
+        texto: "su Caballo maldito",
+        crear: () => CatalogoCartasEspeciales.crearCaballoMalditoPro()
+    },
     "Monoaldea": {
         hueco: "mira",
         texto: "su Monoaldea",
         crear: () => CatalogoCartasEspeciales.crearMonoaldeaPro()
+    },
+    "Monoaldea maldita": {
+        hueco: "mira",
+        texto: "su Monoaldea maldita",
+        crear: () => CatalogoCartasEspeciales.crearMonoaldeaMalditaPro()
     },
     "Barril": {
         hueco: "barril",
@@ -43,6 +53,16 @@ const TABLA_MEJORAS: Record<string, ReglaMejoraEquipamiento> = {
         hueco: "dinamita",
         texto: "su Dinamita",
         crear: () => CatalogoCartasEspeciales.crearDinamitaPro()
+    },
+    "Mini dinamita": {
+        hueco: "miniDinamita",
+        texto: "su Mini dinamita",
+        crear: () => CatalogoCartasEspeciales.crearMiniDinamitaPro()
+    },
+    "Papapum": {
+        hueco: "papa",
+        texto: "su Papapum a Papapum primitiva",
+        crear: () => CatalogoCartasEspeciales.crearPapapumPrimitiva()
     },
     "Girasol": {
         hueco: "girasol",
@@ -83,27 +103,40 @@ const TABLA_MEJORAS: Record<string, ReglaMejoraEquipamiento> = {
         hueco: "arma",
         texto: "su arma a Espada galactica Pro",
         crear: () => CatalogoCartasEspeciales.crearEspadaGalacticaPro()
-    },
-    "Mini dinamita": {
-        hueco: "miniDinamita",
-        texto: "su Mini dinamita",
-        crear: () => CatalogoCartasEspeciales.crearMiniDinamitaPro()
-    },
-    "Papapum": {
-        hueco: "papa",
-        texto: "su Papapum a Papapum primitiva",
-        crear: () => CatalogoCartasEspeciales.crearPapapumPrimitiva()
-    },
+    }
 };
 
 export class Utilidades {
     // =========================================================================
-    // 1. IDENTIDAD VISUAL Y BÚSQUEDA DE JUGADORES
+    // 1. IDENTIDAD, BLOQUEO, CONTROL DE IA Y BÚSQUEDA DE JUGADORES
     // =========================================================================
 
     public static obtenerNombreVisual(jugador: Jugador | null | undefined): string {
         if (!jugador) return "Alguien";
         return jugador.nombreMostrar || jugador.personaje || jugador.nombre || "Alguien";
+    }
+
+    public static estaBloqueado(jugador: Jugador | null | undefined): boolean {
+        if (!jugador || !jugador.efecto) return false;
+        return (jugador.efecto.get("bloqueado") ?? 0) > 0;
+    }
+
+    public static puedeUsarCartaFallo(jugador: Jugador): boolean {
+        if (this.estaBloqueado(jugador)) return true;
+        return jugador.puedeUsarFallo && !jugador.boolean.get("frankFallo");
+    }
+
+    public static esControladoPorIA(jugador: Jugador | null | undefined): boolean {
+        if (!jugador) return false;
+        return jugador.esNpc || jugador.equipamiento.has("manipulacion");
+    }
+
+    public static obtenerIdControlador(jugador: Jugador): string {
+        const manipulacion = jugador.equipamiento.get("manipulacion");
+        if (manipulacion) {
+            return manipulacion.string.get("idManipulador") ?? "";
+        }
+        return jugador.idDueno;
     }
 
     public static obtenerSessionIdDeJugador(sala: IMyRoom, jugadorBuscado: Jugador): string {
@@ -153,7 +186,9 @@ export class Utilidades {
         const bloqueado = this.estaBloqueado(jugador);
 
         if (jugador.transformarCuraEnEscudo && !bloqueado) return true;
-        if (jugador.esNpc && !(jugador.boolean.get("lawrieCura") && !bloqueado)) return false;
+        const npcCurable =
+            (jugador.boolean.get("lawrieCura") || jugador.boolean.get("npcPuedeCurarse")) && !bloqueado;
+        if (jugador.esNpc && !npcCurable) return false;
         if (jugador.efecto.has("malestar")) return false;
 
         if (sala.getTotalJugadoresVivos() === 2) return true;
@@ -221,6 +256,7 @@ export class Utilidades {
 
     public static equiparCarta(sala: IMyRoom, jugador: Jugador, carta: Carta, hueco: string): void {
         carta.idDuenoDelPerro = "";
+        carta.estaHackeada = false;
 
         if (jugador.equipamiento.has(hueco)) {
             const cartaVieja = jugador.equipamiento.get(hueco);
@@ -264,13 +300,11 @@ export class Utilidades {
     public static mejorarEquipamientoAleatorio(sala: IMyRoom, jugador: Jugador): string {
         const opciones: ReglaMejoraEquipamiento[] = [];
 
-        // 1. Mejoras definidas en tabla para equipamientos activos
         jugador.equipamiento.forEach((carta: Carta) => {
             const regla = TABLA_MEJORAS[carta.nombre];
             if (regla) opciones.push(regla);
         });
 
-        // 2. Evolución de armas básicas (Colt .45 -> Shion -> Casiddy -> Ashe -> Francotirador)
         const armaActual = sala.sistemaCombate.getDatosArma(jugador);
         const idxArma = SECUENCIA_ARMAS_BASICAS.findIndex((a) => a.nombre === armaActual.nombre);
         if (idxArma !== -1 && idxArma < SECUENCIA_ARMAS_BASICAS.length - 1) {
@@ -340,6 +374,7 @@ export class Utilidades {
         clon.idDuenoDelPerro = cartaOriginal.idDuenoDelPerro;
         clon.idGranDesaparicion = cartaOriginal.idGranDesaparicion;
         clon.esPlanta = cartaOriginal.esPlanta;
+        clon.estaHackeada = false;
 
         if (cartaOriginal.number) {
             cartaOriginal.number.forEach((valor: number, clave: string) => {
@@ -436,7 +471,11 @@ export class Utilidades {
         return listaOrdenada;
     }
 
-    public static obtenerSiguienteVivoHorario(sala: IMyRoom, jugador: Jugador): Jugador | null {
+    public static obtenerVecinoVivoEnSentido(
+        sala: IMyRoom,
+        jugador: Jugador,
+        sentido: "horario" | "antihorario"
+    ): Jugador | null {
         const idOrigen = this.obtenerSessionIdDeJugador(sala, jugador);
         if (!idOrigen) return null;
 
@@ -445,14 +484,20 @@ export class Utilidades {
         if (idxOrigen === -1) return null;
 
         const n = arraySillas.length;
+        const paso = sentido === "horario" ? 1 : -1;
+
         for (let i = 1; i < n; i++) {
-            const idxTest = (idxOrigen + i + n) % n;
+            const idxTest = (idxOrigen + paso * i + n) % n;
             const jugTest = sala.state.jugadores.get(arraySillas[idxTest]);
             if (jugTest && jugTest.estaVivo) {
                 return jugTest;
             }
         }
         return null;
+    }
+
+    public static obtenerSiguienteVivoHorario(sala: IMyRoom, jugador: Jugador): Jugador | null {
+        return this.obtenerVecinoVivoEnSentido(sala, jugador, "horario");
     }
 
     public static invocarNpcEnMesa(
@@ -496,7 +541,6 @@ export class Utilidades {
 
         const offset = posicionAparicion === "horario" ? 1 : 0;
 
-        // 1. Insertar en sillas físicas (sin usar splice directo en ArraySchema)
         const sillasTemp = Array.from(sala.state.ordenSillasFisicas);
         const idxFisico = sillasTemp.indexOf(idInvocador);
         if (idxFisico !== -1) sillasTemp.splice(idxFisico + offset, 0, idNpc);
@@ -504,7 +548,6 @@ export class Utilidades {
         sala.state.ordenSillasFisicas.clear();
         sillasTemp.forEach((id) => sala.state.ordenSillasFisicas.push(id));
 
-        // 2. Insertar en orden de turnos (sin usar splice directo en ArraySchema)
         const turnosTemp = Array.from(sala.state.ordenTurnos);
         const idxTurno = turnosTemp.indexOf(idInvocador);
         if (idxTurno !== -1) turnosTemp.splice(idxTurno + offset, 0, idNpc);
@@ -512,21 +555,17 @@ export class Utilidades {
         sala.state.ordenTurnos.clear();
         turnosTemp.forEach((id) => sala.state.ordenTurnos.push(id));
 
-        // 3. Registrar en el mapa de jugadores
         sala.state.jugadores.set(idNpc, npc);
 
-        // 4. Notificar al dueño raíz ANTES de onAsignar (ej. Sirius marca npcDeSirius para toda su cadena)
         const duenoRaiz = sala.state.jugadores.get(idDuenoRaiz);
         if (duenoRaiz) {
             sala.motorEventos.disparar(duenoRaiz, "onInvocarNpc", duenoRaiz, npc);
         }
 
-        // 5. Repartir cartas iniciales
         if (cartasIniciales > 0) {
             sala.repartirCartas(npc, cartasIniciales, "inicio_npc");
         }
 
-        // 6. Ejecutar onAsignar del NPC
         if (datosClase?.onAsignar) {
             datosClase.onAsignar(sala, npc, false);
         }
@@ -610,15 +649,5 @@ export class Utilidades {
     public static capitalizar(texto: string): string {
         if (!texto) return "";
         return texto.charAt(0).toUpperCase() + texto.slice(1).toLowerCase();
-    }
-
-    public static estaBloqueado(jugador: Jugador | null | undefined): boolean {
-        if (!jugador || !jugador.efecto) return false;
-        return (jugador.efecto.get("bloqueado") ?? 0) > 0;
-    }
-
-    public static puedeUsarCartaFallo(jugador: Jugador): boolean {
-        if (this.estaBloqueado(jugador)) return true;
-        return jugador.puedeUsarFallo && !jugador.boolean.get("frankFallo");
     }
 }

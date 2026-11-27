@@ -582,7 +582,9 @@ export class CatalogoCartasEspeciales {
             () => this.crearHongoVenenoso(),
             () => this.crearReductor(),
             () => this.crearSlimeComilon(),
-            () => this.crearCartaMaldita()
+            () => this.crearCartaMaldita(),
+            () => this.crearCaballoMaldito(),
+            () => this.crearMonoaldeaMaldita()
         ];
         const carta = opciones[Math.floor(Math.random() * opciones.length)]();
         carta.esConjurada = true;
@@ -1100,6 +1102,72 @@ export class CatalogoCartasEspeciales {
         );
     }
 
+    public static crearManipulacionBang(): Carta {
+        return crearCartaBase(
+            "manipulacion_bang",
+            "Manipulación BANG!",
+            "Hace 0 de daño. Si golpea, controla mentalmente a la víctima hasta el final de su turno.",
+            "objetivo",
+            "dano_0",
+            true
+        );
+    }
+
+    public static crearManipulacion(): Carta {
+        return crearCartaBase(
+            "manipulacion",
+            "Manipulación",
+            "Estás bajo control mental como NPC aliado hasta el final de tu turno.",
+            "equipamiento",
+            "manipulacion",
+            true
+        );
+    }
+
+    public static crearCaballoMaldito(): Carta {
+        return crearCartaBase(
+            "caballo_maldito",
+            "Caballo maldito",
+            "Al descartar: se equipa y los demás te ven a distancia -1.",
+            "oculto",
+            "descartar_caballoMaldito",
+            true
+        );
+    }
+
+    public static crearCaballoMalditoPro(): Carta {
+        return crearCartaBase(
+            "caballo_maldito_pro",
+            "Caballo maldito Pro",
+            "Los demás te ven a distancia -2.",
+            "oculto",
+            "descartar_caballoMaldito",
+            true
+        );
+    }
+
+    public static crearMonoaldeaMaldita(): Carta {
+        return crearCartaBase(
+            "monoaldea_maldita",
+            "Monoaldea maldita",
+            "Al descartar: se equipa y tenés -1 de alcance.",
+            "oculto",
+            "descartar_monoaldeaMaldita",
+            true
+        );
+    }
+
+    public static crearMonoaldeaMalditaPro(): Carta {
+        return crearCartaBase(
+            "monoaldea_maldita_pro",
+            "Monoaldea maldita Pro",
+            "Tenés -2 de alcance.",
+            "oculto",
+            "descartar_monoaldeaMaldita",
+            true
+        );
+    }
+
     // =========================================================================
     // 8. POOL DE EXTENSIONES Y WIKI
     // =========================================================================
@@ -1147,6 +1215,12 @@ export class CatalogoCartasEspeciales {
 
     public static obtenerTodasLasCartas(): Carta[] {
         return [
+            this.crearManipulacionBang(),
+            this.crearManipulacion(),
+            this.crearCaballoMaldito(),
+            this.crearCaballoMalditoPro(),
+            this.crearMonoaldeaMaldita(),
+            this.crearMonoaldeaMalditaPro(),
             this.crearMiniDinamita(),
             this.crearMiniDinamitaPro(),
             this.crearPapapumPrimitiva(),

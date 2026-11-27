@@ -9,12 +9,14 @@ import {
 import type { ClienteJuego, IMyRoom, SfxPayload } from "./IMyRoom.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { GestorMusica } from "./GestorMusica.js";
+import { GestorNPC } from "./GestorNPC.js";
 import { GestorPersonajes, type IPersonaje } from "./Personajes.js";
 import { MotorEventos } from "./MotorEventos.js";
 import { SistemaCartas } from "./SistemaCartas.js";
 import { SistemaCombate } from "./SistemaCombate.js";
 import { SistemaInteracciones, type OpcionCartaConfig } from "./SistemaInteracciones.js";
 import { SistemaRuleta } from "./SistemaRuleta.js";
+import { SistemaTiempo } from "./SistemaTiempo.js";
 import { SistemaTurnos } from "./SistemaTurnos.js";
 import { Utilidades } from "./Utilidades.js";
 
@@ -46,6 +48,7 @@ export class MyRoom extends Room implements IMyRoom {
     public sistemaInteracciones!: SistemaInteracciones;
     public sistemaTurnos!: SistemaTurnos;
     public sistemaCartas!: SistemaCartas;
+    public sistemaTiempo!: SistemaTiempo;
     public gestorPersonajes!: GestorPersonajes;
     public gestorMusica!: GestorMusica;
 
@@ -67,6 +70,7 @@ export class MyRoom extends Room implements IMyRoom {
         this.sistemaRuleta = new SistemaRuleta(this);
         this.sistemaInteracciones = new SistemaInteracciones(this);
         this.sistemaTurnos = new SistemaTurnos(this);
+        this.sistemaTiempo = new SistemaTiempo(this);
 
         this.registrarMensajes();
     }
@@ -108,7 +112,7 @@ export class MyRoom extends Room implements IMyRoom {
             this.reproducirSfx("desconectado");
 
             const eraSuTurno = this.state.turnoActual === client.sessionId;
-            this.evaluarMuerte(jugadorQueSeVa, null, true);
+            this.evaluarMuerte(jugadorQueSeVa, null, true, "DESCONEXION");
 
             if (eraSuTurno && this.state.estadoJuego === "Jugando") {
                 this.sistemaTurnos.avanzarAlSiguienteTurno(client.sessionId);
@@ -141,7 +145,6 @@ export class MyRoom extends Room implements IMyRoom {
 
         this.onMessage("pasar_turno", (client) => this.procesarPasarTurno(client));
 
-        // Mensaje unificado para jugar cartas (acepta string o { idCarta, idObjetivo })
         this.onMessage("jugar_carta", (client, payload: string | PayloadJugarObjetivo) => {
             if (typeof payload === "string") {
                 this.procesarJugarCarta(client, payload);
@@ -150,7 +153,6 @@ export class MyRoom extends Room implements IMyRoom {
             }
         });
 
-        // Alias de compatibilidad
         this.onMessage("jugar_carta_1objetivo", (client, datos: PayloadJugarObjetivo) => {
             if (datos?.idCarta) {
                 this.procesarJugarCarta(client, datos.idCarta, datos.idObjetivo);
@@ -163,7 +165,6 @@ export class MyRoom extends Room implements IMyRoom {
             }
         });
 
-        // Consulta a demanda de objetivos válidos para iluminar en Cocos
         this.onMessage("consultar_objetivos", (client, idCarta: string) => {
             if (
                 this.state.estadoJuego !== "Jugando" ||
@@ -175,7 +176,7 @@ export class MyRoom extends Room implements IMyRoom {
             }
             const jugador = this.state.jugadores.get(client.sessionId);
             const carta = jugador?.mano.find((c: Carta) => c.id === idCarta);
-            if (!jugador || !carta) {
+            if (!jugador || !carta || carta.estaHackeada || Utilidades.esControladoPorIA(jugador)) {
                 client.send("objetivos_validos", { idCarta, objetivos: [] });
                 return;
             }
@@ -206,10 +207,14 @@ export class MyRoom extends Room implements IMyRoom {
             const jugador = this.state.jugadores.get(client.sessionId);
             if (!jugador || !jugador.estaVivo) return;
 
+            if (Utilidades.esControladoPorIA(jugador)) return;
+
             if (Utilidades.estaBloqueado(jugador)) {
                 client.send("alerta_personal", "Tus habilidades están bloqueadas.");
                 return;
             }
+
+            this.sistemaTiempo.capturarPuntoDeRetorno();
 
             this.motorEventos.dispararPersonaje(
                 jugador,
@@ -330,7 +335,6 @@ export class MyRoom extends Room implements IMyRoom {
 
         if (!todosEligieron) return;
 
-        // Reparto de mano inicial según vidas
         this.state.jugadores.forEach((j: Jugador) => {
             j.mano.clear();
             for (let balas = 0; balas < j.vidas; balas++) {
@@ -404,14 +408,12 @@ export class MyRoom extends Room implements IMyRoom {
         agregar(3, () => CatalogoCartasEspeciales.crearPrision());
         agregar(1, () => CatalogoCartasEspeciales.crearDinamita());
 
-        // Armas base
         agregar(2, () => CatalogoCartasEspeciales.crearArma("Pistola de Shion", 2));
         agregar(2, () => CatalogoCartasEspeciales.crearArma("Revolver de Casiddy", 3));
         agregar(1, () => CatalogoCartasEspeciales.crearArma("Rifle de Ashe", 4));
         agregar(1, () => CatalogoCartasEspeciales.crearArma("Francotirador", 5));
         agregar(2, () => CatalogoCartasEspeciales.crearPistolaDeTracer());
 
-        // Pool de extensiones (10 aleatorias)
         const poolExtensiones = this.mezclar(CatalogoCartasEspeciales.obtenerPoolExtensiones()).slice(0, 10);
         for (const config of poolExtensiones) {
             for (let i = 0; i < config.copias; i++) {
@@ -452,8 +454,15 @@ export class MyRoom extends Room implements IMyRoom {
         const jugador = this.state.jugadores.get(client.sessionId);
         if (!jugador) return;
 
+        if (Utilidades.esControladoPorIA(jugador) && !client.esClienteNpc) {
+            return;
+        }
+
         const idx = jugador.mano.findIndex((c: Carta) => c.id === idCarta);
         if (idx === -1) return;
+
+        // Snapshot para Subaru antes de descartar (Hongo Venenoso, Perro, Zombidito, Huevo explosivo)
+        this.sistemaTiempo.capturarPuntoDeRetorno();
 
         const cartaDescartada = jugador.mano.splice(idx, 1)[0];
         if (cartaDescartada) {
@@ -463,7 +472,7 @@ export class MyRoom extends Room implements IMyRoom {
     }
 
     public procesarVoltearCarta(client: ClienteJuego): void {
-        this.sistemaRuleta.procesarGiro(client.sessionId);
+        this.sistemaRuleta.procesarGiro(client.sessionId, Boolean(client.esClienteNpc));
     }
 
     public procesarResponderInteraccion(client: ClienteJuego, idAccion: string): void {
@@ -563,7 +572,6 @@ export class MyRoom extends Room implements IMyRoom {
             const mezcladas = this.mezclar(Array.from(this.state.descarte));
             this.state.descarte.clear();
             for (const carta of mezcladas) {
-                // Clonamos con forzarConjurada = false para que Colyseus mantenga vivos los MapSchema internos
                 this.state.mazo.push(Utilidades.clonarCarta(carta, "mazo", false));
             }
         }
@@ -580,7 +588,6 @@ export class MyRoom extends Room implements IMyRoom {
         this.motorEventos.disparar(jugador, "onDescartarCarta", jugador, cartaDescartada, motivo);
         Utilidades.restarEfecto(jugador, "fuego", 1);
 
-        // Perro con hueso
         if (cartaDescartada.idDuenoDelPerro !== "") {
             const atacante = this.state.jugadores.get(cartaDescartada.idDuenoDelPerro) ?? null;
             this.sistemaCombate.procesarDano(jugador, atacante, 1, "DESCARTE", {
@@ -589,15 +596,14 @@ export class MyRoom extends Room implements IMyRoom {
             this.reproducirSfx("sfxPerroAtacando");
         }
 
-        // Efecto propio de la carta al ser descartada (Hongo Venenoso, Reductor, Zombidito, etc.)
         this.sistemaCartas.alDescartarCartaPropia(jugador, cartaDescartada, motivo);
-
         this.agregarAlDescarte(cartaDescartada);
     }
 
     public agregarAlDescarte(carta: Carta): void {
         if (!carta || carta.esConjurada) return;
         carta.idDuenoDelPerro = "";
+        carta.estaHackeada = false;
         this.state.descarte.push(carta);
     }
 
@@ -610,14 +616,18 @@ export class MyRoom extends Room implements IMyRoom {
     public evaluarMuerte(
         victima: Jugador,
         asesino: Jugador | null = null,
-        _fueDanoVerdadero: boolean = false
+        _fueDanoVerdadero: boolean = false,
+        causa: string = ""
     ): void {
         if (!victima || !victima.estaVivo) return;
 
-        // 1. Intento automático de supervivencia con Botiquín / Huevo sano
+        // 1. Intento automático de supervivencia con Botiquín / Huevo sano (antes que Subaru)
         const totalVivosAntes = this.getTotalJugadoresVivos();
         while (victima.vidas <= 0 && totalVivosAntes !== 2 && !victima.estaDesconectado) {
-            if ((victima.transformarCuraEnEscudo && !Utilidades.estaBloqueado(victima)) || victima.efecto.has("malestar")) {
+            if (
+                (victima.transformarCuraEnEscudo && !Utilidades.estaBloqueado(victima)) ||
+                victima.efecto.has("malestar")
+            ) {
                 break;
             }
 
@@ -636,7 +646,12 @@ export class MyRoom extends Room implements IMyRoom {
 
         if (victima.vidas > 0) return;
 
-        // 2. Muerte confirmada
+        // 2. Retorno por muerte de Subaru (retrocede toda la mesa antes de morir)
+        if (this.sistemaTiempo.intentarRetrocederPorMuerte(victima, causa)) {
+            return;
+        }
+
+        // 3. Muerte confirmada
         victima.estaVivo = false;
         victima.vidas = 0;
 
@@ -657,7 +672,7 @@ export class MyRoom extends Room implements IMyRoom {
             console.log(`☠️ ${victima.nombre} ha sido ELIMINADO.`);
         }
 
-        // 3. Recompensas y castigos de roles
+        // 4. Recompensas y castigos de roles
         if (asesino && asesino.estaVivo && !victima.esNpc) {
             if (victima.rol === "Forajido") {
                 if (victima.beneficiarseDeSuMuerte) {
@@ -686,7 +701,7 @@ export class MyRoom extends Room implements IMyRoom {
             }
         }
 
-        // 4. Limpieza de la víctima
+        // 5. Limpieza de la víctima
         for (const carta of victima.mano) this.agregarAlDescarte(carta);
         victima.mano.clear();
         victima.vidasEscudo = 0;
@@ -697,10 +712,10 @@ export class MyRoom extends Room implements IMyRoom {
 
         const idVictima = Utilidades.obtenerSessionIdDeJugador(this, victima);
 
-        // 5. Hook onMorir exclusivamente en la víctima
+        // 6. Hook onMorir exclusivamente en la víctima
         this.motorEventos.disparar(victima, "onMorir", victima);
 
-        // 6. Hooks globales en vivos (Anillo del Vampiro, Mario, Luigi, Mortis, Maya, Phoenix, Volpina)
+        // 7. Hooks globales en vivos
         const vivosSnapshot = Array.from(this.state.jugadores.values()).filter((j) => j.estaVivo);
         for (const j of vivosSnapshot) {
             if (!victima.esNpc) {
@@ -711,7 +726,7 @@ export class MyRoom extends Room implements IMyRoom {
         }
         victima.beneficiarseDeSuMuerte = false;
 
-        // 7. Evaluamos victoria ANTES de avanzar colas/turnos (evita pisar música de fin)
+        // 8. Evaluación de victoria ANTES de avanzar colas/turnos
         const vivosPorRol = { Sheriff: 0, Forajido: 0, Renegado: 0, Alguacil: 0 };
         let realesVivos = 0;
         this.state.jugadores.forEach((j: Jugador) => {
@@ -737,32 +752,37 @@ export class MyRoom extends Room implements IMyRoom {
             this.state.estadoJuego = "Terminado";
             this.sistemaInteracciones.limpiarTodo();
             this.sistemaRuleta.limpiarTodo();
+            this.sistemaTiempo.limpiar();
+            GestorNPC.reiniciarTemporizadores();
             this.gestorMusica.reproducirFin();
             this.broadcast("victoria", mensajeVictoria);
             return;
         }
 
-        // 8. Si es un NPC, lo removemos de la mesa y turnos
+        // 9. Si es un NPC, lo removemos ANTES de pasar el turno al siguiente (evita el salto al jugador anterior)
         if (victima.esNpc && idVictima !== "") {
             this.agregarRegistro(
                 `💨 ¡${Utilidades.obtenerNombreVisual(victima)} fue derrotado y desapareció de la mesa!`
             );
             const eraSuTurno = this.state.turnoActual === idVictima;
-            if (eraSuTurno) {
-                this.sistemaTurnos.avanzarAlSiguienteTurno(idVictima);
-            }
+            const idxTurnoAntes = this.state.ordenTurnos.indexOf(idVictima);
 
             const idxSilla = this.state.ordenSillasFisicas.indexOf(idVictima);
             if (idxSilla !== -1) this.state.ordenSillasFisicas.splice(idxSilla, 1);
 
-            const idxTurno = this.state.ordenTurnos.indexOf(idVictima);
-            if (idxTurno !== -1) this.state.ordenTurnos.splice(idxTurno, 1);
+            if (idxTurnoAntes !== -1) this.state.ordenTurnos.splice(idxTurnoAntes, 1);
 
             this.state.jugadores.delete(idVictima);
             this.limpiarEstadoPrivado(idVictima);
+
+            if (eraSuTurno && this.state.ordenTurnos.length > 0) {
+                const len = this.state.ordenTurnos.length;
+                const idPrevio = this.state.ordenTurnos[(idxTurnoAntes - 1 + len) % len];
+                this.sistemaTurnos.avanzarAlSiguienteTurno(idPrevio);
+            }
         }
 
-        // 9. Destrabamos interacciones/ruletas pendientes de la víctima y actualizamos música
+        // 10. Destrabamos interacciones/ruletas pendientes de la víctima y actualizamos música
         if (idVictima) {
             this.sistemaRuleta.cancelarSiPerteneceA(idVictima);
             this.sistemaInteracciones.cancelarSiPerteneceA(idVictima);
@@ -837,7 +857,7 @@ export class MyRoom extends Room implements IMyRoom {
     }
 
     // =========================================================================
-    // IMPLEMENTACIÓN DE UTILIDADES DE IMyRoom
+    // UTILIDADES DE IMyRoom
     // =========================================================================
 
     public obtenerEstadoPrivado(idJugador: string): Record<string, unknown> {

@@ -1,12 +1,12 @@
 import type { ClienteJuego, IMyRoom } from "./IMyRoom.js";
-import type { Jugador } from "./schema/MyRoomState.js";
+import type { Carta, Jugador } from "./schema/MyRoomState.js";
 import { CatalogoCartasEspeciales } from "./CatalogoCartasEspeciales.js";
 import { GestorNPC } from "./GestorNPC.js";
 import { Utilidades } from "./Utilidades.js";
 
 interface FaseInicioTurno {
     nombre: string;
-    ejecutar: (idJugador: string, jugador: Jugador, continuar: () => void) => boolean;
+    ejecutar: (idJugador: string, jugador: Jugador, indiceFase: number, continuar: () => void) => boolean;
 }
 
 export class SistemaTurnos {
@@ -14,12 +14,12 @@ export class SistemaTurnos {
 
     constructor(private sala: IMyRoom) {
         this.fasesInicioTurno = [
-            { nombre: "Embrujo", ejecutar: (id, j, next) => this.faseEmbrujo(id, j, next) },
-            { nombre: "MiniDinamita", ejecutar: (id, j, next) => this.faseMiniDinamita(id, j, next) },
-            { nombre: "Dinamita", ejecutar: (id, j, next) => this.faseDinamita(id, j, next) },
-            { nombre: "Papapum", ejecutar: (id, j, next) => this.fasePapapum(id, j, next) },
-            { nombre: "Crisalida", ejecutar: (id, j, next) => this.faseCrisalida(id, j, next) },
-            { nombre: "Prision", ejecutar: (id, j, next) => this.fasePrision(id, j, next) },
+            { nombre: "Embrujo", ejecutar: (id, j, idx, next) => this.faseEmbrujo(id, j, idx, next) },
+            { nombre: "MiniDinamita", ejecutar: (id, j, idx, next) => this.faseMiniDinamita(id, j, idx, next) },
+            { nombre: "Dinamita", ejecutar: (id, j, idx, next) => this.faseDinamita(id, j, idx, next) },
+            { nombre: "Papapum", ejecutar: (id, j, idx, next) => this.fasePapapum(id, j, idx, next) },
+            { nombre: "Crisalida", ejecutar: (id, j, idx, next) => this.faseCrisalida(id, j, idx, next) },
+            { nombre: "Prision", ejecutar: (id, j, idx, next) => this.fasePrision(id, j, idx, next) },
             { nombre: "InicioEfectivo", ejecutar: (id, j) => this.faseInicioEfectivo(id, j) }
         ];
     }
@@ -39,6 +39,10 @@ export class SistemaTurnos {
 
         const jugadorActual = this.sala.state.jugadores.get(client.sessionId);
         if (!jugadorActual) return;
+
+        if (Utilidades.esControladoPorIA(jugadorActual) && !client.esClienteNpc) {
+            return;
+        }
 
         if (!jugadorActual.estaVivo) {
             jugadorActual.mano.clear();
@@ -63,8 +67,29 @@ export class SistemaTurnos {
             return;
         }
 
+        // Snapshot para Subaru antes de efectos de fin de turno (Fuego, Tocxic, BANG! de Bolt)
+        this.sala.sistemaTiempo.capturarPuntoDeRetorno();
+
         this.ejecutarAccionesAlPasarTurno(jugadorActual);
-        this.avanzarAlSiguienteTurno(client.sessionId);
+        this.programarAvanceDeTurno(client.sessionId);
+    }
+
+    public programarAvanceDeTurno(idJugador: string): void {
+        if (this.sala.state.estadoJuego !== "Jugando") return;
+        // Si el jugador era un NPC y murió durante sus efectos de fin de turno, evaluarMuerte ya avanzó el turno
+        if (this.sala.state.turnoActual !== idJugador) return;
+
+        if (this.sala.juegoPausado()) {
+            this.sala.sistemaInteracciones.alVaciarCola(() => {
+                if (this.sala.state.estadoJuego !== "Jugando") return;
+                if (this.sala.state.turnoActual === idJugador) {
+                    this.avanzarAlSiguienteTurno(idJugador);
+                }
+            });
+            return;
+        }
+
+        this.avanzarAlSiguienteTurno(idJugador);
     }
 
     public avanzarAlSiguienteTurno(idJugadorActual: string): void {
@@ -113,6 +138,10 @@ export class SistemaTurnos {
         this.ejecutarFasesDesde(iteradorId, 0);
     }
 
+    public reanudarFaseDesde(idJugador: string, indiceInicial: number): void {
+        this.ejecutarFasesDesde(idJugador, indiceInicial);
+    }
+
     public obtenerSiguienteJugadorVivo(idActual: string): { id: string; jugador: Jugador | null } {
         const idsJugadores =
             this.sala.state.ordenTurnos.length > 0
@@ -138,10 +167,6 @@ export class SistemaTurnos {
         return { id: "", jugador: null };
     }
 
-    /**
-     * Busca al siguiente jugador vivo en orden de turnos que NO tenga ya un equipamiento en `hueco`.
-     * Si todos los demás vivos ya tienen uno, da la vuelta y vuelve al jugador actual (que acaba de liberarse).
-     */
     public obtenerSiguienteJugadorVivoSinEquipamiento(
         idActual: string,
         hueco: string
@@ -182,7 +207,7 @@ export class SistemaTurnos {
             if (!jugador) return;
 
             const fase = this.fasesInicioTurno[i];
-            const pauso = fase.ejecutar(idJugador, jugador, () => {
+            const pauso = fase.ejecutar(idJugador, jugador, i, () => {
                 this.ejecutarFasesDesde(idJugador, i + 1);
             });
 
@@ -190,8 +215,10 @@ export class SistemaTurnos {
         }
     }
 
-    private faseEmbrujo(idJugador: string, jugador: Jugador, continuar: () => void): boolean {
+    private faseEmbrujo(idJugador: string, jugador: Jugador, indiceFase: number, continuar: () => void): boolean {
         if (!jugador.estaVivo || jugador.embrujos.length === 0) return false;
+
+        this.sala.sistemaTiempo.capturarPuntoDeRetorno({ idJugador, indiceFase });
 
         this.sala.agregarRegistro(
             `👻 ¡${jugador.nombre} siente una presencia! La ruleta del Embrujo gira...`
@@ -209,14 +236,16 @@ export class SistemaTurnos {
                 this.sala.motorEventos.disparar(jugador, "onSacarEmbrujoEnRuleta", jugador, tipoResultado);
 
                 if (jugador.estaVivo) continuar();
-                else this.avanzarAlSiguienteTurno(idJugador);
+                else this.programarAvanceDeTurno(idJugador);
             }
         });
         return true;
     }
 
-    private faseMiniDinamita(idJugador: string, jugador: Jugador, continuar: () => void): boolean {
+    private faseMiniDinamita(idJugador: string, jugador: Jugador, indiceFase: number, continuar: () => void): boolean {
         if (!jugador.estaVivo || !jugador.equipamiento.has("miniDinamita")) return false;
+
+        this.sala.sistemaTiempo.capturarPuntoDeRetorno({ idJugador, indiceFase });
 
         const cartaMini = jugador.equipamiento.get("miniDinamita")!;
         const esPro = cartaMini.nombre === "Mini dinamita Pro";
@@ -228,7 +257,7 @@ export class SistemaTurnos {
         this.sala.sistemaRuleta.solicitar({
             idJugador,
             motivo: "MiniDinamita",
-            probabilidadBase: esPro ? 12 : 13, // 4/16 Pro, 3/16 normal
+            probabilidadBase: esPro ? 12 : 13,
             spriteRojo: "ruletaExplosion",
             textoExito: "¡A SALVO!",
             textoFallo: "¡BOOM!",
@@ -247,7 +276,7 @@ export class SistemaTurnos {
                     if (carta) this.sala.agregarAlDescarte(carta);
 
                     if (jugador.estaVivo) continuar();
-                    else this.avanzarAlSiguienteTurno(idJugador);
+                    else this.programarAvanceDeTurno(idJugador);
                 } else {
                     const siguiente = this.obtenerSiguienteJugadorVivoSinEquipamiento(idJugador, "miniDinamita");
                     if (siguiente.jugador && carta) {
@@ -263,8 +292,10 @@ export class SistemaTurnos {
         return true;
     }
 
-    private faseDinamita(idJugador: string, jugador: Jugador, continuar: () => void): boolean {
+    private faseDinamita(idJugador: string, jugador: Jugador, indiceFase: number, continuar: () => void): boolean {
         if (!jugador.estaVivo || !jugador.equipamiento.has("dinamita")) return false;
+
+        this.sala.sistemaTiempo.capturarPuntoDeRetorno({ idJugador, indiceFase });
 
         const cartaDinamita = jugador.equipamiento.get("dinamita")!;
         const esPro = cartaDinamita.nombre === "Dinamita Pro";
@@ -295,7 +326,7 @@ export class SistemaTurnos {
                     if (carta) this.sala.agregarAlDescarte(carta);
 
                     if (jugador.estaVivo) continuar();
-                    else this.avanzarAlSiguienteTurno(idJugador);
+                    else this.programarAvanceDeTurno(idJugador);
                 } else {
                     const siguiente = this.obtenerSiguienteJugadorVivoSinEquipamiento(idJugador, "dinamita");
                     if (siguiente.jugador && carta) {
@@ -311,8 +342,10 @@ export class SistemaTurnos {
         return true;
     }
 
-    private fasePapapum(idJugador: string, jugador: Jugador, continuar: () => void): boolean {
+    private fasePapapum(idJugador: string, jugador: Jugador, indiceFase: number, continuar: () => void): boolean {
         if (!jugador.estaVivo || !jugador.equipamiento.has("papa")) return false;
+
+        this.sala.sistemaTiempo.capturarPuntoDeRetorno({ idJugador, indiceFase });
 
         const cartaPapa = jugador.equipamiento.get("papa")!;
         const esPrimitiva = cartaPapa.nombre === "Papapum primitiva";
@@ -348,7 +381,7 @@ export class SistemaTurnos {
                     });
 
                     if (jugador.estaVivo) continuar();
-                    else this.avanzarAlSiguienteTurno(idJugador);
+                    else this.programarAvanceDeTurno(idJugador);
                 } else {
                     const incremento = esPrimitiva ? 3 : 2;
                     const nuevaProb = Math.min(15, probActual + incremento);
@@ -363,8 +396,10 @@ export class SistemaTurnos {
         return true;
     }
 
-    private faseCrisalida(idJugador: string, jugador: Jugador, continuar: () => void): boolean {
+    private faseCrisalida(idJugador: string, jugador: Jugador, indiceFase: number, continuar: () => void): boolean {
         if (!jugador.estaVivo || !jugador.equipamiento.has("crisalida")) return false;
+
+        this.sala.sistemaTiempo.capturarPuntoDeRetorno({ idJugador, indiceFase });
 
         this.sala.agregarRegistro(
             `🐚 ¡${Utilidades.obtenerNombreVisual(jugador)} está en una crisálida! Debe desenfundar...`
@@ -391,15 +426,17 @@ export class SistemaTurnos {
                     if (prision) this.sala.agregarAlDescarte(prision);
 
                     this.ejecutarAccionesAlPasarTurno(jugador);
-                    this.avanzarAlSiguienteTurno(idJugador);
+                    this.programarAvanceDeTurno(idJugador);
                 }
             }
         });
         return true;
     }
 
-    private fasePrision(idJugador: string, jugador: Jugador, continuar: () => void): boolean {
+    private fasePrision(idJugador: string, jugador: Jugador, indiceFase: number, continuar: () => void): boolean {
         if (!jugador.estaVivo || !jugador.equipamiento.has("prision")) return false;
+
+        this.sala.sistemaTiempo.capturarPuntoDeRetorno({ idJugador, indiceFase });
 
         this.sala.agregarRegistro(
             `⚖️ ¡${Utilidades.obtenerNombreVisual(jugador)} está en Prisión! Debe desenfundar...`
@@ -423,21 +460,16 @@ export class SistemaTurnos {
                         `⛓️ ¡Salió Rojo! ${Utilidades.obtenerNombreVisual(jugador)} se queda encerrado.`
                     );
                     this.ejecutarAccionesAlPasarTurno(jugador);
-                    this.avanzarAlSiguienteTurno(idJugador);
+                    this.programarAvanceDeTurno(idJugador);
                 }
             }
         });
         return true;
     }
 
-    private faseInicioEfectivo(idJugador: string, jugador: Jugador): boolean {
+    private faseInicioEfectivo(_idJugador: string, jugador: Jugador): boolean {
         if (!jugador.estaVivo) {
             jugador.yaJugoFantasma = false;
-            if (this.sala.getTotalJugadoresVivos() === 2 && this.sala.renegadoEstaVivo()) {
-                this.avanzarAlSiguienteTurno(idJugador);
-                return true;
-            }
-
             for (let i = 0; i < 2; i++) {
                 const cartaFantasma = CatalogoCartasEspeciales.crearCartaFantasmaAleatoria();
                 if (cartaFantasma) jugador.mano.push(cartaFantasma);
@@ -461,15 +493,25 @@ export class SistemaTurnos {
         this.sala.motorEventos.disparar(jugador, "onIniciarTurno", jugador);
         this.sala.repartirCartas(jugador, 2, "turno");
 
-        if (jugador.esNpc && jugador.estaVivo) {
-            const idNpc = Utilidades.obtenerSessionIdDeJugador(this.sala, jugador);
-            if (idNpc) {
-                GestorNPC.iniciarTurnoNpc(this.sala, idNpc);
+        // Snapshot limpio al comenzar la fase activa del turno
+        this.sala.sistemaTiempo.capturarPuntoDeRetorno();
+
+        if (jugador.estaVivo && Utilidades.esControladoPorIA(jugador)) {
+            const idIa = Utilidades.obtenerSessionIdDeJugador(this.sala, jugador);
+            if (idIa) {
+                GestorNPC.iniciarTurnoNpc(this.sala, idIa);
             }
         }
     }
 
     public ejecutarAccionesAlPasarTurno(jugador: Jugador): void {
+        // Limpiamos hackeos de Sombra en las cartas del jugador al finalizar su turno
+        for (const carta of jugador.mano) {
+            if (carta.estaHackeada) {
+                carta.estaHackeada = false;
+            }
+        }
+
         this.sala.motorEventos.disparar(jugador, "onPasarTurno", jugador);
 
         if (jugador.estaVivo && jugador.efecto.has("fuego")) {
@@ -491,7 +533,7 @@ export class SistemaTurnos {
             Utilidades.restarEfecto(jugador, "inmortalidad", 1);
             if (!jugador.efecto.has("inmortalidad")) {
                 jugador.vidas = 0;
-                this.sala.evaluarMuerte(jugador, null, true);
+                this.sala.evaluarMuerte(jugador, null, true, "INMORTALIDAD");
             }
         }
 

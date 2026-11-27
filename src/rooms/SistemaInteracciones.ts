@@ -55,6 +55,7 @@ export class SistemaInteracciones {
     private colaInteracciones: SolicitudInteraccion[] = [];
     private interaccionEnCurso: SolicitudInteraccion | null = null;
     private seleccionEnCurso: SolicitudSeleccionCartas | null = null;
+    private callbacksColaVacia: Array<() => void> = [];
 
     constructor(private sala: IMyRoom) {}
 
@@ -67,8 +68,20 @@ export class SistemaInteracciones {
         );
     }
 
+    /**
+     * Registra un callback que se ejecutará apenas terminen todas las interacciones,
+     * selecciones y ruletas pendientes (ej. avanzar turno tras el BANG! final de Bolt).
+     */
+    public alVaciarCola(callback: () => void): void {
+        if (!this.estaPausado() && this.colaInteracciones.length === 0 && !this.sala.sistemaRuleta.estaActiva()) {
+            callback();
+            return;
+        }
+        this.callbacksColaVacia.push(callback);
+    }
+
     // =========================================================================
-    // 1. COLA DE INTERACCIONES DE BOTONES (BANG, INDIOS, DUELO, BOMBA, ETC.)
+    // 1. COLA DE INTERACCIONES DE BOTONES
     // =========================================================================
 
     public encolarInteraccion(
@@ -95,7 +108,6 @@ export class SistemaInteracciones {
             return;
         }
 
-        // Si hay una interacción, selección o ruleta todavía activa, esperamos
         if (
             this.interaccionEnCurso !== null ||
             this.seleccionEnCurso !== null ||
@@ -134,30 +146,40 @@ export class SistemaInteracciones {
             return;
         }
 
-        // Cola vacía: limpiamos estado visual y restauramos música normal
+        // Cola vacía: limpiamos estado visual, restauramos música y disparamos callbacks pendientes
         this.sala.state.interaccionActiva.idJugadorObjetivo = "";
         this.sala.state.spriteFlecha = "";
         this.sala.gestorMusica.actualizarAutomatica();
+
+        if (this.callbacksColaVacia.length > 0) {
+            const pendientes = [...this.callbacksColaVacia];
+            this.callbacksColaVacia = [];
+            for (const cb of pendientes) {
+                cb();
+            }
+        }
     }
 
     public responderInteraccion(client: ClienteJuego, idAccion: string): void {
         if (!this.interaccionEnCurso) return;
         if (this.interaccionEnCurso.idJugadorObjetivo !== client.sessionId) return;
 
-        // Limpiamos ANTES de ejecutar el callback: si el callback mata al jugador,
-        // cancelarSiPerteneceA no disparará un segundo avanzarCola (arregla Bomba/MegaBomba).
+        const victima = this.sala.state.jugadores.get(client.sessionId);
+        if (victima && Utilidades.esControladoPorIA(victima) && !client.esClienteNpc) {
+            return;
+        }
+
         const actual = this.interaccionEnCurso;
         this.interaccionEnCurso = null;
         this.sala.state.interaccionActiva.idJugadorObjetivo = "";
 
         actual.onResponder(idAccion, client);
 
-        // Avanzamos solo si el callback no abrió una ruleta o panel de selección
         this.procesarSiguiente();
     }
 
     // =========================================================================
-    // 2. PANEL UNIVERSAL DE SELECCIÓN DE CARTAS (TIENDAS, COCOROCH, PÁNICO, SUSATO)
+    // 2. PANEL UNIVERSAL DE SELECCIÓN DE CARTAS
     // =========================================================================
 
     public abrirSeleccionCartas(solicitud: SolicitudSeleccionCartas): void {
@@ -182,6 +204,7 @@ export class SistemaInteracciones {
             op.spriteReferencia = item.spritePersonalizado ?? item.carta.nombre;
             op.esConjurada = item.carta.esConjurada;
             op.tienePerro = item.carta.idDuenoDelPerro !== "";
+            op.estaHackeada = item.carta.estaHackeada;
             req.opciones.push(op);
         }
 
@@ -191,6 +214,11 @@ export class SistemaInteracciones {
     public responderSeleccionCarta(client: ClienteJuego, idRespuesta: string): void {
         if (!this.seleccionEnCurso) return;
         if (this.seleccionEnCurso.idJugadorObjetivo !== client.sessionId) return;
+
+        const jugador = this.sala.state.jugadores.get(client.sessionId);
+        if (jugador && Utilidades.esControladoPorIA(jugador) && !client.esClienteNpc) {
+            return;
+        }
 
         const actual = this.seleccionEnCurso;
         this.seleccionEnCurso = null;
@@ -206,7 +234,7 @@ export class SistemaInteracciones {
     }
 
     // =========================================================================
-    // 3. HELPER UNIFICADO PARA TIENDAS (GRIFF, JUJU, PIERRE)
+    // 3. HELPER UNIFICADO PARA TIENDAS
     // =========================================================================
 
     public iniciarTienda(solicitud: SolicitudTienda): void {
@@ -268,7 +296,6 @@ export class SistemaInteracciones {
                 return;
             }
 
-            // Tienda finalizada
             this.sala.state.cartasTienda.clear();
             this.sala.agregarRegistro(`🏪 La tienda de ${nombreTienda} ha cerrado.`);
             this.sala.gestorMusica.actualizarAutomatica();
@@ -278,10 +305,12 @@ export class SistemaInteracciones {
     }
 
     // =========================================================================
-    // 4. LIMPIEZA POR MUERTE / DESCONEXIÓN / FIN DE PARTIDA
+    // 4. LIMPIEZA POR MUERTE / DESCONEXIÓN / FIN / RETROCESO TEMPORAL
     // =========================================================================
 
     public cancelarSiPerteneceA(idJugador: string): void {
+        if (this.sala.state.estadoJuego === "Terminado") return;
+
         let debiaAvanzar = false;
 
         if (this.interaccionEnCurso && this.interaccionEnCurso.idJugadorObjetivo === idJugador) {
@@ -307,6 +336,7 @@ export class SistemaInteracciones {
         this.colaInteracciones = [];
         this.interaccionEnCurso = null;
         this.seleccionEnCurso = null;
+        this.callbacksColaVacia = [];
         this.sala.state.interaccionActiva.idJugadorObjetivo = "";
         this.sala.state.seleccionCartasActiva.idJugadorObjetivo = "";
         this.sala.state.spriteFlecha = "";

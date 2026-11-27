@@ -1,22 +1,24 @@
 import type { ArraySchema, MapSchema } from "@colyseus/schema";
 import type { Carta, Jugador, MyRoomState } from "./schema/MyRoomState.js";
 import type { IPersonaje, GestorPersonajes } from "./Personajes.js";
+import type { MotorEventos } from "./MotorEventos.js";
 import type { SistemaCombate } from "./SistemaCombate.js";
 import type { SistemaRuleta } from "./SistemaRuleta.js";
 import type { SistemaInteracciones } from "./SistemaInteracciones.js";
 import type { SistemaTurnos } from "./SistemaTurnos.js";
 import type { SistemaCartas } from "./SistemaCartas.js";
+import type { SistemaTiempo } from "./SistemaTiempo.js";
 import type { GestorMusica } from "./GestorMusica.js";
-import { MotorEventos } from "./MotorEventos.js";
+
+export type TipoInmunidad = "cocoroch" | "panico" | "prision" | "embrujo_malo";
 
 export interface ClienteJuego {
     sessionId: string;
+    esClienteNpc?: boolean;
     send(type: string, message?: unknown): void;
 }
 
 export type SfxPayload = string | { sfx: string; silencio?: boolean; vol?: number };
-
-export type TipoInmunidad = "cocoroch" | "panico" | "prision" | "embrujo_malo";
 
 export interface ContextoDano {
     victima: Jugador;
@@ -50,13 +52,13 @@ export interface SolicitudRuleta {
     idJugador: string;
     motivo: string;
     titulo?: string;
-    probabilidadBase: number; // Casillas verdes base sobre 16 (ej. 4 para Barril, 6 para Prisión)
+    probabilidadBase: number;
     spriteVerde?: string;
     spriteRojo?: string;
-    permiteModificadoresSuerte?: boolean;
-    esEmbrujo?: boolean;
     textoExito?: string;
     textoFallo?: string;
+    permiteModificadoresSuerte?: boolean;
+    esEmbrujo?: boolean;
     onResultado: (exito: boolean, fichaVisual: string) => void;
 }
 
@@ -71,8 +73,6 @@ export interface ReglaObjetivo {
     ignoraGravedad?: boolean;
     validarObjetivo?: (sala: IMyRoom, atacante: Jugador, objetivo: Jugador, carta: Carta) => string | null;
 }
-
-export type ResultadoJugada = "consumir" | "equipar" | "pendiente" | "cancelado";
 
 export interface ContextoJugada {
     sala: IMyRoom;
@@ -94,12 +94,11 @@ export interface IMyRoom {
     sistemaInteracciones: SistemaInteracciones;
     sistemaTurnos: SistemaTurnos;
     sistemaCartas: SistemaCartas;
+    sistemaTiempo: SistemaTiempo;
     gestorPersonajes: GestorPersonajes;
     gestorMusica: GestorMusica;
 
     broadcast(evento: string, datos?: unknown): void;
-
-    // Estado privado por sessionId (para Tracer, Volpina, Leon, etc. sin pisarse entre copias)
     obtenerEstadoPrivado(idJugador: string): Record<string, unknown>;
     limpiarEstadoPrivado(idJugador: string): void;
 
@@ -112,7 +111,7 @@ export interface IMyRoom {
     repartirCartas(jugador: Jugador, cantidad: number, causa: string): void;
     descartarCarta(cartaDescartada: Carta, jugador: Jugador, motivo: string): void;
     agregarAlDescarte(carta: Carta): void;
-    evaluarMuerte(victima: Jugador, asesino?: Jugador | null, fueDanoVerdadero?: boolean): void;
+    evaluarMuerte(victima: Jugador, asesino?: Jugador | null, fueDanoVerdadero?: boolean, causa?: string): void;
     ejecutarPasivasAlJugarCarta(jugador: Jugador, carta: Carta): void;
 
     juegoPausado(): boolean;
@@ -124,7 +123,6 @@ export interface IMyRoom {
     renegadoEstaVivo(): boolean;
     obtenerIPersonaje(personaje: string): IPersonaje | null;
 
-    // Procesadores accesibles por GestorNPC
     procesarPasarTurno(client: ClienteJuego): void;
     procesarJugarCarta(client: ClienteJuego, idCarta: string, idObjetivo?: string): boolean;
     procesarDescartarCarta(client: ClienteJuego, idCarta: string): void;

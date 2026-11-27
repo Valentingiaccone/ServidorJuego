@@ -83,6 +83,7 @@ export class SistemaCartas {
     }
 
     public puedeEsquivarBang(carta: Carta): boolean {
+        if (carta.estaHackeada) return false;
         return this.obtener(carta.nombre)?.puedeEsquivarBang === true;
     }
 
@@ -114,6 +115,10 @@ export class SistemaCartas {
         const jugador = this.sala.state.jugadores.get(client.sessionId);
         if (!jugador) return false;
 
+        if (Utilidades.esControladoPorIA(jugador) && !client.esClienteNpc) {
+            return false;
+        }
+
         if (!jugador.estaVivo && jugador.yaJugoFantasma) {
             this.sala.enviarAlerta(client.sessionId, "Los muertos solo pueden lanzar un maleficio por turno.");
             return false;
@@ -122,10 +127,15 @@ export class SistemaCartas {
         const carta = jugador.mano.find((c: Carta) => c.id === idCarta);
         if (!carta) return false;
 
+        if (carta.estaHackeada) {
+            this.sala.enviarAlerta(client.sessionId, "Esta carta está hackeada y no podés jugarla este turno.");
+            return false;
+        }
+
         const def = this.obtener(carta.nombre);
         if (!def || carta.tipoDeUso === "oculto") return false;
 
-        // 1. Validación de objetivo (si la carta lo requiere)
+        // 1. Validación de objetivo
         let objetivoFinal: Jugador | null = null;
         let idObjetivoFinal: string | undefined = idObjetivo;
 
@@ -146,7 +156,6 @@ export class SistemaCartas {
                 return false;
             }
 
-            // Redirección gravitacional (si corresponde)
             objetivoFinal = def.reglaObjetivo.ignoraGravedad
                 ? objetivoInicial
                 : this.sala.sistemaCombate.resolverObjetivoConGravedad(jugador, objetivoInicial);
@@ -172,7 +181,12 @@ export class SistemaCartas {
             }
         }
 
-        // 3. Consumo automático de la carta (evita olvidar splice y evita bugs de índices)
+        // 3. Snapshot para Subaru justo antes de ejecutar la jugada
+        if (!def.consumoDiferido) {
+            this.sala.sistemaTiempo.capturarPuntoDeRetorno();
+        }
+
+        // 4. Consumo automático de la carta
         if (!def.consumoDiferido) {
             Utilidades.eliminarCartaDeLaMano(jugador, carta);
 
@@ -188,10 +202,10 @@ export class SistemaCartas {
             }
         }
 
-        // 4. Ejecución del efecto principal
+        // 5. Ejecución del efecto principal
         def.onJugar?.(ctx);
 
-        // 5. Disparo de pasivas de "al jugar carta"
+        // 6. Disparo de pasivas de "al jugar carta"
         if (!def.consumoDiferido) {
             this.sala.ejecutarPasivasAlJugarCarta(jugador, carta);
         }
@@ -297,13 +311,38 @@ export class SistemaCartas {
                 danoBase: 0,
                 causa: "Orbita BANG!",
                 onImpacto: (sala, ctx) => {
-                    Utilidades.agregarEfecto(ctx.victima, "gravitacional", 3);
+                    Utilidades.agregarEfecto(ctx.victima, "gravitacional", 4);
                     sala.reproducirSfx("sfxOrbitaBang");
                     // Si el atacante tenía Papapum y el golpe hizo 0 daño (no disparó onGolpear), la pasamos igual
                     if (ctx.atacante && ctx.cantidad === 0 && ctx.atacante.equipamiento.has("papa")) {
                         const papa = Utilidades.quitarEquipamiento(ctx.atacante, "papa");
                         if (papa) Utilidades.equiparCarta(sala, ctx.victima, papa, "papa");
                     }
+                }
+            })
+        );
+        this.registrar(
+            this.crearDefBang({
+                nombre: "Manipulación BANG!",
+                danoBase: 0,
+                causa: "Manipulación BANG!",
+                onImpacto: (sala, ctx) => {
+                    if (!ctx.atacante || !ctx.victima.estaVivo) return;
+                    const idAtacante = Utilidades.obtenerSessionIdDeJugador(sala, ctx.atacante);
+                    const idControlador =
+                        ctx.atacante.esNpc && ctx.atacante.idDueno !== ""
+                            ? ctx.atacante.idDueno
+                            : idAtacante;
+
+                    const manipulacion = CatalogoCartasEspeciales.crearManipulacion();
+                    manipulacion.esConjurada = true;
+                    manipulacion.string.set("idManipulador", idControlador);
+
+                    Utilidades.equiparCarta(sala, ctx.victima, manipulacion, "manipulacion");
+                    sala.agregarRegistro(
+                        `🕷️ ¡${Utilidades.obtenerNombreVisual(ctx.atacante)} manipuló la mente de ${Utilidades.obtenerNombreVisual(ctx.victima)}!`
+                    );
+                    sala.reproducirSfx("sfxWillowImpacto");
                 }
             })
         );
@@ -1639,7 +1678,7 @@ export class SistemaCartas {
                 const vivosIds = this.obtenerIdsVivosEnOrden(ctx.idJugador);
                 const cartas: Carta[] = [];
                 for (let i = 0; i < vivosIds.length; i++) {
-                    if (Math.random() < 0.05) {
+                    if (Math.random() < 0.025) {
                         const alma = CatalogoCartasEspeciales.crearAlmaBalatro();
                         alma.esConjurada = true;
                         cartas.push(alma);
@@ -1672,7 +1711,7 @@ export class SistemaCartas {
                 const vivosIds = this.obtenerIdsVivosEnOrden(ctx.idJugador);
                 const cartas: Carta[] = [];
                 for (let i = 0; i < vivosIds.length; i++) {
-                    if (Math.random() < 0.01) {
+                    if (Math.random() < 0.025) {
                         const alma = CatalogoCartasEspeciales.crearAlmaBalatro();
                         alma.esConjurada = true;
                         cartas.push(alma);
@@ -1978,6 +2017,7 @@ export class SistemaCartas {
             tipoEmbrujo: "bueno" | "malo"
         ): IDefinicionCarta => ({
             nombre,
+            cartaParaAnimacion: () => null,
             reglaObjetivo: {
                 tipo: "jugador",
                 alcance: "global",

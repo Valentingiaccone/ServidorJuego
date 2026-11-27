@@ -7,6 +7,7 @@ import type {
     TipoInmunidad
 } from "./IMyRoom.js";
 import { Carta, HabilidadActiva, Jugador } from "./schema/MyRoomState.js";
+import { OpcionesAtaqueBang } from "./SistemaCombate.js";
 import { Utilidades } from "./Utilidades.js";
 
 export interface IPersonaje {
@@ -19,6 +20,11 @@ export interface IPersonaje {
     spriteFueraDeJuego?: boolean;
     esNpcInvocable?: boolean;
     mantenerSpritePropio?: boolean;
+    pasaTurnoRapido?: boolean;
+
+    ignorarEnDistanciaFisica?(sala: IMyRoom, atacante: Jugador, candidatoIntermedio: Jugador): boolean;
+    onBangEsquivado?(sala: IMyRoom, atacante: Jugador, victimaQueEsquivo: Jugador, opts: OpcionesAtaqueBang): void;
+    puedeRetrocederEnElTiempo?(sala: IMyRoom, jugador: Jugador): boolean;
 
     obtenerPersonajesDelegados?(sala: IMyRoom, jugador: Jugador): string[];
 
@@ -3230,9 +3236,484 @@ export class Otis implements IPersonaje {
     }
 }
 
+export class Sombra implements IPersonaje {
+    nombre = "Sombra";
+    vidasBase = 4;
+    habilidad = "Hackeo:\nAl inicio del turno: hackea una carta aleatoria de la mano de todos los demás jugadores.\nAl golpear: hackea una carta aleatoria de la mano de la víctima.";
+    sfxDefault = "sfxSombra";
+    sfxMuerte: [string, boolean] = ["sfxSombraMuerte", false];
+
+    private hackearCartaAleatoria(objetivo: Jugador): Carta | null {
+        const hackeables = objetivo.mano.filter((c: Carta) => !c.estaHackeada);
+        if (hackeables.length === 0) return null;
+        const elegida = hackeables[Math.floor(Math.random() * hackeables.length)];
+        elegida.estaHackeada = true;
+        return elegida;
+    }
+
+    onIniciarTurno(sala: IMyRoom, miJugador: Jugador): void {
+        if (!miJugador.estaVivo) return;
+        let cantidadHackeados = 0;
+
+        sala.getJugadores().forEach((j: Jugador) => {
+            if (j.estaVivo && j !== miJugador) {
+                if (this.hackearCartaAleatoria(j)) {
+                    cantidadHackeados++;
+                }
+            }
+        });
+
+        if (cantidadHackeados > 0) {
+            sala.agregarRegistro(
+                `👾 ¡${Utilidades.obtenerNombreVisual(miJugador)} hackeó una carta de todos los demás jugadores!`
+            );
+            sala.reproducirSfx("sfxSombraHack");
+        }
+    }
+
+    onGolpear(sala: IMyRoom, ctx: ContextoDano): void {
+        if (!ctx.atacante || ctx.atacante === ctx.victima || !ctx.victima.estaVivo) return;
+        if (this.hackearCartaAleatoria(ctx.victima)) {
+            sala.agregarRegistro(
+                `👾 ¡${Utilidades.obtenerNombreVisual(ctx.atacante)} hackeó una carta de ${Utilidades.obtenerNombreVisual(ctx.victima)}!`
+            );
+            sala.reproducirSfx("sfxSombraHack");
+        }
+    }
+}
+
+export class Rico implements IPersonaje {
+    nombre = "Rico";
+    vidasBase = 4;
+    habilidad = "Ricochet:\nCuando te esquivan un BANG!: rebota una vez hacia otro jugador aleatorio.\nCada 2 vidas que perdés: disparás un BANG! a un jugador aleatorio.";
+    sfxDefault = "sfxRico";
+    sfxMuerte: [string, boolean] = ["sfxRicoMuerte", false];
+
+    onAsignar(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.number.set("ricoVidasPerdidas", 0);
+    }
+
+    onBangEsquivado(
+        sala: IMyRoom,
+        atacante: Jugador,
+        victimaQueEsquivo: Jugador,
+        opts: OpcionesAtaqueBang
+    ): void {
+        if (opts.yaRebotado || !atacante.estaVivo) return;
+
+        const candidatos: Jugador[] = [];
+        sala.getJugadores().forEach((j: Jugador) => {
+            if (j.estaVivo && j !== atacante && j !== victimaQueEsquivo) {
+                candidatos.push(j);
+            }
+        });
+        if (candidatos.length === 0) return;
+
+        const nuevoObjetivo = candidatos[Math.floor(Math.random() * candidatos.length)];
+        sala.agregarRegistro(
+            `🤖 ¡El disparo de ${Utilidades.obtenerNombreVisual(atacante)} rebotó hacia ${Utilidades.obtenerNombreVisual(nuevoObjetivo)}!`
+        );
+        sala.reproducirSfx("sfxRicoRebote");
+
+        sala.sistemaCombate.encolarAtaqueBang({
+            ...opts,
+            victima: nuevoObjetivo,
+            atacante,
+            yaRebotado: true,
+            tituloPersonalizado: `¡El disparo de ${Utilidades.obtenerNombreVisual(atacante)} rebotó hacia vos!\nElegí cómo responder:`,
+            alFrente: true,
+            ejecutarInmediatamente: false
+        });
+    }
+
+    onRecibirDano(sala: IMyRoom, ctx: ContextoDano): void {
+        if (!ctx.victima.estaVivo || ctx.danoCuerpo <= 0) return;
+
+        let acumulado = (ctx.victima.number.get("ricoVidasPerdidas") ?? 0) + ctx.danoCuerpo;
+
+        while (acumulado >= 2) {
+            acumulado -= 2;
+            const rivales: Jugador[] = [];
+            sala.getJugadores().forEach((j: Jugador) => {
+                if (j.estaVivo && j !== ctx.victima) rivales.push(j);
+            });
+            if (rivales.length === 0) break;
+
+            const objetivo = rivales[Math.floor(Math.random() * rivales.length)];
+            sala.agregarRegistro(
+                `🤖 ¡${Utilidades.obtenerNombreVisual(ctx.victima)} disparó un BANG! automático a ${Utilidades.obtenerNombreVisual(objetivo)}!`
+            );
+            sala.reproducirSfx("sfxRicoDisparo");
+
+            sala.sistemaCombate.encolarAtaqueBang({
+                victima: objetivo,
+                atacante: ctx.victima,
+                danoBase: 1,
+                causa: "BANG",
+                flecha: "revolver",
+                yaRebotado: false,
+                alFrente: true,
+                ejecutarInmediatamente: true
+            });
+        }
+
+        ctx.victima.number.set("ricoVidasPerdidas", acumulado);
+    }
+}
+
+export class Sprout implements IPersonaje {
+    nombre = "Sprout";
+    vidasBase = 4;
+    habilidad = "Muro vegetal:\nAl recibir daño: invoca una Enredadera en sentido horario y otra en sentido antihorario.\nIgnora las Enredaderas al calcular su distancia de ataque.";
+    sfxDefault = "sfxSprout";
+    sfxMuerte: [string, boolean] = ["sfxSproutMuerte", false];
+
+    onRecibirDano(sala: IMyRoom, ctx: ContextoDano): void {
+        if (!ctx.victima.estaVivo) return;
+        Utilidades.invocarNpcEnMesa(sala, ctx.victima, "Enredadera", 1, 0, "horario");
+        Utilidades.invocarNpcEnMesa(sala, ctx.victima, "Enredadera", 1, 0, "antihorario");
+        sala.reproducirSfx("sfxSproutEnredadera");
+    }
+
+    ignorarEnDistanciaFisica(_sala: IMyRoom, _atacante: Jugador, candidatoIntermedio: Jugador): boolean {
+        return candidatoIntermedio.personaje === "Enredadera";
+    }
+}
+
+export class Willow implements IPersonaje {
+    nombre = "Willow";
+    vidasBase = 4;
+    habilidad = "Control mental:\nBotón (1 por turno): descarta tu BANG! de más a la izquierda y conjura una Manipulación BANG!.";
+    sfxDefault = "sfxWillow";
+    sfxMuerte: [string, boolean] = ["sfxWillowMuerte", false];
+
+    onAsignar(_sala: IMyRoom, jugador: Jugador): void {
+        const boton = new HabilidadActiva();
+        boton.id = "willow_manipulacion";
+        boton.textoBoton = "Manipulación";
+        boton.tooltip = "Descarta un BANG! y conjura Manipulación BANG!.";
+        boton.spriteBoton = "botonWillow";
+        jugador.habilidadesActivas.push(boton);
+        jugador.boolean.set("willowUsado", false);
+    }
+
+    onRemover(_sala: IMyRoom, jugador: Jugador): void {
+        Utilidades.removerBotonActivo(jugador, "willow_manipulacion");
+        jugador.boolean.delete("willowUsado");
+    }
+
+    onIniciarTurno(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.set("willowUsado", false);
+    }
+
+    ejecutarHabilidadActiva(sala: IMyRoom, jugador: Jugador, client: ClienteJuego, idHabilidad: string): void {
+        if (!jugador.estaVivo || idHabilidad !== "willow_manipulacion") return;
+
+        if (jugador.boolean.get("willowUsado")) {
+            client.send("alerta_personal", "Ya usaste tu habilidad en este turno.");
+            return;
+        }
+
+        const idxBang = jugador.mano.findIndex((c: Carta) => c.nombre === "BANG!");
+        if (idxBang === -1) {
+            client.send("alerta_personal", "Necesitás tener al menos un BANG! en la mano.");
+            return;
+        }
+
+        const descartada = jugador.mano.splice(idxBang, 1)[0];
+        if (descartada) sala.descartarCarta(descartada, jugador, "HABILIDAD");
+
+        const manip = CatalogoCartasEspeciales.crearManipulacionBang();
+        manip.esConjurada = true;
+        jugador.mano.push(manip);
+        jugador.boolean.set("willowUsado", true);
+
+        sala.agregarRegistro(`🕷️ ¡${Utilidades.obtenerNombreVisual(jugador)} preparó una Manipulación BANG!!`);
+        sala.reproducirSfx("sfxWillowBoton");
+    }
+}
+
+export class Bolt implements IPersonaje {
+    nombre = "Bolt";
+    vidasBase = 4;
+    habilidad = "Licensia de conducir:\nAl jugar una carta: se mueve en sentido antihorario y gana 1 turbo.\nAl final del turno: si tiene 3+ turbo, dispara un BANG! al vecino antihorario (con 5+ turbo además aplica 1 fuego), luego pierde todo el turbo.";
+    sfxDefault = "sfxBolt";
+    sfxMuerte: [string, boolean] = ["sfxBoltMuerte", false];
+
+    onAsignar(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.number.set("boltTurbo", 0);
+    }
+
+    onRemover(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.number.delete("boltTurbo");
+        jugador.spriteAvatarOpcional = "";
+    }
+
+    onJugarCarta(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador.estaVivo) return;
+
+        Utilidades.moverPosicionFisica(sala, jugador, "antihorario");
+        const turbo = (jugador.number.get("boltTurbo") ?? 0) + 1;
+        jugador.number.set("boltTurbo", turbo);
+
+        if (turbo >= 5) {
+            jugador.spriteAvatarOpcional = "Bolt 5";
+        } else if (turbo >= 3) {
+            jugador.spriteAvatarOpcional = "Bolt 3";
+        }
+
+        sala.reproducirSfx("sfxBoltTurbo");
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        const turbo = jugador.number.get("boltTurbo") ?? 0;
+        jugador.number.set("boltTurbo", 0);
+        jugador.spriteAvatarOpcional = "";
+
+        if (!jugador.estaVivo || turbo < 3) return;
+
+        const objetivo = Utilidades.obtenerVecinoVivoEnSentido(sala, jugador, "antihorario");
+        if (!objetivo || objetivo === jugador) return;
+
+        const conFuego = turbo >= 5;
+        sala.agregarRegistro(
+            `⚡ ¡${Utilidades.obtenerNombreVisual(jugador)} descarga ${turbo} de turbo y dispara un BANG!${conFuego ? " incendiario" : ""} a ${Utilidades.obtenerNombreVisual(objetivo)}!`
+        );
+        sala.reproducirSfx("sfxBoltBang");
+
+        sala.sistemaCombate.encolarAtaqueBang({
+            victima: objetivo,
+            atacante: jugador,
+            danoBase: 1,
+            causa: "BANG",
+            flecha: "revolver",
+            alFrente: true,
+            ejecutarInmediatamente: true,
+            onImpactoExtra: conFuego
+                ? (s, ctx) => {
+                      if (ctx.victima.estaVivo) {
+                          Utilidades.agregarEfecto(ctx.victima, "fuego", 1);
+                          s.agregarRegistro(
+                              `🔥 ¡El turbo de ${Utilidades.obtenerNombreVisual(jugador)} incendia a ${Utilidades.obtenerNombreVisual(ctx.victima)}!`
+                          );
+                          s.reproducirSfx("sfxFuego");
+                      }
+                  }
+                : undefined
+        });
+    }
+}
+
+export class Wiwawowi implements IPersonaje {
+    nombre = "Wiwawowi";
+    vidasBase = 4;
+    habilidad = "El pepe vs ete sech:\nAl inicio de la partida: invoca un NPC Martian en sentido antihorario.\nAl final del turno: si jugaste la misma cantidad de cartas que tu Martian, ambos mejoran un equipamiento, se curan 1 y roban 2 cartas.";
+    sfxDefault = "sfxFarmerBob";
+    sfxMuerte: [string, boolean] = ["sfxFarmerBobMuerte", false];
+
+    onAsignar(sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
+        jugador.number.set("bobJugadas", 0);
+        if (!esImitacion) {
+            const martian = Utilidades.invocarNpcEnMesa(sala, jugador, "Martian", 2, 2, "antihorario");
+            if (martian) {
+                const idMartian = Utilidades.obtenerSessionIdDeJugador(sala, martian);
+                jugador.string.set("bobMartianId", idMartian);
+            }
+        }
+    }
+
+    onRemover(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.number.delete("bobJugadas");
+        jugador.string.delete("bobMartianId");
+    }
+
+    onIniciarTurno(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.number.set("bobJugadas", 0);
+    }
+
+    onJugarCarta(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador.estaVivo) return;
+        const miId = Utilidades.obtenerSessionIdDeJugador(sala, jugador);
+        if (sala.state.turnoActual === miId) {
+            jugador.number.set("bobJugadas", (jugador.number.get("bobJugadas") ?? 0) + 1);
+        }
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador.estaVivo) return;
+        const idMartian = jugador.string.get("bobMartianId");
+        if (!idMartian) return;
+
+        const martian = sala.getJugadores().get(idMartian);
+        if (!martian || !martian.estaVivo) return;
+
+        const jugadasBob = jugador.number.get("bobJugadas") ?? 0;
+        const jugadasMartian = martian.number.get("martianJugadas") ?? 0;
+
+        if (jugadasBob !== jugadasMartian) return;
+
+        const recompensar = (j: Jugador): void => {
+            Utilidades.mejorarEquipamientoAleatorio(sala, j);
+            if (Utilidades.puedeRecibirCuracion(sala, j)) {
+                Utilidades.aplicarCuracion(sala, j, 1, "pasiva", false);
+            }
+            sala.repartirCartas(j, 2, "pasiva");
+        };
+
+        recompensar(jugador);
+        recompensar(martian);
+
+        sala.agregarRegistro(
+            `👨‍🌾👽 ¡${Utilidades.obtenerNombreVisual(jugador)} y Martian sincronizaron (${jugadasBob} cartas)! Ambos mejoran un equipamiento, se curan 1 y roban 2 cartas.`
+        );
+        sala.reproducirSfx("sfxFarmerBob");
+    }
+}
+
+export class AvePhoenix implements IPersonaje {
+    nombre = "Ave Phoenix";
+    vidasBase = 4;
+    habilidad = "Renacimiento:\nTiene 3 vidas.\nAl morir: se transforma en un huevo y se cura al máximo.\nAl inicio de su turno en modo huevo: renace, se cura al máximo y pierde 1 vida máxima.\nPenalizacion 1.";
+    sfxDefault = "sfxAvePhoenix";
+    sfxMuerte: [string, boolean] = ["sfxAvePhoenixMuerte", false];
+
+    onAsignar(_sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
+        if (!esImitacion) {
+            Utilidades.bajarVidaMaxima(jugador, 1);
+        }
+        jugador.boolean.set("avePhoenixHuevo", false);
+    }
+
+    onRemover(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.delete("avePhoenixHuevo");
+        jugador.spriteAvatarOpcional = "";
+    }
+
+    onRecibirDano(sala: IMyRoom, ctx: ContextoDano): void {
+        if (!ctx.victima.estaVivo || ctx.victima.vidas > 0) return;
+        if (ctx.victima.boolean.get("avePhoenixHuevo")) return;
+
+        ctx.victima.boolean.set("avePhoenixHuevo", true);
+        ctx.victima.vidas = ctx.victima.vidasMaximas;
+        ctx.victima.spriteAvatarOpcional = "Ave Phoenix huevo";
+
+        sala.agregarRegistro(
+            `🥚🔥 ¡${Utilidades.obtenerNombreVisual(ctx.victima)} se transformó en un huevo ardiente con ${ctx.victima.vidas} de vida!`
+        );
+        sala.reproducirSfx("sfxAvePhoenixHuevo");
+    }
+
+    onIniciarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador.estaVivo || !jugador.boolean.get("avePhoenixHuevo")) return;
+
+        jugador.boolean.set("avePhoenixHuevo", false);
+        jugador.spriteAvatarOpcional = "";
+        jugador.vidas = jugador.vidasMaximas;
+        Utilidades.bajarVidaMaxima(jugador, 1);
+
+        sala.agregarRegistro(
+            `🔥 ¡${Utilidades.obtenerNombreVisual(jugador)} renació de su huevo! (Vida máxima: ${jugador.vidasMaximas})`
+        );
+        sala.reproducirSfx("sfxAvePhoenixRenace");
+    }
+
+    modificarCartasEnManoAlPasarTurno(): number {
+        return -1;
+    }
+}
+
+export class Subaru implements IPersonaje {
+    nombre = "Subaru";
+    vidasBase = 4;
+    habilidad = "Regreso de la muerte:\nTiene 1 vida (2 si es Sheriff).\nAl morir (6 usos, 3 si es Sheriff): retrocede el tiempo de toda la mesa justo antes de morir y se prepara para enfrentarlo.\nAlmacenamiento 1.";
+    sfxDefault = "sfxSubaru";
+    sfxMuerte: [string, boolean] = ["sfxSubaruMuerte", false];
+
+    onAsignar(_sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
+        if (!esImitacion) {
+            Utilidades.bajarVidaMaxima(jugador, 3);
+        }
+        const usos = jugador.rol === "Sheriff" ? 3 : 6;
+        jugador.number.set("subaruUsos", usos);
+    }
+
+    onRemover(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.number.delete("subaruUsos");
+    }
+
+    puedeRetrocederEnElTiempo(_sala: IMyRoom, jugador: Jugador): boolean {
+        return (jugador.number.get("subaruUsos") ?? 0) > 0;
+    }
+
+    modificarCartasEnManoAlPasarTurno(): number {
+        return 1
+    }
+}
+
 // =============================================================================
 // NPCS INVOCABLES
 // =============================================================================
+
+export class Enredadera implements IPersonaje {
+    nombre = "Enredadera";
+    vidasBase = 1;
+    habilidad = "NPC:\nTiene 1 vida. No roba cartas en su turno y descarta toda su mano al iniciar su turno. Sprout la ignora al calcular distancia.";
+    esNpcInvocable = true;
+    pasaTurnoRapido = true;
+    sfxDefault = "sfxEnredadera";
+    sfxMuerte: [string, boolean] = ["sfxEnredaderaMuerte", false];
+
+    modificarRepartirCarta(_sala: IMyRoom, _jugador: Jugador, causa: string): number {
+        return causa === "turno" ? -2 : 0;
+    }
+
+    onIniciarTurno(sala: IMyRoom, jugador: Jugador): void {
+        while (jugador.mano.length > 0) {
+            const c = jugador.mano.splice(0, 1)[0];
+            if (c) sala.descartarCarta(c, jugador, "PASIVA");
+        }
+    }
+}
+
+export class Martian implements IPersonaje {
+    nombre = "Martian";
+    vidasBase = 2;
+    habilidad = "NPC:\nTiene 2 vidas y puede curarse. Empieza con 1 escudo y al final de su turno gana 1 escudo.";
+    esNpcInvocable = true;
+    sfxDefault = "sfxMartian";
+    sfxMuerte: [string, boolean] = ["sfxMartianMuerte", false];
+
+    onAsignar(sala: IMyRoom, jugador: Jugador, esImitacion: boolean): void {
+        jugador.boolean.set("npcPuedeCurarse", true);
+        jugador.number.set("martianJugadas", 0);
+        if (!esImitacion) {
+            Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva");
+        }
+    }
+
+    onRemover(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.boolean.delete("npcPuedeCurarse");
+        jugador.number.delete("martianJugadas");
+    }
+
+    onIniciarTurno(_sala: IMyRoom, jugador: Jugador): void {
+        jugador.number.set("martianJugadas", 0);
+    }
+
+    onJugarCarta(sala: IMyRoom, jugador: Jugador): void {
+        if (!jugador.estaVivo) return;
+        const miId = Utilidades.obtenerSessionIdDeJugador(sala, jugador);
+        if (sala.state.turnoActual === miId) {
+            jugador.number.set("martianJugadas", (jugador.number.get("martianJugadas") ?? 0) + 1);
+        }
+    }
+
+    onPasarTurno(sala: IMyRoom, jugador: Jugador): void {
+        if (jugador.estaVivo) {
+            Utilidades.agregarEscudos(sala, jugador, 1, 1, "pasiva");
+        }
+    }
+}
 
 export class Bruce implements IPersonaje {
     nombre = "Bruce";
@@ -3338,9 +3819,12 @@ export class GestorPersonajes {
             new Phoenix(), new Clint(), new Kertley(), new Susato(), new Colt(),
             new Cosmo(), new Amber(), new FlorAmarilla(), new Volpina(), new Tracer(),
             new RoaringKnight(), new ShellyDeKiller(), new Sirius(), new MRasmodius(),
-            new Echo(), new Dynamike(), new BrockElCartero(), new Otis(),
+            new Echo(), new Dynamike(), new BrockElCartero(), new Otis(), new Sombra(), new Rico(), 
+            new Sprout(), new Willow(), new Bolt(), new Wiwawowi(), new AvePhoenix(), 
+            new Subaru(),
             // NPCs invocables
-            new Lawrie(), new Bruce(), new Bubble_npc(), new Leon_oculto()
+            new Lawrie(), new Bruce(), new Bubble_npc(), new Leon_oculto(), new Enredadera(),
+            new Martian()
         ];
 
         for (const p of lista) {

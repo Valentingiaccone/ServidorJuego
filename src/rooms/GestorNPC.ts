@@ -1,12 +1,20 @@
 import type { ClienteJuego, IMyRoom } from "./IMyRoom.js";
 import type { Carta, Jugador, OpcionInteraccion } from "./schema/MyRoomState.js";
+import { Utilidades } from "./Utilidades.js";
 
 export class GestorNPC {
+    private static generacion: number = 0;
+
+    public static reiniciarTemporizadores(): void {
+        this.generacion++;
+    }
+
     public static crearClienteNpc(idNpc: string): ClienteJuego {
         return {
             sessionId: idNpc,
+            esClienteNpc: true,
             send: (_tipo: string, _datos?: unknown) => {
-                // El NPC ignora alertas personales en silencio
+                // La IA ignora alertas personales en silencio
             }
         };
     }
@@ -18,9 +26,12 @@ export class GestorNPC {
         jugadorObjetivo: Jugador
     ): boolean {
         if (idObjetivo === idNpc) return true;
-        if (npc.idDueno !== "") {
-            if (idObjetivo === npc.idDueno) return true;
-            if (jugadorObjetivo.esNpc && jugadorObjetivo.idDueno === npc.idDueno) return true;
+
+        const idControlador = Utilidades.obtenerIdControlador(npc);
+        if (idControlador !== "") {
+            if (idObjetivo === idControlador) return true;
+            const controladorObjetivo = Utilidades.obtenerIdControlador(jugadorObjetivo);
+            if (controladorObjetivo === idControlador) return true;
         }
         return false;
     }
@@ -34,15 +45,20 @@ export class GestorNPC {
         if (!idActual) return;
 
         const jugador = sala.state.jugadores.get(idActual);
-        if (!jugador || !jugador.esNpc || !jugador.estaVivo) return;
+        if (!jugador || !jugador.estaVivo || !Utilidades.esControladoPorIA(jugador)) return;
 
+        const genActual = this.generacion;
         const delay = Math.max(100, 1500 - 100 * sala.getTotalNpc());
 
         sala.clock.setTimeout(() => {
+            if (this.generacion !== genActual) return;
             if (sala.state.estadoJuego !== "Jugando") return;
-            if (sala.state.jugadorDesenfundando === idActual) {
-                sala.procesarVoltearCarta(this.crearClienteNpc(idActual));
-            }
+            if (sala.state.jugadorDesenfundando !== idActual) return;
+
+            const jActual = sala.state.jugadores.get(idActual);
+            if (!jActual || !jActual.estaVivo || !Utilidades.esControladoPorIA(jActual)) return;
+
+            sala.procesarVoltearCarta(this.crearClienteNpc(idActual));
         }, delay);
     }
 
@@ -51,13 +67,18 @@ export class GestorNPC {
         if (!idActual) return;
 
         const jugador = sala.state.jugadores.get(idActual);
-        if (!jugador || !jugador.esNpc || !jugador.estaVivo) return;
+        if (!jugador || !jugador.estaVivo || !Utilidades.esControladoPorIA(jugador)) return;
 
+        const genActual = this.generacion;
         const delay = Math.max(100, 1500 - 100 * sala.getTotalNpc());
 
         sala.clock.setTimeout(() => {
+            if (this.generacion !== genActual) return;
             if (sala.state.estadoJuego !== "Jugando") return;
             if (sala.state.interaccionActiva.idJugadorObjetivo !== idActual) return;
+
+            const jActual = sala.state.jugadores.get(idActual);
+            if (!jActual || !jActual.estaVivo || !Utilidades.esControladoPorIA(jActual)) return;
 
             const opciones = Array.from(sala.state.interaccionActiva.opciones);
             const opcionElegida = opciones.find((op: OpcionInteraccion) => op.habilitado);
@@ -73,13 +94,18 @@ export class GestorNPC {
         if (!idActual) return;
 
         const jugador = sala.state.jugadores.get(idActual);
-        if (!jugador || !jugador.esNpc || !jugador.estaVivo) return;
+        if (!jugador || !jugador.estaVivo || !Utilidades.esControladoPorIA(jugador)) return;
 
+        const genActual = this.generacion;
         const delay = Math.max(100, 1500 - 100 * sala.getTotalNpc());
 
         sala.clock.setTimeout(() => {
+            if (this.generacion !== genActual) return;
             if (sala.state.estadoJuego !== "Jugando") return;
             if (sala.state.seleccionCartasActiva.idJugadorObjetivo !== idActual) return;
+
+            const jActual = sala.state.jugadores.get(idActual);
+            if (!jActual || !jActual.estaVivo || !Utilidades.esControladoPorIA(jActual)) return;
 
             const opciones = Array.from(sala.state.seleccionCartasActiva.opciones);
             if (opciones.length > 0) {
@@ -94,14 +120,39 @@ export class GestorNPC {
     }
 
     // =========================================================================
-    // 2. BUCLE PRINCIPAL DEL TURNO DEL NPC (2 PASADAS + DESCARTE + PASAR)
+    // 2. BUCLE PRINCIPAL DEL TURNO DE IA (NPC O MANIPULADO POR WILLOW)
     // =========================================================================
 
     public static iniciarTurnoNpc(sala: IMyRoom, idNpc: string): void {
         const npc = sala.state.jugadores.get(idNpc);
-        if (!npc || !npc.esNpc || !npc.estaVivo) return;
+        if (!npc || !npc.estaVivo || !Utilidades.esControladoPorIA(npc)) return;
+
+        const defPersonaje = sala.obtenerIPersonaje(npc.personaje);
+        if (defPersonaje?.pasaTurnoRapido) {
+            this.programarPasoRapidoNpc(sala, idNpc);
+            return;
+        }
 
         this.programarPasoTurnoNpc(sala, idNpc, 1, 0);
+    }
+
+    private static programarPasoRapidoNpc(sala: IMyRoom, idNpc: string): void {
+        const genActual = this.generacion;
+
+        sala.clock.setTimeout(() => {
+            if (this.generacion !== genActual) return;
+            if (sala.state.estadoJuego !== "Jugando" || sala.state.turnoActual !== idNpc) return;
+
+            const npc = sala.state.jugadores.get(idNpc);
+            if (!npc || !npc.estaVivo || !Utilidades.esControladoPorIA(npc)) return;
+
+            if (sala.juegoPausado()) {
+                this.programarPasoRapidoNpc(sala, idNpc);
+                return;
+            }
+
+            this.finalizarTurnoNpc(sala, idNpc, npc);
+        }, 150);
     }
 
     private static programarPasoTurnoNpc(
@@ -110,17 +161,20 @@ export class GestorNPC {
         pasada: number,
         indiceCarta: number
     ): void {
+        const genActual = this.generacion;
         const totalNpc = sala.getTotalNpc();
         const rango = Math.max(100, 1000 - 60 * totalNpc);
         const minimo = Math.max(100, 500 - 30 * totalNpc);
         const delay = Math.floor(Math.random() * rango) + minimo;
 
         sala.clock.setTimeout(() => {
+            if (this.generacion !== genActual) return;
             if (sala.state.estadoJuego !== "Jugando") return;
             if (sala.state.turnoActual !== idNpc) return;
 
             const npc = sala.state.jugadores.get(idNpc);
-            if (!npc || !npc.estaVivo) return;
+            // Si le removieron Manipulación en medio de su turno, la IA frena al instante y el humano retoma el control
+            if (!npc || !npc.estaVivo || !Utilidades.esControladoPorIA(npc)) return;
 
             if (sala.juegoPausado()) {
                 this.programarPasoTurnoNpc(sala, idNpc, pasada, indiceCarta);
@@ -157,7 +211,13 @@ export class GestorNPC {
         let frenoSeguridad = 50;
 
         while (frenoSeguridad > 0) {
-            if (!npc.estaVivo || sala.state.turnoActual !== idNpc || npc.mano.length === 0 || sala.juegoPausado()) {
+            if (
+                !npc.estaVivo ||
+                !Utilidades.esControladoPorIA(npc) ||
+                sala.state.turnoActual !== idNpc ||
+                npc.mano.length === 0 ||
+                sala.juegoPausado()
+            ) {
                 break;
             }
 
@@ -180,16 +240,25 @@ export class GestorNPC {
             }
         }
 
-        if (npc.estaVivo && sala.state.turnoActual === idNpc && !sala.juegoPausado()) {
+        if (
+            npc.estaVivo &&
+            Utilidades.esControladoPorIA(npc) &&
+            sala.state.turnoActual === idNpc &&
+            !sala.juegoPausado()
+        ) {
             sala.procesarPasarTurno(clienteNpc);
-        } else if (npc.estaVivo && sala.state.turnoActual === idNpc && sala.juegoPausado()) {
-            // Si un descarte abrió una ruleta o interacción, reintentamos pasar cuando se destrabe
+        } else if (
+            npc.estaVivo &&
+            Utilidades.esControladoPorIA(npc) &&
+            sala.state.turnoActual === idNpc &&
+            sala.juegoPausado()
+        ) {
             this.programarPasoTurnoNpc(sala, idNpc, 2, npc.mano.length);
         }
     }
 
     // =========================================================================
-    // 3. SELECCIÓN DE CARTAS Y OBJETIVOS (USA SistemaCombate COMO ÚNICA FUENTE)
+    // 3. SELECCIÓN DE CARTAS Y OBJETIVOS
     // =========================================================================
 
     private static intentarJugarCarta(
@@ -198,7 +267,7 @@ export class GestorNPC {
         npc: Jugador,
         carta: Carta
     ): boolean {
-        if (carta.tipoDeUso === "oculto") return false;
+        if (carta.tipoDeUso === "oculto" || carta.estaHackeada) return false;
 
         const def = sala.sistemaCartas.obtener(carta.nombre);
         if (!def) return false;
@@ -216,16 +285,12 @@ export class GestorNPC {
             const cand = sala.state.jugadores.get(idCand);
             if (!cand || !cand.estaVivo) return false;
 
-            if (esBeneficiosa) {
-                return true;
-            }
-            // Jamás ataca a sí mismo, a su dueño ni a otros NPCs aliados
+            if (esBeneficiosa) return true;
             return !this.esAliado(idNpc, npc, idCand, cand);
         });
 
         if (candidatos.length === 0) return false;
 
-        // Si es beneficiosa, prioriza aliados (incluyéndose si aplica)
         let poolFinal = candidatos;
         if (esBeneficiosa) {
             const aliados = candidatos.filter((idCand: string) => {

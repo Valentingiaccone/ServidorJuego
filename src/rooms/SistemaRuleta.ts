@@ -6,6 +6,7 @@ import type {
 } from "./IMyRoom.js";
 import type { Jugador } from "./schema/MyRoomState.js";
 import { GestorNPC } from "./GestorNPC.js";
+import { Utilidades } from "./Utilidades.js";
 
 const TOTAL_CASILLAS = 16;
 
@@ -45,6 +46,7 @@ interface RuletaEnCurso {
 export class SistemaRuleta {
     private cola: SolicitudRuleta[] = [];
     private enCurso: RuletaEnCurso | null = null;
+    private generacion: number = 0;
 
     constructor(private sala: IMyRoom) {}
 
@@ -52,10 +54,6 @@ export class SistemaRuleta {
         return this.enCurso !== null || this.sala.state.faseTransicion;
     }
 
-    /**
-     * Encola una ruleta. Si no hay ninguna en curso, la inicia inmediatamente.
-     * `alFrente = true` la inserta antes que otras pendientes (útil para interrupciones inmediatas).
-     */
     public solicitar(solicitud: SolicitudRuleta, alFrente: boolean = false): void {
         if (this.sala.state.estadoJuego === "Terminado") return;
 
@@ -70,9 +68,6 @@ export class SistemaRuleta {
         }
     }
 
-    /**
-     * Si el jugador muere o se desconecta mientras tiene una ruleta abierta o en cola, la destraba.
-     */
     public cancelarSiPerteneceA(idJugador: string): void {
         this.cola = this.cola.filter((s) => s.idJugador !== idJugador);
 
@@ -83,12 +78,26 @@ export class SistemaRuleta {
         }
     }
 
-    public procesarGiro(idJugador: string): void {
+    public limpiarTodo(): void {
+        this.generacion++;
+        this.cola = [];
+        this.enCurso = null;
+        this.sala.state.faseTransicion = false;
+        this.limpiarEstadoVisual();
+    }
+
+    public procesarGiro(idJugador: string, esClienteNpc: boolean = false): void {
         if (!this.enCurso) return;
         if (this.enCurso.solicitud.idJugador !== idJugador) return;
         if (this.enCurso.girando) return;
 
+        const victimaCheck = this.sala.state.jugadores.get(idJugador);
+        if (victimaCheck && Utilidades.esControladoPorIA(victimaCheck) && !esClienteNpc) {
+            return;
+        }
+
         const ruleta = this.enCurso;
+        const generacionActual = this.generacion;
         ruleta.girando = true;
 
         const indiceObjetivo = Math.floor(Math.random() * TOTAL_CASILLAS);
@@ -119,13 +128,15 @@ export class SistemaRuleta {
             objetivoIndex: indiceObjetivo
         });
 
-        // 5s para la animación visual de la ruleta en Cocos
         this.sala.clock.setTimeout(() => {
+            if (this.generacion !== generacionActual) return;
+
             this.limpiarEstadoVisual();
             this.sala.state.faseTransicion = true;
 
-            // 650ms de pausa visual entre paneles
             this.sala.clock.setTimeout(() => {
+                if (this.generacion !== generacionActual) return;
+
                 this.sala.state.faseTransicion = false;
                 this.enCurso = null;
 
@@ -136,7 +147,6 @@ export class SistemaRuleta {
 
                 const victima = this.sala.state.jugadores.get(idJugador);
 
-                // 1. Activamos consecuencia de ficha especial (Maggey, Cubo, Triboulet, Chicot, etc.)
                 if (!ruleta.solicitud.esEmbrujo && fichaElegida.ownerId && fichaElegida.onActivar) {
                     const dueno = this.sala.state.jugadores.get(fichaElegida.ownerId);
                     if (dueno && dueno.estaVivo && victima) {
@@ -144,10 +154,11 @@ export class SistemaRuleta {
                     }
                 }
 
-                // 2. Ejecutamos el callback propio de quien solicitó esta ruleta
                 ruleta.solicitud.onResultado(esExito, fichaElegida.visual);
 
-                // 3. Si quedaron más ruletas en cola, arrancamos la siguiente; si no, reanudamos interacciones
+                // Si Subaru retrocedió el tiempo dentro de onResultado, cortamos acá
+                if (this.generacion !== generacionActual) return;
+
                 if (this.cola.length > 0) {
                     this.iniciarSiguiente();
                 } else {
@@ -195,11 +206,7 @@ export class SistemaRuleta {
         for (let i = 0; i < TOTAL_CASILLAS; i++) {
             const visual = i < victima.embrujos.length ? victima.embrujos[i] : "vacio";
             const verde = TEXTOS_EMBRUJO[visual]?.verde ?? true;
-            casillas.push({
-                tipo: verde ? "exito" : "fallo",
-                visual,
-                ownerId: ""
-            });
+            casillas.push({ tipo: verde ? "exito" : "fallo", visual, ownerId: "" });
         }
         return this.mezclar(casillas);
     }
@@ -208,18 +215,13 @@ export class SistemaRuleta {
         const ctx = new ContextoRuleta(solicitud.motivo, victima, solicitud.idJugador);
 
         if (solicitud.permiteModificadoresSuerte !== false) {
-            // Suerte local (personaje de la víctima + sus cartas/equipamientos)
             this.sala.motorEventos.disparar(victima, "modificarRuletaLocal", ctx);
-
-            // Suerte global (personajes/cartas de toda la mesa, ej. Maggey, Cubo)
             this.sala.motorEventos.dispararGlobal("modificarRuletaGlobal", ctx);
         }
 
-        // Siempre mínimo 1 verde y mínimo 1 rojo
         const verdes = Math.max(1, Math.min(TOTAL_CASILLAS - 1, solicitud.probabilidadBase + ctx.bonusSuerte));
         const rojos = TOTAL_CASILLAS - verdes;
 
-        // Separamos y mezclamos fichas especiales por color: si exceden el cupo, entran al azar sin priorizar nada
         const especialesVerdes = this.mezclar(
             ctx.fichasEspeciales.filter((f) => f.tipo === "exito")
         ).slice(0, verdes);
@@ -248,7 +250,6 @@ export class SistemaRuleta {
         this.sala.state.ruletaRojo = "";
     }
 
-    /** Mezcla Fisher-Yates uniforme (sin sesgos de sort) */
     private mezclar<T>(lista: T[]): T[] {
         const copia = [...lista];
         for (let i = copia.length - 1; i > 0; i--) {
@@ -258,12 +259,5 @@ export class SistemaRuleta {
             copia[j] = temp;
         }
         return copia;
-    }
-
-    public limpiarTodo(): void {
-        this.cola = [];
-        this.enCurso = null;
-        this.sala.state.faseTransicion = false;
-        this.limpiarEstadoVisual();
     }
 }
